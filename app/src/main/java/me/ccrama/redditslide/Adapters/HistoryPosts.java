@@ -2,7 +2,6 @@ package me.ccrama.redditslide.Adapters;
 
 import android.os.AsyncTask;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.util.Log;
 
 import com.lusfold.androidkeyvaluestore.KVStore;
 
@@ -16,7 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
 
 import me.ccrama.redditslide.Authentication;
 import me.ccrama.redditslide.PostMatch;
@@ -71,11 +69,9 @@ public class HistoryPosts extends GeneralPosts {
                             filteredSubmissions.add(c);
                         }
                     } else {
-                        LogUtil.v("Not a submission");
                         filteredSubmissions.add(c);
                     }
                 }
-                Log.v(LogUtil.getTag(), "SIZE IS " + filteredSubmissions.size());
 
                 if (reset || posts == null) {
                     posts = filteredSubmissions;
@@ -113,20 +109,20 @@ public class HistoryPosts extends GeneralPosts {
                     ArrayList<String> ids = new ArrayList<>();
                     HashMap<Long, String> idsSorted = new HashMap<>();
                     Map<String,String> values = KVStore.getInstance().getByContains("");
-                    for (String value : values.keySet()) {
+                    for (Map.Entry<String, String> entry : values.entrySet()) {
                         Object done;
-                        if(values.get(value).equals("true") || values.get(value).equals("false")){
-                            done = Boolean.valueOf(values.get(value));
+                        if(entry.getValue().equals("true") || entry.getValue().equals("false")){
+                            done = Boolean.valueOf(entry.getValue());
                         } else {
-                            done = Long.valueOf(values.get(value));
+                            done = Long.valueOf(entry.getValue());
                         }
-                        if (value.length() == 6 && done instanceof Boolean){
-                            ids.add("t3_" + value);
+                        if (entry.getKey().length() == 6 && done instanceof Boolean){
+                            ids.add("t3_" + entry.getKey());
                         } else if(done instanceof Long){
-                            if(value.contains("_")){
-                                idsSorted.put((Long)done, value);
+                            if(entry.getKey().contains("_")){
+                                idsSorted.put((Long)done, entry.getKey());
                             } else {
-                                idsSorted.put((Long) done, "t3_" + value);
+                                idsSorted.put((Long) done, "t3_" + entry.getKey());
                             }
                         }
                     }

@@ -18,6 +18,8 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import net.dean.jraw.paginators.SubmissionSearchPaginator;
 import net.dean.jraw.paginators.TimePeriod;
 
+import org.apache.commons.lang3.StringUtils;
+
 import me.ccrama.redditslide.Adapters.ContributionAdapter;
 import me.ccrama.redditslide.Adapters.SubredditSearchPosts;
 import me.ccrama.redditslide.ColorPreferences;
@@ -31,6 +33,7 @@ import me.ccrama.redditslide.handler.ToolbarScrollHideHandler;
 
 public class Search extends BaseActivityAnim {
 
+    //todo NFC support
 
     public static final String EXTRA_TERM = "term";
     public static final String EXTRA_SUBREDDIT = "subreddit";
@@ -48,11 +51,11 @@ public class Search extends BaseActivityAnim {
 
     private String where;
     private String subreddit;
-    private String site;
-    private String url;
-    private boolean self;
-    private boolean nsfw;
-    private String author;
+//    private String site;
+//    private String url;
+//    private boolean self;
+//    private boolean nsfw;
+//    private String author;
 
     private SubredditSearchPosts posts;
 
@@ -70,18 +73,13 @@ public class Search extends BaseActivityAnim {
     public void reloadSubs() {
         posts.refreshLayout.setRefreshing(true);
         posts.reset();
-
-
     }
 
-    public void openPopup() {
-
+    public void openTimeFramePopup() {
         final DialogInterface.OnClickListener l2 = new DialogInterface.OnClickListener() {
-
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 switch (i) {
-
                     case 0:
                         time = TimePeriod.HOUR;
                         break;
@@ -100,28 +98,27 @@ public class Search extends BaseActivityAnim {
                     case 5:
                         time = TimePeriod.ALL;
                         break;
-
                 }
                 reloadSubs();
-                getSupportActionBar().setSubtitle(Reddit.getSortingStringsSearch(getBaseContext())[Reddit.getSortingIdSearch(Search.this)]);
 
+                //When the .name() is returned for both of the ENUMs, it will be in all caps.
+                //So, make it lowercase, then capitalize the first letter of each.
+                getSupportActionBar()
+                        .setSubtitle(StringUtils.capitalize(Reddit.search.name().toLowerCase()) + " › " + StringUtils.capitalize(time.name().toLowerCase()));
             }
         };
         AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(Search.this);
         builder.setTitle(R.string.sorting_time_choose);
         builder.setSingleChoiceItems(Reddit.getSortingStringsSearch(getBaseContext()), Reddit.getSortingIdSearch(this), l2);
         builder.show();
-
     }
 
-    public void openPopup2() {
-
+    public void openSearchTypePopup() {
         final DialogInterface.OnClickListener l2 = new DialogInterface.OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 switch (i) {
-
                     case 0:
                         Reddit.search = SubmissionSearchPaginator.SearchSort.RELEVANCE;
                         break;
@@ -134,18 +131,19 @@ public class Search extends BaseActivityAnim {
                     case 3:
                         Reddit.search = SubmissionSearchPaginator.SearchSort.COMMENTS;
                         break;
-
-
                 }
                 reloadSubs();
 
+                //When the .name() is returned for both of the ENUMs, it will be in all caps.
+                //So, make it lowercase, then capitalize the first letter of each.
+                getSupportActionBar()
+                        .setSubtitle(StringUtils.capitalize(Reddit.search.name().toLowerCase()) + " › " + StringUtils.capitalize(time.name().toLowerCase()));
             }
         };
         AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(Search.this);
         builder.setTitle(R.string.sorting_choose);
         builder.setSingleChoiceItems(Reddit.getSearch(getBaseContext()), Reddit.getTypeSearch(), l2);
         builder.show();
-
     }
 
     public TimePeriod time;
@@ -157,7 +155,7 @@ public class Search extends BaseActivityAnim {
                 onBackPressed();
                 return true;
             case R.id.time:
-                openPopup();
+                openTimeFramePopup();
                 return true;
             case R.id.edit:
                 MaterialDialog.Builder builder = new MaterialDialog.Builder(this).title(R.string.search_title)
@@ -170,27 +168,24 @@ public class Search extends BaseActivityAnim {
                         });
 
                 //Add "search current sub" if it is not frontpage/all/random
-
-                    builder.positiveText("Search")
-                            .onPositive(new MaterialDialog.SingleButtonCallback() {
-                                @Override
-                                public void onClick(@NonNull MaterialDialog materialDialog, @NonNull DialogAction dialogAction) {
-                                    Intent i = new Intent(Search.this, Search.class);
-                                    i.putExtra(Search.EXTRA_TERM, where);
-                                    i.putExtra(Search.EXTRA_SUBREDDIT, subreddit);
-                                    startActivity(i);
-                                    overridePendingTransition(0, 0);
-                                    finish();
-                                    overridePendingTransition(0, 0);
-                                }
-                            });
-
+                builder.positiveText("Search")
+                        .onPositive(new MaterialDialog.SingleButtonCallback() {
+                            @Override
+                            public void onClick(@NonNull MaterialDialog materialDialog, @NonNull DialogAction dialogAction) {
+                                Intent i = new Intent(Search.this, Search.class);
+                                i.putExtra(Search.EXTRA_TERM, where);
+                                i.putExtra(Search.EXTRA_SUBREDDIT, subreddit);
+                                startActivity(i);
+                                overridePendingTransition(0, 0);
+                                finish();
+                                overridePendingTransition(0, 0);
+                            }
+                        });
                 builder.show();
                 return true;
             case R.id.sort:
-                openPopup2();
+                openSearchTypePopup();
                 return true;
-
         }
         return false;
     }
@@ -200,13 +195,13 @@ public class Search extends BaseActivityAnim {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         overrideRedditSwipeAnywhere();
-
         super.onCreate(savedInstanceState);
+
         applyColorTheme("");
-        setContentView(R.layout.activity_saved);
+        setContentView(R.layout.activity_search);
         where = getIntent().getExtras().getString(EXTRA_TERM, "");
 
-        if(getIntent().hasExtra(EXTRA_MULTIREDDIT)){
+        if (getIntent().hasExtra(EXTRA_MULTIREDDIT)) {
             multireddit = true;
             subreddit  = getIntent().getExtras().getString(EXTRA_MULTIREDDIT);
         } else {
@@ -228,6 +223,7 @@ public class Search extends BaseActivityAnim {
 
             subreddit = getIntent().getExtras().getString(EXTRA_SUBREDDIT, "");
         }
+
         setupSubredditAppBar(R.id.toolbar, "Search", true, subreddit.toLowerCase());
 
         time = TimePeriod.ALL;
@@ -243,7 +239,10 @@ public class Search extends BaseActivityAnim {
         });
         mToolbar.setPopupTheme(new ColorPreferences(this).getFontStyle().getBaseId());
 
-        getSupportActionBar().setSubtitle(Reddit.getSortingStringsSearch(getBaseContext())[Reddit.getSortingIdSearch(this)]);
+        //When the .name() is returned for both of the ENUMs, it will be in all caps.
+        //So, make it lowercase, then capitalize the first letter of each.
+        getSupportActionBar().setSubtitle(StringUtils.capitalize(Reddit.search.name().toLowerCase()) + " › " + StringUtils.capitalize(time.name().toLowerCase()));
+
         final RecyclerView rv = ((RecyclerView) findViewById(R.id.vertical_content));
         final PreCachingLayoutManager mLayoutManager;
         mLayoutManager = new PreCachingLayoutManager(this);
@@ -266,12 +265,10 @@ public class Search extends BaseActivityAnim {
                     }
                 }
 
-                if (!posts.loading) {
-                    if ((visibleItemCount + pastVisiblesItems) + 5>= totalItemCount) {
-                        posts.loading = true;
-                        posts.loadMore(adapter, subreddit, where, false);
+                if (!posts.loading && (visibleItemCount + pastVisiblesItems) + 5>= totalItemCount) {
+                    posts.loading = true;
+                    posts.loadMore(adapter, subreddit, where, false);
 
-                    }
                 }
             }
         });
@@ -280,12 +277,10 @@ public class Search extends BaseActivityAnim {
         mSwipeRefreshLayout.setColorSchemeColors(Palette.getColors(subreddit, this));
 
         //If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
-        //So, we just do 7% of the device screen height as a general estimate for just a toolbar
-        final int headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.07));
-
+        //So, we estimate the height of the header in dp.
         mSwipeRefreshLayout.setProgressViewOffset(false,
-                headerOffset - Reddit.pxToDp(42, Search.this),
-                headerOffset + Reddit.pxToDp(42, Search.this));
+                Constants.SINGLE_HEADER_VIEW_OFFSET - Constants.PTR_OFFSET_TOP,
+                Constants.SINGLE_HEADER_VIEW_OFFSET + Constants.PTR_OFFSET_BOTTOM);
 
         mSwipeRefreshLayout.post(new Runnable() {
             @Override
@@ -298,7 +293,6 @@ public class Search extends BaseActivityAnim {
         adapter = new ContributionAdapter(this, posts, rv);
         rv.setAdapter(adapter);
 
-
         posts.bindAdapter(adapter, mSwipeRefreshLayout);
         //TODO catch errors
         mSwipeRefreshLayout.setOnRefreshListener(
@@ -306,12 +300,9 @@ public class Search extends BaseActivityAnim {
                     @Override
                     public void onRefresh() {
                         posts.loadMore(adapter, subreddit, where, true);
-
                         //TODO catch errors
                     }
                 }
         );
     }
-
-
 }

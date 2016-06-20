@@ -4,8 +4,6 @@ import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -41,9 +39,9 @@ import me.ccrama.redditslide.Activities.Album;
 import me.ccrama.redditslide.Activities.AlbumPager;
 import me.ccrama.redditslide.Activities.CommentsScreen;
 import me.ccrama.redditslide.Activities.FullscreenVideo;
-import me.ccrama.redditslide.Activities.GifView;
+import me.ccrama.redditslide.Activities.MediaView;
 import me.ccrama.redditslide.Activities.Shadowbox;
-import me.ccrama.redditslide.Authentication;
+import me.ccrama.redditslide.Activities.Website;
 import me.ccrama.redditslide.ContentType;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
@@ -59,7 +57,6 @@ import me.ccrama.redditslide.util.CustomTabUtil;
 import me.ccrama.redditslide.util.GifUtils;
 import me.ccrama.redditslide.util.LogUtil;
 import me.ccrama.redditslide.util.NetworkUtil;
-import me.ccrama.redditslide.util.StreamableUtil;
 
 
 /**
@@ -84,11 +81,9 @@ public class MediaFragment extends Fragment {
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
-        if (isVisibleToUser) {
-            if (videoView != null) {
-                videoView.seekTo(0);
-                videoView.start();
-            }
+        if (isVisibleToUser && videoView != null) {
+            videoView.seekTo(0);
+            videoView.start();
         }
 
     }
@@ -215,7 +210,10 @@ public class MediaFragment extends Fragment {
         firstUrl = bundle.getString("firstUrl");
         sub = ((Shadowbox) getActivity()).subreddit;
         i = bundle.getInt("page");
-        s = ((Shadowbox) getActivity()).subredditPosts.getPosts().get(i);
+        if (((Shadowbox) getActivity()).subredditPosts.getPosts().size() != 0)
+            s = ((Shadowbox) getActivity()).subredditPosts.getPosts().get(i);
+        else
+            getActivity().finish();
         contentUrl = bundle.getString("contentUrl");
     }
 
@@ -236,28 +234,23 @@ public class MediaFragment extends Fragment {
                                 }
                                 doLoadImage(url);
                             } else {
-                                if (!imageShown)
-                                    doLoadImage(contentUrl);
+                                Intent i = new Intent(getActivity(), Website.class);
+                                i.putExtra(Website.EXTRA_URL, contentUrl);
+                                getActivity().startActivity(i);
                             }
                         }
                     });
                 }
                 break;
-            case VIDEO:
-            case EXTERNAL:
-            case SELF:
-            case SPOILER:
-            case LINK:
-            case REDDIT:
             case IMAGE:
                 doLoadImage(contentUrl);
                 break;
             case IMGUR:
                 doLoadImgur(contentUrl);
                 break;
-            case GIF:
             case VID_ME:
             case STREAMABLE:
+            case GIF:
                 doLoadGif(contentUrl);
                 break;
         }
@@ -268,132 +261,6 @@ public class MediaFragment extends Fragment {
     public boolean isGif;
     GifUtils.AsyncLoadGif gif;
 
-    public void doLoadGif(final String dat) {
-        isGif = true;
-        videoView = (MediaVideoView) rootView.findViewById(R.id.gif);
-        videoView.clearFocus();
-        videoView.setZOrderOnTop(true);
-        rootView.findViewById(R.id.gifarea).setVisibility(View.VISIBLE);
-        rootView.findViewById(R.id.submission_image).setVisibility(View.GONE);
-        final ProgressBar loader = (ProgressBar) rootView.findViewById(R.id.gifprogress);
-        rootView.findViewById(R.id.progress).setVisibility(View.GONE);
-        if (dat.contains("streamable.com")) {
-            new StreamableUtil.AsyncLoadStreamable(getActivity(), (MediaVideoView) rootView.findViewById(R.id.gif), loader, rootView.findViewById(R.id.placeholder), null, false, false).execute(dat);
-        } else {
-            gif = new GifUtils.AsyncLoadGif(getActivity(), (MediaVideoView) rootView.findViewById(R.id.gif), loader, rootView.findViewById(R.id.placeholder), true, false, false);
-            gif.execute(dat);
-        }
-
-    }
-
-    public void doLoadImgur(String url) {
-        final String finalUrl = url;
-        final String finalUrl1 = url;
-        if (url.endsWith("/")) {
-            url = url.substring(0, url.length() - 1);
-        }
-        String hash = url.substring(url.lastIndexOf("/"), url.length());
-
-        if (hash.startsWith("/")) hash = hash.substring(1, hash.length());
-        if (NetworkUtil.isConnected(getActivity())) {
-
-            LogUtil.v("Loading" + "https://imgur-apiv3.p.mashape.com/3/image/" + hash + ".json");
-            Ion.with(this).load("https://imgur-apiv3.p.mashape.com/3/image/" + hash + ".json")
-                    .addHeader("X-Mashape-Key", SecretConstants.getImgurApiKey(getActivity())).addHeader("Authorization", "Client-ID " + "bef87913eb202e9")
-                    .asJsonObject().setCallback(new FutureCallback<JsonObject>() {
-                                                    @Override
-                                                    public void onCompleted(Exception e, JsonObject obj) {
-
-                                                        if (obj != null && !obj.isJsonNull() && obj.has("error")) {
-                                                            LogUtil.v("Error loading content");
-                                                            getActivity().finish();
-                                                        } else {
-                                                            try {
-                                                                if (obj != null && !obj.isJsonNull() && obj.has("image")) {
-                                                                    String type = obj.get("image").getAsJsonObject().get("image").getAsJsonObject().get("type").getAsString();
-                                                                    String urls = obj.get("image").getAsJsonObject().get("links").getAsJsonObject().get("original").getAsString();
-
-                                                                    if (type.contains("gif")) {
-                                                                        doLoadGif(urls);
-                                                                    } else if (!imageShown) { //only load if there is no image
-                                                                        doLoadImage(urls);
-                                                                    }
-                                                                } else {
-                                                                    if (!imageShown)
-                                                                        doLoadImage(finalUrl1);
-                                                                }
-                                                            } catch (Exception e2) {
-                                                                if (!imageShown)
-                                                                    doLoadImage(finalUrl1);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-
-            );
-        }
-    }
-
-    public String actuallyLoaded;
-
-    public void doLoadImage(String contentUrl) {
-            if (contentUrl != null && ContentType.isImgurLink(contentUrl)) {
-                contentUrl = contentUrl + ".png";
-            }
-            imageShown = true;
-            rootView.findViewById(R.id.gifprogress).setVisibility(View.GONE);
-            LogUtil.v(contentUrl);
-            if (contentUrl != null && contentUrl.contains("m.imgur.com"))
-                contentUrl = contentUrl.replace("m.imgur.com", "i.imgur.com");
-            if ((contentUrl != null && !contentUrl.startsWith("https://i.redditmedia.com") && !contentUrl.contains("imgur.com")) || contentUrl != null && contentUrl.contains(".jpg") && !contentUrl.contains("i.redditmedia.com") && Authentication.didOnline) { //we can assume redditmedia and imgur links are to direct images and not websites
-                rootView.findViewById(R.id.progress).setVisibility(View.VISIBLE);
-                ((ProgressBar) rootView.findViewById(R.id.progress)).setIndeterminate(true);
-
-                final String finalUrl2 = contentUrl;
-                new AsyncTask<Void, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(Void... params) {
-                        try {
-                            URL obj = new URL(finalUrl2);
-                            URLConnection conn = obj.openConnection();
-                            final String type = conn.getHeaderField("Content-Type");
-                            if (getActivity() != null)
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (type != null && !type.isEmpty() && type.startsWith("image/")) {
-                                            //is image
-                                            if (type.contains("gif")) {
-                                                doLoadGif(finalUrl2.replace(".jpg", ".gif"));
-                                            } else if (!imageShown) {
-                                                displayImage(finalUrl2);
-                                            }
-                                            actuallyLoaded = finalUrl2;
-                                        } else {
-                                            if (!imageShown)
-                                                doLoadImage(finalUrl2);
-                                        }
-                                    }
-                                });
-
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        return null;
-                    }
-
-                    @Override
-                    protected void onPostExecute(Void aVoid) {
-                        rootView.findViewById(R.id.progress).setVisibility(View.GONE);
-                    }
-                }.execute();
-
-            } else if (contentUrl != null && !imageShown) {
-                displayImage(contentUrl);
-            }
-            actuallyLoaded = contentUrl;
-
-    }
 
     private static void addClickFunctions(final View base, final View clickingArea, ContentType.Type type, final Activity contextActivity, final Submission submission) {
 
@@ -404,9 +271,8 @@ public class MediaFragment extends Fragment {
                     @Override
                     public void onClick(View v) {
                         if (SettingValues.video) {
-                            Intent myIntent = new Intent(contextActivity, GifView.class);
-
-                            myIntent.putExtra(GifView.EXTRA_STREAMABLE, submission.getUrl());
+                            Intent myIntent = new Intent(contextActivity, MediaView.class);
+                            myIntent.putExtra(MediaView.EXTRA_URL, submission.getUrl());
                             contextActivity.startActivity(myIntent);
 
                         } else {
@@ -486,7 +352,7 @@ public class MediaFragment extends Fragment {
                 base.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v2) {
-                        PopulateSubmissionViewHolder.openImage(contextActivity, submission);
+                        PopulateSubmissionViewHolder.openImage(contextActivity, submission, null);
 
                     }
                 });
@@ -527,116 +393,251 @@ public class MediaFragment extends Fragment {
 
     }
 
-    public void displayImage(final String url) {
-        if(!imageShown){
-        actuallyLoaded = url;
-        final SubsamplingScaleImageView i = (SubsamplingScaleImageView) rootView.findViewById(R.id.submission_image);
-        imageShown = true;
 
-        i.setMinimumDpi(70);
-        i.setMinimumTileDpi(240);
-        final ProgressBar bar = (ProgressBar) rootView.findViewById(R.id.progress);
-        bar.setIndeterminate(false);
-        bar.setProgress(0);
+    public void doLoadGif(final String dat) {
+        isGif = true;
+        videoView = (MediaVideoView) rootView.findViewById(R.id.gif);
+        videoView.clearFocus();
+        videoView.setZOrderOnTop(true);
+        rootView.findViewById(R.id.gifarea).setVisibility(View.VISIBLE);
+        rootView.findViewById(R.id.submission_image).setVisibility(View.GONE);
+        final ProgressBar loader = (ProgressBar) rootView.findViewById(R.id.gifprogress);
+        rootView.findViewById(R.id.progress).setVisibility(View.GONE);
+        gif = new GifUtils.AsyncLoadGif(getActivity(), (MediaVideoView) rootView.findViewById(R.id.gif), loader, rootView.findViewById(R.id.placeholder), true, false, false);
+        gif.execute(dat);
+    }
 
-        final Handler handler = new Handler();
-        final Runnable progressBarDelayRunner = new Runnable() {
-            public void run() {
-                bar.setVisibility(View.VISIBLE);
-            }
-        };
-        handler.postDelayed(progressBarDelayRunner, 500);
+    public void doLoadImgur(String url) {
 
+        final String finalUrl = url;
+        final String finalUrl1 = url;
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        String hash = url.substring(url.lastIndexOf("/"), url.length());
 
+        if (NetworkUtil.isConnected(getActivity())) {
 
-        File f = ((Reddit) getActivity().getApplicationContext()).getImageLoader().getDiscCache().get(url);
-        if (f != null && f.exists()) {
-            try {
-                i.setImage(ImageSource.uri(f.getAbsolutePath()));
-            } catch (Exception e) {
-                //todo  i.setImage(ImageSource.bitmap(loadedImage));
-            }
-            (rootView.findViewById(R.id.progress)).setVisibility(View.GONE);
-            handler.removeCallbacks(progressBarDelayRunner);
+            if (hash.startsWith("/"))
+                hash = hash.substring(1, hash.length());
+            LogUtil.v("Loading" + "https://imgur-apiv3.p.mashape.com/3/image/" + hash + ".json");
+            Ion.with(this).load("https://imgur-apiv3.p.mashape.com/3/image/" + hash + ".json")
+                    .addHeader("X-Mashape-Key", SecretConstants.getImgurApiKey(getActivity())).addHeader("Authorization", "Client-ID " + "bef87913eb202e9")
+                    .asJsonObject().setCallback(new FutureCallback<JsonObject>() {
+                                                    @Override
+                                                    public void onCompleted(Exception e, JsonObject obj) {
 
-            previous = i.scale;
-            final float base = i.scale;
-            i.setOnZoomChangedListener(new SubsamplingScaleImageView.OnZoomChangedListener() {
+                                                        if (obj != null && !obj.isJsonNull() && obj.has("error")) {
+                                                            LogUtil.v("Error loading content");
+                                                            (getActivity()).finish();
+                                                        } else {
+                                                            try {
+                                                                if (obj != null && !obj.isJsonNull() && obj.has("image")) {
+                                                                    String type = obj.get("image").getAsJsonObject().get("image").getAsJsonObject().get("type").getAsString();
+                                                                    String urls = obj.get("image").getAsJsonObject().get("links").getAsJsonObject().get("original").getAsString();
+
+                                                                    if (type.contains("gif")) {
+                                                                        doLoadGif(urls);
+                                                                    } else if (!imageShown) { //only load if there is no image
+                                                                        doLoadImage(urls);
+                                                                    }
+                                                                } else if (obj.has("data")) {
+                                                                    String type = obj.get("data").getAsJsonObject().get("type").getAsString();
+                                                                    String urls = obj.get("data").getAsJsonObject().get("link").getAsString();
+                                                                    String mp4 = "";
+                                                                    if (obj.get("data").getAsJsonObject().has("mp4")) {
+                                                                        mp4 = obj.get("data").getAsJsonObject().get("mp4").getAsString();
+                                                                    }
+
+                                                                    if (type.contains("gif")) {
+                                                                        doLoadGif(((mp4 == null || mp4.isEmpty()) ? urls : mp4));
+                                                                    } else if (!imageShown) { //only load if there is no image
+                                                                        doLoadImage(urls);
+                                                                    }
+                                                                } else {
+                                                                    if (!imageShown)
+                                                                        doLoadImage(finalUrl1);
+                                                                }
+                                                            } catch (Exception e2) {
+                                                                e2.printStackTrace();
+                                                                Intent i = new Intent(getActivity(), Website.class);
+                                                                i.putExtra(Website.EXTRA_URL, finalUrl);
+                                                                getActivity().startActivity(i);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+            );
+        }
+    }
+
+    public void doLoadImage(String contentUrl) {
+        if (contentUrl != null && contentUrl.contains("bildgur.de"))
+            contentUrl = contentUrl.replace("b.bildgur.de", "i.imgur.com");
+        if (contentUrl != null && ContentType.isImgurLink(contentUrl)) {
+            contentUrl = contentUrl + ".png";
+        }
+
+        rootView.findViewById(R.id.gifprogress).setVisibility(View.GONE);
+
+        if (contentUrl != null && contentUrl.contains("m.imgur.com"))
+            contentUrl = contentUrl.replace("m.imgur.com", "i.imgur.com");
+
+        if ((contentUrl != null && !contentUrl.startsWith("https://i.redditmedia.com") && !contentUrl.startsWith("https://i.reddituploads.com") && !contentUrl.contains("imgur.com"))) { //we can assume redditmedia and imgur links are to direct images and not websites
+            rootView.findViewById(R.id.progress).setVisibility(View.VISIBLE);
+            ((ProgressBar) rootView.findViewById(R.id.progress)).setIndeterminate(true);
+
+            final String finalUrl2 = contentUrl;
+            new AsyncTask<Void, Void, Void>() {
                 @Override
-                public void onZoomLevelChanged(float zoom) {
-                    if (zoom > previous && !hidden && zoom > base) {
-                        hidden = true;
-                        final View base = rootView.findViewById(R.id.base);
-
-                        ValueAnimator va = ValueAnimator.ofFloat(1.0f, 0.2f);
-                        int mDuration = 250; //in millis
-                        va.setDuration(mDuration);
-                        va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                            public void onAnimationUpdate(ValueAnimator animation) {
-                                Float value = (Float) animation.getAnimatedValue();
-                                base.setAlpha(value);
+                protected Void doInBackground(Void... params) {
+                    try {
+                        URL obj = new URL(finalUrl2);
+                        URLConnection conn = obj.openConnection();
+                        final String type = conn.getHeaderField("Content-Type");
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!imageShown && type != null && !type.isEmpty() && type.startsWith("image/")) {
+                                    //is image
+                                    if (type.contains("gif")) {
+                                        doLoadGif(finalUrl2.replace(".jpg", ".gif").replace(".png", ".gif"));
+                                    } else if (!imageShown) {
+                                        displayImage(finalUrl2);
+                                    }
+                                    actuallyLoaded = finalUrl2;
+                                } else if (!imageShown) {
+                                    Intent i = new Intent(getActivity(), Website.class);
+                                    i.putExtra(Website.EXTRA_URL, finalUrl2);
+                                    getActivity().startActivity(i);
+                                }
                             }
                         });
 
-                        va.start();
-
-                        //hide
-                    } else if (zoom <= previous && hidden) {
-                        hidden = false;
-                        final View base = rootView.findViewById(R.id.base);
-
-                        ValueAnimator va = ValueAnimator.ofFloat(0.2f, 1.0f);
-                        int mDuration = 250; //in millis
-                        va.setDuration(mDuration);
-                        va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                            public void onAnimationUpdate(ValueAnimator animation) {
-                                Float value = (Float) animation.getAnimatedValue();
-                                base.setAlpha(value);
-                            }
-                        });
-
-                        va.start();
-
-                        //unhide
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-                    previous = zoom;
-
+                    return null;
                 }
-            });
+
+                @Override
+                protected void onPostExecute(Void aVoid) {
+                    rootView.findViewById(R.id.progress).setVisibility(View.GONE);
+                }
+            }.execute();
+
         } else {
-            final ImageView fakeImage = new ImageView(getActivity());
+            displayImage(contentUrl);
+        }
+
+
+        actuallyLoaded = contentUrl;
+    }
+
+    public String actuallyLoaded;
+
+    public void displayImage(final String url) {
+        if (!imageShown) {
+            actuallyLoaded = url;
+            final SubsamplingScaleImageView i = (SubsamplingScaleImageView) rootView.findViewById(R.id.submission_image);
+
+            i.setMinimumDpi(70);
+            i.setMinimumTileDpi(240);
+            final ProgressBar bar = (ProgressBar) rootView.findViewById(R.id.progress);
+            bar.setIndeterminate(false);
+            bar.setProgress(0);
+
+            final Handler handler = new Handler();
+            final Runnable progressBarDelayRunner = new Runnable() {
+                public void run() {
+                    bar.setVisibility(View.VISIBLE);
+                }
+            };
+            handler.postDelayed(progressBarDelayRunner, 500);
+
+            ImageView fakeImage = new ImageView(getActivity());
             fakeImage.setLayoutParams(new LinearLayout.LayoutParams(i.getWidth(), i.getHeight()));
             fakeImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            ((Reddit) getActivity().getApplication()).getImageLoader()
-                    .displayImage(url, new ImageViewAware(fakeImage), new DisplayImageOptions.Builder()
-                            .resetViewBeforeLoading(true)
-                            .cacheOnDisk(true)
-                            .imageScaleType(ImageScaleType.NONE)
-                            .cacheInMemory(false)
-                            .build(), new ImageLoadingListener() {
-                        private View mView;
 
-                        @Override
-                        public void onLoadingStarted(String imageUri, View view) {
-                            mView = view;
+            File f = ((Reddit) getActivity().getApplicationContext()).getImageLoader().getDiscCache().get(url);
+            if (f != null && f.exists()) {
+                imageShown = true;
+
+                try {
+                    i.setImage(ImageSource.uri(f.getAbsolutePath()));
+                } catch (Exception e) {
+                    //todo  i.setImage(ImageSource.bitmap(loadedImage));
+                }
+                (rootView.findViewById(R.id.progress)).setVisibility(View.GONE);
+                handler.removeCallbacks(progressBarDelayRunner);
+
+                previous = i.scale;
+                final float base = i.scale;
+                i.setOnZoomChangedListener(new SubsamplingScaleImageView.OnZoomChangedListener() {
+                    @Override
+                    public void onZoomLevelChanged(float zoom) {
+                        if (zoom > previous && !hidden && zoom > base) {
+                            hidden = true;
+                            final View base = rootView.findViewById(R.id.base);
+
+                            ValueAnimator va = ValueAnimator.ofFloat(1.0f, 0.2f);
+                            int mDuration = 250; //in millis
+                            va.setDuration(mDuration);
+                            va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                                public void onAnimationUpdate(ValueAnimator animation) {
+                                    Float value = (Float) animation.getAnimatedValue();
+                                    base.setAlpha(value);
+                                }
+                            });
+                            va.start();
+                            //hide
+                        } else if (zoom <= previous && hidden) {
+                            hidden = false;
+                            final View base = rootView.findViewById(R.id.base);
+
+                            ValueAnimator va = ValueAnimator.ofFloat(0.2f, 1.0f);
+                            int mDuration = 250; //in millis
+                            va.setDuration(mDuration);
+                            va.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                                public void onAnimationUpdate(ValueAnimator animation) {
+                                    Float value = (Float) animation.getAnimatedValue();
+                                    base.setAlpha(value);
+                                }
+                            });
+                            va.start();
+                            //unhide
                         }
+                        previous = zoom;
+                    }
+                });
+            } else {
+                ((Reddit) getActivity().getApplicationContext()).getImageLoader()
+                        .displayImage(url, new ImageViewAware(fakeImage), new DisplayImageOptions.Builder()
+                                .resetViewBeforeLoading(true)
+                                .cacheOnDisk(true)
+                                .imageScaleType(ImageScaleType.NONE)
+                                .cacheInMemory(false)
+                                .build(), new ImageLoadingListener() {
+                            private View mView;
 
-                        @Override
-                        public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
-                            Log.v(LogUtil.getTag(), "LOADING FAILED");
-
-                        }
-
-                        @Override
-                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                            Drawable drawable = fakeImage.getDrawable();
-                            if (drawable instanceof BitmapDrawable) {
-                                BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-                                Bitmap bitmap = bitmapDrawable.getBitmap();
-                                bitmap.recycle();
+                            @Override
+                            public void onLoadingStarted(String imageUri, View view) {
+                                imageShown = true;
+                                mView = view;
                             }
-                            if (getActivity() != null) {
-                                File f = ((Reddit) getActivity().getApplicationContext()).getImageLoader().getDiscCache().get(url);
+
+                            @Override
+                            public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
+                                Log.v(LogUtil.getTag(), "LOADING FAILED");
+
+                            }
+
+                            @Override
+                            public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                                imageShown = true;
+                                File f = null;
+                                if (getActivity() != null)
+                                    f = ((Reddit) getActivity().getApplicationContext()).getImageLoader().getDiscCache().get(url);
                                 if (f != null && f.exists()) {
                                     i.setImage(ImageSource.uri(f.getAbsolutePath()));
                                 } else {
@@ -663,9 +664,7 @@ public class MediaFragment extends Fragment {
                                                     base.setAlpha(value);
                                                 }
                                             });
-
                                             va.start();
-
                                             //hide
                                         } else if (zoom <= previous && hidden) {
                                             hidden = false;
@@ -680,30 +679,34 @@ public class MediaFragment extends Fragment {
                                                     base.setAlpha(value);
                                                 }
                                             });
-
                                             va.start();
-
                                             //unhide
                                         }
                                         previous = zoom;
-
                                     }
                                 });
                             }
-                        }
 
-                        @Override
-                        public void onLoadingCancelled(String imageUri, View view) {
-                            Log.v(LogUtil.getTag(), "LOADING CANCELLED");
+                            @Override
+                            public void onLoadingCancelled(String imageUri, View view) {
+                                Log.v(LogUtil.getTag(), "LOADING CANCELLED");
 
-                        }
-                    }, new ImageLoadingProgressListener() {
-                        @Override
-                        public void onProgressUpdate(String imageUri, View view, int current, int total) {
-                            ((ProgressBar) rootView.findViewById(R.id.progress)).setProgress(Math.round(100.0f * current / total));
-                        }
-                    });
-        }
+                            }
+                        }, new ImageLoadingProgressListener() {
+                            @Override
+                            public void onProgressUpdate(String imageUri, View view, int current, int total) {
+                                ((ProgressBar) rootView.findViewById(R.id.progress)).setProgress(Math.round(100.0f * current / total));
+                            }
+                        });
+            }
+
+            rootView.findViewById(R.id.submission_image).setOnClickListener(new View.OnClickListener() {
+
+                @Override
+                public void onClick(View v2) {
+                    getActivity().finish();
+                }
+            });
         }
     }
 }

@@ -9,18 +9,13 @@
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-
+        android:layout_height="@dimen/standard_toolbar_height"
+        android:minHeight="@dimen/standard_toolbar_height"
         android:background="@color/md_amber_500"
-        android:clipToPadding="false"
-        android:elevation="5dp"
+        android:elevation="8dp"
         android:paddingEnd="16dp"
         android:theme="@style/Theme.AppCompat"
-        android:title="@string/editor_submit"
-
-        >
-
-
+        android:title="@string/editor_submit">
     </android.support.v7.widget.Toolbar>
 
     <android.support.v4.widget.NestedScrollView
@@ -33,7 +28,6 @@
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-
             android:orientation="vertical"
             android:padding="16dp">
 
@@ -57,8 +51,6 @@
                 <RadioButton
                     android:id="@+id/imageradio"
                     android:layout_width="0dp"
-
-
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/type_img"
@@ -69,7 +61,6 @@
                     android:id="@+id/linkradio"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-
                     android:layout_weight="1"
                     android:text="@string/type_link"
                     android:textAllCaps="true"
@@ -83,15 +74,15 @@
                 <AutoCompleteTextView
                     android:id="@+id/subreddittext"
                     android:layout_width="match_parent"
-
                     android:layout_height="wrap_content"
-
                     android:backgroundTint="?attr/tint"
                     android:hint="@string/editor_hint_subreddit"
-
+                    android:inputType="textFilter"
                     android:maxLength="21"
                     android:maxLines="1"
-                    android:textColor="?attr/font" />
+                    android:imeOptions="flagNavigateNext"
+                    android:textColor="?attr/font"
+                    android:digits="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" />
             </android.support.design.widget.TextInputLayout>
 
             <android.support.design.widget.TextInputLayout
@@ -105,6 +96,7 @@
                     android:backgroundTint="?attr/tint"
                     android:hint="@string/editor_title"
                     android:inputType="text|textCapSentences"
+                    android:maxLines="1"
                     android:maxLength="300" />
             </android.support.design.widget.TextInputLayout>
 
@@ -136,7 +128,7 @@
                     android:id="@+id/preview"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="right"
+                    android:layout_gravity="start"
                     android:background="?android:selectableItemBackground"
                     android:padding="6dp"
                     android:text="@string/btn_preview"
@@ -170,7 +162,6 @@
                     android:id="@+id/imagepost"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-
                     android:layout_marginTop="10dp"
                     android:adjustViewBounds="true" />
             </LinearLayout>
@@ -226,7 +217,6 @@
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:visibility="gone"/>
-
         </LinearLayout>
     </android.support.v4.widget.NestedScrollView>
 
@@ -238,7 +228,6 @@
         android:layout_marginBottom="16dp"
         android:layout_marginEnd="100dp"
         android:layout_marginStart="16dp"
-        android:background="?android:selectableItemBackground"
         android:backgroundTint="?attr/tint"
         android:button="@null"
         android:buttonTint="?attr/tint"
@@ -254,7 +243,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
-        android:layout_margin="16dp"
+        android:layout_margin="@dimen/activity_vertical_margin"
         app:elevation="6dp"
         app:fabSize="normal"
         app:layout_behavior="me.ccrama.slideforreddit.AutoHideFAB"

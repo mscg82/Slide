@@ -44,6 +44,10 @@
         <item quantity="one">pt</item>
         <item quantity="other">pts</item>
     </plurals>
+    <plurals name="comments">
+        <item quantity="one">cmt</item>
+        <item quantity="other">cmts</item>
+    </plurals>
 
     <!-- Theme settings -->
     <string name="theme_light">Light</string>
@@ -59,6 +63,7 @@
 
     <!-- Font settings -->
     <string name="font_size">Font size</string>
+    <string name="font_size_huge">Huge</string>
     <string name="font_size_larger">Larger</string>
     <string name="font_size_large">Large</string>
     <string name="font_size_medium">Medium</string>
@@ -138,6 +143,7 @@
     <string name="comment_deleted">[deleted]</string>
     <string name="comment_unsave">Unsave</string>
     <string name="comment_load_more">Load %1$d more</string>
+    <string name="comment_load_more_string">Load %1$s more</string>
     <string name="comment_loading_more">Loading more comments…</string>
     <string name="comment_permalink">Load comment permalink</string>
     <string name="comment_parent">Show parent comment</string>
@@ -214,6 +220,8 @@
     <!-- Multireddit errors -->
     <string name="multireddit_err_title">No multireddits (yet)!</string>
     <string name="multireddit_err_msg">Would you like to create a new multireddit?</string>
+    <string name="public_multireddit_err_title">No multireddits!</string>
+    <string name="public_multireddit_err_msg">This user has no public multireddits.</string>
     <string name="multireddit_title_empty">Title can\'t be empty</string>
     <string name="multireddit_title_empty_msg">Please enter a title for your multireddit</string>
     <string name="multireddit_no_subs">No subreddits are added</string>
@@ -287,6 +295,7 @@
     <string name="misc_err">Error</string>
     <string name="misc_none">None</string>
     <string name="misc_retry">Would you like to try again?</string>
+    <string name="misc_retry_draft">Would you like to try again? \nA draft of your submission has been saved</string>
     <string name="misc_score_hidden">score hidden</string>
     <string name="misc_nsfw">NSFW</string>
     <string name="misc_subscribed">Subscribed</string>
@@ -302,6 +311,7 @@
     <!-- Goto User -->
     <string name="user_enter">Enter username</string>
     <string name="user_btn_goto">Go to user</string>
+    <string name="user_btn_gotomultis">Go to user\'s multis</string>
     <string name="user_invalid_msg">Reddit usernames can only contain letters, numbers, underscores and dashes</string>
 
 
@@ -327,6 +337,7 @@
     <string name="btn_cache">Cache comments</string>
     <string name="btn_delete">Delete</string>
     <string name="btn_time">Time period</string>
+    <string name="btn_message">Message</string>
 
 
     <!-- Backup -->
@@ -383,6 +394,8 @@
 
     <!-- Subreddits -->
     <string name="subreddit_subscribers">%1$d subscribers</string>
+    <string name="subreddit_subscribers_string">%1$s subscribers</string>
+    <string name="subreddit_active_users_string">%1$d here now</string>
     <string name="subreddit_err_msg">The subreddit %1$s could not be found. Perhaps it\'s spelled wrong?</string>
     <string name="subreddit_err_msg_new">The subreddit %1$s could not be found. Perhaps it\'s spelled wrong, or you do not have access to this subreddit.</string>
     <string name="subreddit_err">Subreddit not found</string>
@@ -410,7 +423,7 @@
     <!-- Settings -->
     <string name="settings_reddit_prefs">Reddit preferences</string>
     <string name="settings_accent_title">Edit accent color</string>
-    <string name="settings_delete_sub_settings">Do you really want to delete settings for /r/%1$s?</string>
+    <string name="settings_delete_sub_settings">Do you really want to delete settings for %1$s?</string>
     <string name="settings_layout_default">Post layout</string>
     <string name="settings_link_album">Internal album view</string>
     <string name="settings_link_gif">Internal GIF view</string>
@@ -472,6 +485,14 @@
     <string name="settings_section_general">General</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_other">Other</string>
+    <string name="settings_section_browser">Browser</string>
+    <string name="settings_section_internal_viewers">Internal viewers</string>
+    <string name="settings_section_custom_domains">Custom domains</string>
+    <string name="settings_section_save_history">Save history</string>
+    <string name="settings_section_clear_history">Clear history</string>
+    <string name="settings_section_data_saving_mode">Data saving mode</string>
+    <string name="settings_section_image_quality">Image quality</string>
+    <string name="settings_section_hide_images">Hide images</string>
 
     <!-- Setting subheaders -->
     <string name="sorting">Sorting</string>
@@ -638,6 +659,7 @@
     <string name="subreddit_search_method_title">Subreddit search method</string>
     <string name="subreddit_search_method_drawer">Search bar in the drawer</string>
     <string name="subreddit_search_method_toolbar">Long press on the toolbar title</string>
+    <string name="subreddit_search_method_both">Both drawer and toolbar title</string>
     <string name="handling_internal_browser">Use internal browser</string>
     <string name="handling_external_browser">Use external browser</string>
     <string name="settings_commentnav_description">Enables a bottom bar with navigation arrows</string>
@@ -647,7 +669,8 @@
     <string name="mode_list">List</string>
     <string name="mode_centered">Card with centered image</string>
     <string name="mode_card">Card</string>
-    <string name="mode_thumbnail">Thumbnail only</string>
+    <string name="mode_thumbnail">Thumbnail</string>
+    <string name="mode_big_thumbnails">Big Thumbnails</string>
     <string name="mode_cropped">Big picture cropped</string>
     <string name="mode_bigpic">Big picture</string>
     <string name="settings_general_swipeanywhere_description">Swipe anywhere in view to exit</string>
@@ -712,6 +735,8 @@
     <string name="settings_links_force_external">Force external browser</string>
     <string name="settings_links_force_external_desc">Choose domains that will always open externally</string>
     <string name="settings_layout_show_domain">Show domain in info line</string>
+    <string name="settings_layout_show_content_type">Show content type in info line</string>
+    <string name="settings_layout_show_votes_comments">Show votes/comments in info line</string>
     <string name="submit_replies_to_inbox">Send replies to inbox</string>
     <string name="settings_data">Data saving</string>
     <string name="settings_card_show_selftext">Show first paragraph of selftext</string>
@@ -737,6 +762,9 @@
     <string name="dialog_no_drafts">No drafts yet</string>
     <string name="dialog_no_drafts_msg">You can add a draft by clicking the \'save\' icon in the editor bar!</string>
     <string name="msg_save_draft">Message saved as a draft</string>
+    <string name="msg_sent_success">Message sent</string>
+    <string name="msg_sent_failure">Message failed to send</string>
+    <string name="msg_send_user_dne">That user doesn\'t exist</string>
     <string name="content_removed">[removed]</string>
     <string name="guest">Guest</string>
     <string name="err_comment_post_nosave_message">\nPlease try again in a minute</string>
@@ -838,4 +866,25 @@
     <string name="folder_name">Folder name</string>
     <string name="btn_create">Create</string>
     <string name="sidebar_friends">Friends</string>
+    <string name="settings_manage_subscriptions">Manage your subscriptions</string>
+    <string name="btn_add_domain">Add a domain</string>
+    <string name="delete_multireddit_title">Do you really want to delete /m/</string>
+    <string name="cannot_be_undone">This cannot be undone.</string>
+    <string name="deleting">Deleting...</string>
+    <string name="results_in_slightly_higher_data_usage_but_some_cropped_images_will_be_full_sized">Results in slightly higher data usage, but some cropped images will be full sized</string>
+    <string name="get_lq_imgur_images_through_imgur_api">Get LQ Imgur images through Imgur API</string>
+    <string name="theme_sepia">Sepia</string>
+    <string name="open_links_externally">Always open this host externally</string>
+    <string name="hide_read_posts">Hide read posts</string>
+
+    <!-- Strings for alert dialogs -->
+    <string name="force_change_subscription">Could not change subscription</string>
+    <string name="force_change_subscription_desc">Would you still like to change it locally?</string>
+    <string name="never_load_images">Don\'t load any images</string>
+    <string name="low_quality_images_in_image_viewer">Low quality images in image viewer</string>
+    <string name="load_high_quality_image_every_time">Otherwise, load high quality image every time</string>
+    <string name="load_lower_quality_imgur">If enabled, will attempt to load an even lower quality Imgur image</string>
+    <string name="load_medium_quality_imgur_images">Load medium quality Imgur images</string>
+
+
 </resources>

@@ -5,27 +5,28 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.view.ContextThemeWrapper;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateDecelerateInterpolator;
+
+import com.mikepenz.itemanimators.SlideUpAlphaAnimator;
 
 import net.dean.jraw.models.Subreddit;
 
 import java.util.List;
 
-import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
 import me.ccrama.redditslide.Activities.BaseActivity;
 import me.ccrama.redditslide.Adapters.SubredditAdapter;
 import me.ccrama.redditslide.Adapters.SubredditNames;
 import me.ccrama.redditslide.ColorPreferences;
 import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.R;
-import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.Views.PreCachingLayoutManager;
 import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.handler.ToolbarScrollHideHandler;
+import me.ccrama.redditslide.util.LogUtil;
 
 public class SubredditListView extends Fragment {
     public SubredditNames posts;
@@ -48,42 +49,18 @@ public class SubredditListView extends Fragment {
         final RecyclerView.LayoutManager mLayoutManager = new PreCachingLayoutManager(getActivity());
 
         rv.setLayoutManager(mLayoutManager);
-        rv.setItemAnimator(new SlideInUpAnimator(new AccelerateDecelerateInterpolator()));
+        rv.setItemAnimator(new SlideUpAlphaAnimator());
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.activity_main_swipe_refresh_layout);
         mSwipeRefreshLayout.setColorSchemeColors(Palette.getColors("no sub", getContext()));
 
         //If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
-        //So, we just do 13% of the phone screen height as a general estimate for the Tabs view type
-        final int headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.13));
-
+        //So, we estimate the height of the header in dp
         mSwipeRefreshLayout.setProgressViewOffset(false,
-                headerOffset - Reddit.pxToDp(42, getContext()),
-                headerOffset + Reddit.pxToDp(42, getContext()));
+                Constants.TAB_HEADER_VIEW_OFFSET - Constants.PTR_OFFSET_TOP,
+                Constants.TAB_HEADER_VIEW_OFFSET + Constants.PTR_OFFSET_BOTTOM);
 
         v.findViewById(R.id.post_floating_action_button).setVisibility(View.GONE);
-
-        rv.addOnScrollListener(new ToolbarScrollHideHandler(((BaseActivity) getActivity()).mToolbar, getActivity().findViewById(R.id.header)) {
-
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                if (!posts.loading && !posts.nomore) {
-
-                    visibleItemCount = rv.getLayoutManager().getChildCount();
-                    totalItemCount = rv.getLayoutManager().getItemCount();
-
-                    if ((visibleItemCount + pastVisiblesItems) + 5 >= totalItemCount) {
-                        posts.loading = true;
-                        posts.loadMore(mSwipeRefreshLayout.getContext(), false, where);
-
-                    }
-                }
-
-            }
-        });
-
-
         doAdapter();
 
         return v;
@@ -111,6 +88,25 @@ public class SubredditListView extends Fragment {
                     }
                 }
         );
+        rv.addOnScrollListener(new ToolbarScrollHideHandler(((BaseActivity) getActivity()).mToolbar, getActivity().findViewById(R.id.header)) {
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (!posts.loading && !posts.nomore) {
+                    visibleItemCount = rv.getLayoutManager().getChildCount();
+                    totalItemCount = rv.getLayoutManager().getItemCount();
+
+                    pastVisiblesItems = ((LinearLayoutManager)rv.getLayoutManager()).findFirstVisibleItemPosition();
+                    if ((visibleItemCount + pastVisiblesItems) >= totalItemCount) {
+                        posts.loading = true;
+                        LogUtil.v("Loading more");
+                        posts.loadMore(mSwipeRefreshLayout.getContext(), false, where);
+                    }
+                }
+
+            }
+        });
     }
 
     @Override

@@ -13,7 +13,6 @@ import me.ccrama.redditslide.Adapters.InboxAdapter;
 import me.ccrama.redditslide.Adapters.InboxMessages;
 import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.R;
-import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.Views.CatchStaggeredGridLayoutManager;
 import me.ccrama.redditslide.Views.PreCachingLayoutManager;
 import me.ccrama.redditslide.Visuals.Palette;
@@ -43,12 +42,10 @@ public class InboxPage extends Fragment {
         mSwipeRefreshLayout.setColorSchemeColors(Palette.getColors(id, getActivity()));
 
         //If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
-        //So, we just do 13% of the phone screen height as a general estimate for the Tabs view type
-        final int headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.13));
-
+        //So, we estimate the height of the header in dp
         mSwipeRefreshLayout.setProgressViewOffset(false,
-                headerOffset - Reddit.pxToDp(42, getContext()),
-                headerOffset + Reddit.pxToDp(42, getContext()));
+                Constants.TAB_HEADER_VIEW_OFFSET - Constants.PTR_OFFSET_TOP,
+                Constants.TAB_HEADER_VIEW_OFFSET + Constants.PTR_OFFSET_BOTTOM);
 
         mSwipeRefreshLayout.post(new Runnable() {
             @Override

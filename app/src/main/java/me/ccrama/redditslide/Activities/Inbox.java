@@ -37,7 +37,7 @@ import me.ccrama.redditslide.util.LogUtil;
  */
 public class Inbox extends BaseActivityAnim {
 
-    public static String EXTRA_UNREAD = "unread";
+    public static final String EXTRA_UNREAD = "unread";
     public Inbox.OverviewPagerAdapter adapter;
     private TabLayout tabs;
     private ViewPager pager;
@@ -89,13 +89,17 @@ public class Inbox extends BaseActivityAnim {
                         if (changed) { //restart the fragment
                             adapter.notifyDataSetChanged();
 
-                            final int CURRENT_TAB = tabs.getSelectedTabPosition();
-                            adapter = new OverviewPagerAdapter(getSupportFragmentManager());
-                            pager.setAdapter(adapter);
-                            tabs.setupWithViewPager(pager);
+                            try {
+                                final int CURRENT_TAB = tabs.getSelectedTabPosition();
+                                adapter = new OverviewPagerAdapter(getSupportFragmentManager());
+                                pager.setAdapter(adapter);
+                                tabs.setupWithViewPager(pager);
 
-                            scrollToTabAfterLayout(CURRENT_TAB);
-                            pager.setCurrentItem(CURRENT_TAB);
+                                scrollToTabAfterLayout(CURRENT_TAB);
+                                pager.setCurrentItem(CURRENT_TAB);
+                            } catch(Exception e){
+                                
+                            }
                         }
                     }
                 }.execute();
@@ -106,6 +110,7 @@ public class Inbox extends BaseActivityAnim {
 
     /**
      * Method to scroll the TabLayout to a specific index
+     *
      * @param tabPosition index to scroll to
      */
     private void scrollToTabAfterLayout(final int tabPosition) {
@@ -144,7 +149,7 @@ public class Inbox extends BaseActivityAnim {
         adapter = new OverviewPagerAdapter(getSupportFragmentManager());
         pager.setAdapter(adapter);
 
-        if(getIntent() != null && getIntent().hasExtra(EXTRA_UNREAD)){
+        if (getIntent() != null && getIntent().hasExtra(EXTRA_UNREAD)) {
             pager.setCurrentItem(1);
         }
 
@@ -162,9 +167,9 @@ public class Inbox extends BaseActivityAnim {
                         .translationY(0)
                         .setInterpolator(new LinearInterpolator())
                         .setDuration(180);
-                if (position == 3) {
+                if (position == 3 && findViewById(R.id.read) != null) {
                     findViewById(R.id.read).setVisibility(View.GONE);
-                } else {
+                } else if(findViewById(R.id.read) != null){
                     findViewById(R.id.read).setVisibility(View.VISIBLE);
                 }
             }
@@ -179,6 +184,9 @@ public class Inbox extends BaseActivityAnim {
             @Override
             protected Void doInBackground(Void... params) {
                 if (Authentication.me == null) {
+                    if (Authentication.reddit == null) {
+                        new Authentication(getApplicationContext());
+                    }
                     Authentication.me = Authentication.reddit.me();
                     Authentication.mod = Authentication.me.isMod();
                     Reddit.over18 = Authentication.me.isOver18();

@@ -18,6 +18,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -263,14 +265,17 @@ public class OfflineSubreddit {
     public void hide(int index) {
         hide(index, true);
     }
-
+    public void hideMulti(int index) {
+        if (submissions != null) {
+            submissions.remove(index);
+        }
+    }
     public void hide(int index, boolean save) {
         if (submissions != null) {
             savedSubmission = submissions.get(index);
             submissions.remove(index);
             savedIndex = index;
             writeToMemoryNoStorage();
-
         }
     }
 
@@ -283,14 +288,26 @@ public class OfflineSubreddit {
 
     public static ArrayList<String> getAll(String subreddit) {
         subreddit = subreddit.toLowerCase();
-        ArrayList<String> keys = new ArrayList<>();
+        ArrayList<String> base = new ArrayList<>();
         for (String s : Reddit.cachedData.getAll().keySet()) {
             if (s.startsWith(subreddit) && s.contains(",")) {
-                keys.add(s);
+                base.add(s);
             }
         }
 
-        return keys;
+        Collections.sort(base, new MultiComparator());
+        return base;
+    }
+
+    public static class MultiComparator<T> implements Comparator<T> {
+        public int compare(T o1, T o2) {
+            double first = Double.valueOf(((String) o1).split(",")[1]);
+            double second = Double.valueOf(((String) o2).split(",")[1]);
+            int comparison = first >= second ? first == second ? 0 : -1 : 1;
+            if (comparison != 0) return comparison;
+
+            return 0;
+        }
     }
 
     public static ArrayList<String> getAll() {

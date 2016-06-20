@@ -16,13 +16,36 @@ import java.util.HashMap;
  * Created by ccrama on 5/26/2015.
  */
 public class ContentType {
+    /**
+     * Checks if {@code host} is contains by any of the provided {@code bases}
+     * <p/>
+     * For example "www.youtube.com" contains "youtube.com" but not "notyoutube.com" or
+     * "youtube.co.uk"
+     *
+     * @param host  A hostname from e.g. {@link URI#getHost()}
+     * @param bases Any number of hostnames to compare against {@code host}
+     * @return If {@code host} contains any of {@code bases}
+     */
+    public static boolean hostContains(String host, String... bases) {
+        if (host == null || host.isEmpty()) return false;
+
+        for (String base : bases) {
+            if (base == null || base.isEmpty()) continue;
+
+            final int index = host.indexOf(base);
+            if (index < 0 || index + base.length() != host.length()) continue;
+            if (base.length() == host.length() || host.charAt(index - 1) == '.') return true;
+        }
+
+        return false;
+    }
 
     public static boolean isGif(URI uri) {
         try {
             final String host = uri.getHost().toLowerCase();
             final String path = uri.getPath().toLowerCase();
 
-            return host.endsWith("gfycat.com")
+            return hostContains(host, "gfycat.com")
                     || path.endsWith(".gif")
                     || path.endsWith(".gifv")
                     || path.endsWith(".webm")
@@ -53,7 +76,7 @@ public class ContentType {
             final String host = uri.getHost().toLowerCase();
             final String path = uri.getPath().toLowerCase();
 
-            return host.endsWith("imgur.com")
+            return hostContains(host, "imgur.com", "bildgur.de")
                     && (path.startsWith("/a/")
                     || path.startsWith("/gallery/")
                     || path.startsWith("/g/")
@@ -64,12 +87,14 @@ public class ContentType {
         }
     }
 
-    public static boolean isRedditLink(URI uri) {
+    public static boolean isVideo(URI uri) {
         try {
             final String host = uri.getHost().toLowerCase();
+            final String path = uri.getPath().toLowerCase();
 
-            return host.endsWith("reddit.com")
-                    || host.endsWith("redd.it");
+            return Reddit.videoPlugin
+                    && hostContains(host, "youtu.be", "youtube.com", "youtube.co.uk")
+                    && !path.contains("/user/");
 
         } catch (NullPointerException e) {
             return false;
@@ -81,7 +106,7 @@ public class ContentType {
             final URI uri = new URI(url);
             final String host = uri.getHost().toLowerCase();
 
-            return host.endsWith("imgur.com")
+            return hostContains(host, "imgur.com", "bildgur.de")
                     && !isAlbum(uri)
                     && !isGif(uri)
                     && !isImage(uri);
@@ -121,9 +146,10 @@ public class ContentType {
             if (!scheme.equals("http") && !scheme.equals("https")) {
                 return Type.EXTERNAL;
             }
-            if (Reddit.videoPlugin && ((host.contains("youtu.be") || host.contains("youtube.co")))) {
+            if (isVideo(uri)) {
                 return Type.VIDEO;
-            } else if (PostMatch.openExternal(url)) {
+            }
+            if (PostMatch.openExternal(url)) {
                 return Type.EXTERNAL;
             }
             if (isGif(uri)) {
@@ -135,25 +161,27 @@ public class ContentType {
             if (isAlbum(uri)) {
                 return Type.ALBUM;
             }
-            if (host.endsWith("imgur.com")) {
+            if (hostContains(host, "imgur.com", "bildgur.de")) {
                 return Type.IMGUR;
             }
-            if (isRedditLink(uri)) {
+            if (hostContains(host, "reddit.com", "redd.it")) {
                 return Type.REDDIT;
             }
-            if (host.endsWith("vid.me")) {
+            if (hostContains(host, "vid.me")) {
                 return Type.VID_ME;
             }
-            if (host.endsWith("deviantart.com")) {
+            if (hostContains(host, "deviantart.com")) {
                 return Type.DEVIANTART;
             }
-            if (host.endsWith("streamable.com")) {
+            if (hostContains(host, "streamable.com")) {
                 return Type.STREAMABLE;
             }
 
             return Type.LINK;
 
         } catch (URISyntaxException | NullPointerException e) {
+            if (e.getMessage().contains("Illegal character in fragment")) //a valid link but something un-encoded in the URL
+                return Type.LINK;
             return Type.NONE;
         }
     }
@@ -166,6 +194,9 @@ public class ContentType {
      * @see #getContentType(String)
      */
     public static Type getContentType(Submission submission) {
+        if (submission == null)
+            return Type.SELF; //hopefully shouldn't be null, but catch it in case
+
         final String url = submission.getUrl();
         final Type basicType = getContentType(url);
 
@@ -180,6 +211,21 @@ public class ContentType {
         }
 
         return basicType;
+    }
+
+    public static boolean displayImage(Type t) {
+        switch (t) {
+
+            case ALBUM:
+            case DEVIANTART:
+            case IMAGE:
+            case IMGUR:
+            case SELF:
+                return true;
+            default:
+                return false;
+
+        }
     }
 
     public static boolean fullImage(Type t) {
@@ -313,6 +359,22 @@ public class ContentType {
         } catch (PackageManager.NameNotFoundException | NullPointerException e) {
             contentDescriptions.put(domain, res.getString(generic));
             return res.getString(generic);
+        }
+    }
+
+    public static boolean isImgurImage(String lqUrl) {
+        try {
+            final URI uri = new URI(lqUrl);
+            final String host = uri.getHost().toLowerCase();
+            final String path = uri.getPath().toLowerCase();
+
+            return (host.contains("imgur.com") || host.contains("bildgur.de"))
+                    && (path.endsWith(".png")
+                    || path.endsWith(".jpg")
+                    || path.endsWith(".jpeg"));
+
+        } catch (Exception e) {
+            return false;
         }
     }
 

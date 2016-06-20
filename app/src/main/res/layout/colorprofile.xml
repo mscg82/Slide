@@ -102,23 +102,17 @@
                         android:textSize="16sp" />
                 </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:id="@+id/moreinfo"
+                    android:layout_width="wrap_content"
                     android:layout_height="48dp"
+                    android:layout_marginStart="5dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal"
                     android:paddingEnd="16dp"
-                    android:paddingStart="8dp">
-
-                    <TextView
-                        android:id="@+id/moreinfo"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="5dp"
-                        android:text="Redditor for 2 years, 3 months of gold remiaing"
-                        android:textColor="?attr/font"
-                        android:textSize="16sp" />
-                </LinearLayout>
+                    android:paddingStart="8dp"
+                    android:text="Redditor for 2 years, 3 months of gold remiaing"
+                    android:textColor="?attr/font"
+                    android:textSize="16sp"/>
 
                 <HorizontalScrollView
                     android:id="@+id/trophies"
@@ -192,6 +186,31 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/multi_body"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="?android:selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingEnd="16dp">
+
+                    <ImageView
+                        android:layout_width="56dp"
+                        android:layout_height="match_parent"
+                        android:alpha=".86"
+                        android:padding="12dp"
+                        android:tint="?attr/tint"
+                        app:srcCompat="@drawable/collection" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/title_multireddits"
+                        android:textColor="?attr/font"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:id="@+id/color"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -252,14 +271,16 @@
                 android:layout_alignTop="@+id/body"
                 android:background="?attr/card_background"
                 android:orientation="vertical"
-                android:padding="24dp"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <uz.shift.colorpicker.LineColorPicker xmlns:app="http://schemas.android.com/apk/res-auto"
                     android:id="@+id/picker"
                     android:layout_width="match_parent"
                     android:layout_height="60dp"
                     app:orientation="horizontal"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginStart="24dp"
+                    android:layout_marginEnd="24dp"
                     app:selectedColorIndex="0" />
 
                 <uz.shift.colorpicker.LineColorPicker xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -267,23 +288,22 @@
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
                     android:layout_below="@+id/picker"
-                    android:layout_marginTop="8dp"
                     app:orientation="horizontal"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginStart="24dp"
+                    android:layout_marginEnd="24dp"
                     app:selectedColorIndex="5" />
 
-                <TextView
+                <android.support.v7.widget.AppCompatButton
                     android:id="@+id/ok"
-                    android:layout_width="match_parent"
+                    style="?attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
                     android:layout_alignParentBottom="true"
-                    android:layout_below="@+id/picker2"
-                    android:background="?android:selectableItemBackground"
-                    android:gravity="end|bottom"
-                    android:padding="16dp"
-                    android:text="@string/btn_ok"
-                    android:textColor="?attr/font"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:layout_margin="8dp"
+                    android:padding="8dp"
+                    android:text="@string/btn_ok" />
             </RelativeLayout>
         </RelativeLayout>
     </LinearLayout>

@@ -6,18 +6,22 @@ package me.ccrama.redditslide.Synccit;
 
 import java.util.HashSet;
 
+import me.ccrama.redditslide.Adapters.SubmissionDisplay;
 import me.ccrama.redditslide.HasSeen;
 import me.ccrama.redditslide.SettingValues;
 
 public class MySynccitReadTask extends SynccitReadTask {
 
     private static final String MY_DEV_NAME = "slide_for_reddit";
+    SubmissionDisplay displayer;
 
-
+    public MySynccitReadTask(SubmissionDisplay displayer) {
+        super(MY_DEV_NAME);
+        this.displayer = displayer;
+    }
     public MySynccitReadTask() {
         super(MY_DEV_NAME);
     }
-
     @Override
     protected void onVisited(HashSet<String> visitedThreadIds) {
         SynccitRead.visitedIds.addAll(visitedThreadIds);
@@ -41,6 +45,13 @@ public class MySynccitReadTask extends SynccitReadTask {
     @Override
     protected String getUserAgent() {
         return "slide_for_reddit";
+    }
+
+    @Override
+    public void onPostExecute(SynccitResponse result) {
+        super.onPostExecute(result);
+        if(displayer != null)
+            displayer.updateViews();
     }
 
 }

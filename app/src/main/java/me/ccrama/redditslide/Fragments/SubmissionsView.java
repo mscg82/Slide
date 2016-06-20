@@ -17,17 +17,17 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
+import com.mikepenz.itemanimators.AlphaInAnimator;
+import com.mikepenz.itemanimators.SlideUpAlphaAnimator;
 
 import net.dean.jraw.models.Submission;
 
 import java.util.List;
 
-import jp.wasabeef.recyclerview.animators.FadeInAnimator;
-import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
 import me.ccrama.redditslide.Activities.BaseActivity;
 import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.Activities.Submit;
@@ -44,6 +44,7 @@ import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.Views.CatchStaggeredGridLayoutManager;
+import me.ccrama.redditslide.Views.CreateCardView;
 import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.handler.ToolbarScrollHideHandler;
 
@@ -79,7 +80,7 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
             savedInstanceState) {
 
         final Context contextThemeWrapper = new ContextThemeWrapper(getActivity(), new ColorPreferences(inflater.getContext()).getThemeSubreddit(id));
-        View v = ((LayoutInflater) contextThemeWrapper.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.fragment_verticalcontent, container, false);
+        final View v = ((LayoutInflater) contextThemeWrapper.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.fragment_verticalcontent, container, false);
 
         if (getActivity() instanceof MainActivity) {
             v.findViewById(R.id.back).setBackgroundResource(0);
@@ -95,24 +96,36 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
             v.findViewById(R.id.back).setBackground(null);
         }
         rv.setLayoutManager(mLayoutManager);
-        rv.setItemAnimator(new SlideInUpAnimator(new AccelerateDecelerateInterpolator()));
+        rv.setItemAnimator(new SlideUpAlphaAnimator());
         rv.getLayoutManager().scrollToPosition(0);
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.activity_main_swipe_refresh_layout);
         mSwipeRefreshLayout.setColorSchemeColors(Palette.getColors(id, getContext()));
 
-        //If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
-        //So, we just do 13% of the device screen height as a general estimate for the Tabs view type
-        int headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.13));
-
-        //if the view type is "single" (and therefore "commentPager"), we need a different offset
-        if (SettingValues.single || getActivity() instanceof SubredditView) {
-            headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.07));
+        /**
+         * If using List view mode, we need to remove the start margin from the SwipeRefreshLayout.
+         * The scrollbar style of "outsideInset" creates a 4dp padding around it. To counter this,
+         * change the scrollbar style to "insideOverlay" when list view is enabled.
+         * To recap: this removes the margins from the start/end so list view is full-width.
+         */
+        if (SettingValues.defaultCardView == CreateCardView.CardEnum.LIST) {
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            params.setMarginStart(0);
+            rv.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+            mSwipeRefreshLayout.setLayoutParams(params);
         }
 
+        /**
+         * If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
+         * So, we estimate the height of the header in dp.
+         * If the view type is "single" (and therefore "commentPager"), we need a different offset
+         */
+        final int HEADER_OFFSET = (SettingValues.single || getActivity() instanceof SubredditView)
+                ? Constants.SINGLE_HEADER_VIEW_OFFSET : Constants.TAB_HEADER_VIEW_OFFSET;
+
         mSwipeRefreshLayout.setProgressViewOffset(false,
-                headerOffset - Reddit.pxToDp(42, getContext()),
-                headerOffset + Reddit.pxToDp(42, getContext()));
+                HEADER_OFFSET - Constants.PTR_OFFSET_TOP,
+                HEADER_OFFSET + Constants.PTR_OFFSET_BOTTOM);
 
         if (SettingValues.fab) {
             fab = (FloatingActionButton) v.findViewById(R.id.post_floating_action_button);
@@ -196,7 +209,7 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
         if (fab != null)
             fab.show();
 
-        final View header = getActivity().findViewById(R.id.header);
+        header = getActivity().findViewById(R.id.header);
 
         //TODO, have it so that if the user clicks anywhere in the rv to hide and cancel GoToSubreddit?
 //        final TextInputEditText GO_TO_SUB_FIELD = (TextInputEditText) getActivity().findViewById(R.id.toolbar_search);
@@ -220,80 +233,7 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
 //            }
 //        });
 
-        rv.addOnScrollListener(new ToolbarScrollHideHandler(((BaseActivity) getActivity()).mToolbar, header) {
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                if (!posts.loading && !posts.nomore && !posts.offline) {
-
-                    visibleItemCount = rv.getLayoutManager().getChildCount();
-                    totalItemCount = rv.getLayoutManager().getItemCount();
-
-                    int[] firstVisibleItems;
-                    firstVisibleItems = ((CatchStaggeredGridLayoutManager) rv.getLayoutManager()).findFirstVisibleItemPositions(null);
-                    if (firstVisibleItems != null && firstVisibleItems.length > 0) {
-                        for (int firstVisibleItem : firstVisibleItems) {
-                            pastVisiblesItems = firstVisibleItem;
-                            if (SettingValues.scrollSeen) {
-                                if (pastVisiblesItems > 0) {
-                                    HasSeen.addSeen(posts.posts.get(pastVisiblesItems - 1).getFullName());
-                                }
-                            }
-                        }
-                    }
-
-                    if ((visibleItemCount + pastVisiblesItems) + 5 >= totalItemCount) {
-                        posts.loading = true;
-                        posts.loadMore(mSwipeRefreshLayout.getContext(), SubmissionsView.this, false, posts.subreddit);
-
-                    }
-                }
-
-                /*
-                if(dy <= 0 && !down){
-                    (getActivity()).findViewById(R.id.header).animate().translationY(((BaseActivity)getActivity()).mToolbar.getTop()).setInterpolator(new AccelerateInterpolator()).start();
-                    down = true;
-                } else if(down){
-                    (getActivity()).findViewById(R.id.header).animate().translationY(((BaseActivity)getActivity()).mToolbar.getTop()).setInterpolator(new AccelerateInterpolator()).start();
-                    down = false;
-                }*///todo For future implementation instead of scrollFlags
-
-                if (recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING) {
-                    diff += dy;
-                } else {
-                    diff = 0;
-                }
-                if (fab != null) {
-                    if (dy <= 0 && fab.getId() != 0 && SettingValues.fab) {
-                        if (recyclerView.getScrollState() != RecyclerView.SCROLL_STATE_DRAGGING || diff < -fab.getHeight() * 2)
-                            fab.show();
-                    } else {
-                        fab.hide();
-                    }
-                }
-
-            }
-
-            /*
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                switch (newState) {
-                    case RecyclerView.SCROLL_STATE_IDLE:
-                        ((Reddit)getActivity().getApplicationContext()).getImageLoader().resume();
-                        break;
-                    case RecyclerView.SCROLL_STATE_DRAGGING:
-                        ((Reddit)getActivity().getApplicationContext()).getImageLoader().resume();
-
-                        break;
-                    case RecyclerView.SCROLL_STATE_SETTLING:
-                        ((Reddit)getActivity().getApplicationContext()).getImageLoader().pause();
-
-                        break;
-                }
-                super.onScrollStateChanged(recyclerView, newState);
-
-            }*/
-        });
+        resetScroll();
 
         Reddit.isLoading = false;
         if (MainActivity.shouldLoad == null || id == null || (MainActivity.shouldLoad != null && MainActivity.shouldLoad.equals(id)) || !(getActivity() instanceof MainActivity)) {
@@ -302,12 +242,16 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
         return v;
     }
 
+    View header;
+
+    ToolbarScrollHideHandler toolbarScroll;
+
     @NonNull
     private RecyclerView.LayoutManager createLayoutManager(final int numColumns) {
         return new CatchStaggeredGridLayoutManager(numColumns, CatchStaggeredGridLayoutManager.VERTICAL);
     }
 
-    private int getNumColumns(final int orientation) {
+    public static int getNumColumns(final int orientation) {
         final int numColumns;
         if (orientation == Configuration.ORIENTATION_LANDSCAPE && SettingValues.tabletUI) {
             numColumns = Reddit.dpWidth;
@@ -363,12 +307,12 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
         );
     }
 
-    private List<Submission> clearSeenPosts(boolean forever) {
+    public List<Submission> clearSeenPosts(boolean forever) {
         if (adapter.dataSet.posts != null) {
 
             List<Submission> originalDataSetPosts = adapter.dataSet.posts;
-
             OfflineSubreddit o = OfflineSubreddit.getSubreddit(id.toLowerCase(), false, getActivity());
+
             for (int i = adapter.dataSet.posts.size(); i > -1; i--) {
                 try {
                     if (HasSeen.getSeen(adapter.dataSet.posts.get(i))) {
@@ -376,12 +320,11 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
                             Hidden.setHidden(adapter.dataSet.posts.get(i));
                         }
                         o.clearPost(adapter.dataSet.posts.get(i));
-
                         adapter.dataSet.posts.remove(i);
-                        if (adapter.dataSet.posts.size() == 0) {
+                        if (adapter.dataSet.posts.isEmpty()) {
                             adapter.notifyDataSetChanged();
                         } else {
-                            rv.setItemAnimator(new FadeInAnimator());
+                            rv.setItemAnimator(new AlphaInAnimator());
                             adapter.notifyItemRemoved(i + 1);
                         }
                     }
@@ -389,8 +332,9 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
                     //Let the loop reset itself
                 }
             }
-            o.writeToMemory(getActivity());
-            rv.setItemAnimator(new SlideInUpAnimator(new AccelerateDecelerateInterpolator()));
+            adapter.notifyItemRangeChanged(0, adapter.dataSet.posts.size());
+            o.writeToMemoryNoStorage();
+            rv.setItemAnimator(new SlideUpAlphaAnimator());
             return originalDataSetPosts;
         }
 
@@ -489,5 +433,101 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
         }
         mSwipeRefreshLayout.setRefreshing(false);
         adapter.setError(true);
+    }
+
+    @Override
+    public void updateViews() {
+        if (adapter.dataSet.posts != null) {
+            for (int i = adapter.dataSet.posts.size(); i > -1; i--) {
+                try {
+                    if (HasSeen.getSeen(adapter.dataSet.posts.get(i))) {
+                        adapter.notifyItemChanged(i + 1);
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    //Let the loop reset itself
+                }
+            }
+        }
+    }
+
+    public void resetScroll() {
+        if (toolbarScroll == null) {
+            toolbarScroll = new ToolbarScrollHideHandler(((BaseActivity) getActivity()).mToolbar, header) {
+                @Override
+                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                    super.onScrolled(recyclerView, dx, dy);
+
+                    if (!posts.loading && !posts.nomore && !posts.offline) {
+                        visibleItemCount = rv.getLayoutManager().getChildCount();
+                        totalItemCount = rv.getLayoutManager().getItemCount();
+
+                        int[] firstVisibleItems;
+                        firstVisibleItems = ((CatchStaggeredGridLayoutManager) rv.getLayoutManager()).findFirstVisibleItemPositions(null);
+                        if (firstVisibleItems != null && firstVisibleItems.length > 0) {
+                            for (int firstVisibleItem : firstVisibleItems) {
+                                pastVisiblesItems = firstVisibleItem;
+                                if (SettingValues.scrollSeen && pastVisiblesItems > 0) {
+                                    HasSeen.addSeen(posts.posts.get(pastVisiblesItems - 1).getFullName());
+                                }
+                            }
+                        }
+
+                        if ((visibleItemCount + pastVisiblesItems) + 5 >= totalItemCount) {
+                            posts.loading = true;
+                            posts.loadMore(mSwipeRefreshLayout.getContext(), SubmissionsView.this, false, posts.subreddit);
+                        }
+                    }
+
+                /*
+                if(dy <= 0 && !down){
+                    (getActivity()).findViewById(R.id.header).animate().translationY(((BaseActivity)getActivity()).mToolbar.getTop()).setInterpolator(new AccelerateInterpolator()).start();
+                    down = true;
+                } else if(down){
+                    (getActivity()).findViewById(R.id.header).animate().translationY(((BaseActivity)getActivity()).mToolbar.getTop()).setInterpolator(new AccelerateInterpolator()).start();
+                    down = false;
+                }*///todo For future implementation instead of scrollFlags
+
+                    if (recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING) {
+                        diff += dy;
+                    } else {
+                        diff = 0;
+                    }
+                    if (fab != null) {
+                        if (dy <= 0 && fab.getId() != 0 && SettingValues.fab) {
+                            if (recyclerView.getScrollState() != RecyclerView.SCROLL_STATE_DRAGGING || diff < -fab.getHeight() * 2)
+                                fab.show();
+                        } else {
+                            fab.hide();
+                        }
+                    }
+
+                }
+
+                @Override
+                public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+//                switch (newState) {
+//                    case RecyclerView.SCROLL_STATE_IDLE:
+//                        ((Reddit)getActivity().getApplicationContext()).getImageLoader().resume();
+//                        break;
+//                    case RecyclerView.SCROLL_STATE_DRAGGING:
+//                        ((Reddit)getActivity().getApplicationContext()).getImageLoader().resume();
+//                        break;
+//                    case RecyclerView.SCROLL_STATE_SETTLING:
+//                        ((Reddit)getActivity().getApplicationContext()).getImageLoader().pause();
+//                        break;
+//                }
+                    super.onScrollStateChanged(recyclerView, newState);
+                    //If the toolbar search is open, and the user scrolls in the Main view--close the search UI
+                    if (getActivity() instanceof MainActivity && (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR
+                            || SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH)
+                            && ((MainActivity) getContext()).findViewById(R.id.toolbar_search).getVisibility() == View.VISIBLE) {
+                        ((MainActivity) getContext()).findViewById(R.id.close_search_toolbar).performClick();
+                    }
+                }
+            };
+            rv.addOnScrollListener(toolbarScroll);
+        } else {
+            toolbarScroll.reset = true;
+        }
     }
 }

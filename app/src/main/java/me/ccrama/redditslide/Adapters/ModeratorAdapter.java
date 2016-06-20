@@ -56,10 +56,10 @@ import me.ccrama.redditslide.util.SubmissionParser;
 
 public class ModeratorAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements BaseAdapter {
 
-    public static int COMMENT = 1;
+    public static final int COMMENT = 1;
     private final int SPACER = 6;
-    public static int MESSAGE = 2;
-    public static int POST = 3;
+    public static final int MESSAGE = 2;
+    public static final int POST = 3;
     public final Activity mContext;
     private final RecyclerView listView;
     public ModeratorPosts dataSet;
@@ -82,15 +82,15 @@ public class ModeratorAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     @Override
     public int getItemViewType(int position) {
-        if (position == 0 && dataSet.posts.size() != 0) {
+        if (position == 0 && !dataSet.posts.isEmpty()) {
             return SPACER;
-        } else if (dataSet.posts.size() != 0) {
+        } else if (!dataSet.posts.isEmpty()) {
             position -= 1;
         }
 
-        if (dataSet.posts.get(position).getFullName().contains("t1"))//IS COMMENT
+        if (dataSet.posts.get(position).getFullName().startsWith("t1"))//IS COMMENT
             return COMMENT;
-        if (dataSet.posts.get(position).getFullName().contains("t4"))//IS MESSAGE
+        if (dataSet.posts.get(position).getFullName().startsWith("t4"))//IS MESSAGE
             return MESSAGE;
         return POST;
     }
@@ -320,7 +320,7 @@ public class ModeratorAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             });
 
 
-        } else if (!(firstHold instanceof SpacerViewHolder)) {
+        } else if (firstHold instanceof ProfileCommentViewHolder) {
             //IS COMMENT
             ProfileCommentViewHolder holder = (ProfileCommentViewHolder) firstHold;
             final Comment comment = (Comment) dataSet.posts.get(i);
@@ -423,7 +423,7 @@ public class ModeratorAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     @Override
     public int getItemCount() {
-        if (dataSet.posts == null || dataSet.posts.size() == 0) {
+        if (dataSet.posts == null || dataSet.posts.isEmpty()) {
             return 0;
         } else {
             return dataSet.posts.size() + 1;

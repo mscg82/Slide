@@ -14,6 +14,7 @@ import net.dean.jraw.models.DistinguishedStatus;
 import net.dean.jraw.models.Submission;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.WeakHashMap;
 
 import me.ccrama.redditslide.Views.RoundedBackgroundSpan;
@@ -26,7 +27,7 @@ public class SubmissionCache {
     private static WeakHashMap<String, SpannableStringBuilder> titles;
     private static WeakHashMap<String, SpannableStringBuilder> info;
 
-    public static void cacheSubmissions(List<Submission> submissions, Context mContext, String baseSub){
+    public static void cacheSubmissions(List<Submission> submissions, Context mContext, String baseSub) {
         cacheInfo(submissions, mContext, baseSub);
     }
 
@@ -39,6 +40,11 @@ public class SubmissionCache {
             titles.put(submission.getFullName(), getTitleSpannable(submission, mContext));
             info.put(submission.getFullName(), getInfoSpannable(submission, mContext, baseSub));
         }
+    }
+
+    public static void updateTitleFlair(Submission s, String flair, Context c) {
+        titles.put(s.getFullName(), getTitleSpannable(s, flair, c));
+
     }
 
     public static SpannableStringBuilder getTitleLine(Submission s, Context mContext) {
@@ -61,13 +67,16 @@ public class SubmissionCache {
         }
     }
 
-    private static SpannableStringBuilder getInfoSpannable(Submission submission, Context mContext, String baseSub){
+    private static SpannableStringBuilder getInfoSpannable(Submission submission, Context mContext, String baseSub) {
         String spacer = mContext.getString(R.string.submission_properties_seperator);
         SpannableStringBuilder titleString = new SpannableStringBuilder();
 
         SpannableStringBuilder subreddit = new SpannableStringBuilder(" /r/" + submission.getSubredditName() + " ");
-
-        String subname = submission.getSubredditName().toLowerCase();
+        String subname;
+        if (submission.getSubredditName() != null)
+            subname = submission.getSubredditName().toLowerCase();
+        else
+            subname = "";
         if (baseSub == null || baseSub.isEmpty()) baseSub = subname;
         if ((SettingValues.colorSubName && Palette.getColor(subname) != Palette.getDefaultColor()) || (baseSub.equals("nomatching") && (SettingValues.colorSubName && Palette.getColor(subname) != Palette.getDefaultColor()))) {
             boolean secondary = (baseSub.equalsIgnoreCase("frontpage") || (baseSub.equalsIgnoreCase("all")) || (baseSub.equalsIgnoreCase("friends")) || (baseSub.equalsIgnoreCase("mod")) || baseSub.contains(".") || baseSub.contains("+"));
@@ -101,7 +110,6 @@ public class SubmissionCache {
             } else if (authorcolor != 0) {
                 author.setSpan(new ForegroundColorSpan(authorcolor), 0, author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
-
             titleString.append(author);
         }
 
@@ -122,6 +130,8 @@ public class SubmissionCache {
             titleString.append(pinned);
             titleString.append(" ");
         }
+
+
         /* too big, might add later todo
         if (submission.getAuthorFlair() != null && submission.getAuthorFlair().getText() != null && !submission.getAuthorFlair().getText().isEmpty()) {
             TypedValue typedValue = new TypedValue();
@@ -222,10 +232,23 @@ public class SubmissionCache {
             titleString.append(spacer);
             titleString.append(submission.getDomain());
         }
+
+        if (SettingValues.typeInfoLine) {
+            titleString.append(spacer);
+            SpannableStringBuilder s = new SpannableStringBuilder(ContentType.getContentDescription(submission, mContext));
+            s.setSpan(new StyleSpan(Typeface.BOLD), 0, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            titleString.append(s);
+        }
+        if (SettingValues.votesInfoLine) {
+            titleString.append("\n ");
+            SpannableStringBuilder s = new SpannableStringBuilder(submission.getScore() + String.format(Locale.getDefault(), " %s", mContext.getResources().getQuantityString(R.plurals.points, submission.getScore())) + spacer + submission.getCommentCount() + String.format(Locale.getDefault(), " %s", mContext.getResources().getQuantityString(R.plurals.comments, submission.getCommentCount())));
+            s.setSpan(new StyleSpan(Typeface.BOLD), 0, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            titleString.append(s);
+        }
         return titleString;
     }
 
-    private static SpannableStringBuilder getTitleSpannable(Submission submission, Context mContext) {
+    private static SpannableStringBuilder getTitleSpannable(Submission submission, String flairOverride, Context mContext) {
         SpannableStringBuilder titleString = new SpannableStringBuilder();
         titleString.append(Html.fromHtml(submission.getTitle()));
 
@@ -255,18 +278,35 @@ public class SubmissionCache {
             titleString.append(" ");
             titleString.append(pinned);
         }
-        if (submission.getSubmissionFlair().getText() != null && !submission.getSubmissionFlair().getText().isEmpty()) {
+        if (submission.getSubmissionFlair().getText() != null && !submission.getSubmissionFlair().getText().isEmpty() || flairOverride != null || (submission.getSubmissionFlair().getCssClass() != null)) {
             TypedValue typedValue = new TypedValue();
             Resources.Theme theme = mContext.getTheme();
             theme.resolveAttribute(R.attr.activity_background, typedValue, false);
             int color = typedValue.data;
             theme.resolveAttribute(R.attr.font, typedValue, false);
             int font = typedValue.data;
-            SpannableStringBuilder pinned = new SpannableStringBuilder("\u00A0" + Html.fromHtml(submission.getSubmissionFlair().getText()) + "\u00A0");
+            String flairString;
+            if (flairOverride != null) {
+                flairString = flairOverride;
+            } else if ((submission.getSubmissionFlair().getText() == null || submission.getSubmissionFlair().getText().isEmpty()) && submission.getSubmissionFlair().getCssClass() != null) {
+                flairString = submission.getSubmissionFlair().getCssClass();
+            } else {
+                flairString = submission.getSubmissionFlair().getText();
+            }
+            SpannableStringBuilder pinned = new SpannableStringBuilder("\u00A0" + Html.fromHtml(flairString) + "\u00A0");
             pinned.setSpan(new RoundedBackgroundSpan(font, color, true, mContext), 0, pinned.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             titleString.append(" ");
             titleString.append(pinned);
         }
         return titleString;
+
+    }
+
+    private static SpannableStringBuilder getTitleSpannable(Submission submission, Context mContext) {
+        return getTitleSpannable(submission, null, mContext);
+    }
+
+    public static void evictAll() {
+        info = new WeakHashMap<>();
     }
 }

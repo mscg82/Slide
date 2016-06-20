@@ -2,20 +2,24 @@ package me.ccrama.redditslide.Activities;
 
 import android.app.Activity;
 import android.appwidget.AppWidgetManager;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.widget.SwitchCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.RadioGroup;
+
+import com.afollestad.materialdialogs.AlertDialogWrapper;
 
 import java.util.ArrayList;
 
 import me.ccrama.redditslide.Adapters.SubChooseAdapter;
 import me.ccrama.redditslide.ColorPreferences;
 import me.ccrama.redditslide.R;
+import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.UserSubscriptions;
 import me.ccrama.redditslide.Visuals.FontPreferences;
 import me.ccrama.redditslide.Widget.SubredditWidgetProvider;
@@ -51,19 +55,22 @@ public class SetupWidget extends BaseActivity {
             appWidgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID,
                     AppWidgetManager.INVALID_APPWIDGET_ID);
     }
-
+    View header;
     public void doShortcut() {
 
         setContentView(R.layout.activity_setup_widget);
-        setupAppBar(R.id.toolbar, "New widget", true, false);
+        setupAppBar(R.id.toolbar, "New widget", true, true);
+        header = getLayoutInflater().inflate(R.layout.widget_header, null);
 
         ListView list = (ListView)findViewById(R.id.subs);
-        final ArrayList<String> sorted = UserSubscriptions.getSubscriptions(SetupWidget.this);
+        final ArrayList<String> sorted = UserSubscriptions.getSubscriptionsForShortcut(SetupWidget.this);
         final SubChooseAdapter adapter = new SubChooseAdapter(this, sorted, UserSubscriptions.getAllSubreddits(this));
+
+        list.addHeaderView(header);
         list.setAdapter(adapter);
 
-        (findViewById(R.id.sort)).clearFocus();
-        ((EditText)findViewById(R.id.sort)).addTextChangedListener(new TextWatcher() {
+        (header.findViewById(R.id.sort)).clearFocus();
+        ((EditText)header.findViewById(R.id.sort)).addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
 
@@ -90,34 +97,56 @@ public class SetupWidget extends BaseActivity {
      * remote data from Server
      */
     public void startWidget() {
+        final DialogInterface.OnClickListener l2 = new DialogInterface.OnClickListener() {
 
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+                SubredditWidgetProvider.setSubFromid(appWidgetId, name, SetupWidget.this);
+                int theme = 0;
+                switch(((RadioGroup)header.findViewById(R.id.theme)).getCheckedRadioButtonId()){
+                    case R.id.dark:
+                        theme = 1;
+                        break;
+                    case R.id.light:
+                        theme = 2;
+                        break;
+                }
+                int view = 0;
+                switch(((RadioGroup)header.findViewById(R.id.type)).getCheckedRadioButtonId()){
+                    case R.id.big:
+                        view = 1;
+                        break;
+                    case R.id.compact:
+                        view = 2;
+                        break;
+                }
+                SubredditWidgetProvider.setSorting(appWidgetId, i, SetupWidget.this);
+                SubredditWidgetProvider.setThemeToId(appWidgetId, theme, SetupWidget.this);
+                SubredditWidgetProvider.setViewType(appWidgetId, view, SetupWidget.this);
+
+                {
+                    Intent intent = new Intent();
+                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+                    setResult(Activity.RESULT_OK, intent);
+                }
+
+                Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE, null, SetupWidget.this, SubredditWidgetProvider.class);
+                intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[] {appWidgetId});
+                sendBroadcast(intent);
+
+                finish();
+
+            }
+        };
+        AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(SetupWidget.this);
+        builder.setTitle(R.string.sorting_choose);
+        builder.setSingleChoiceItems(
+                Reddit.getSortingStrings(getBaseContext(), "", false), Reddit.getSortingId(""), l2);
+        builder.show();
         // this intent is essential to show the widget
         // if this intent is not included,you can't show
         // widget on homescreen
-        SubredditWidgetProvider.setSubFromid(appWidgetId, name, this);
-        int theme = 0;
-        switch(((RadioGroup)findViewById(R.id.theme)).getCheckedRadioButtonId()){
-            case R.id.dark:
-                theme = 1;
-                break;
-            case R.id.light:
-                theme = 2;
-                break;
-        }
-        SubredditWidgetProvider.setThemeToId(appWidgetId, theme, this);
-        SubredditWidgetProvider.setLargePreviews(appWidgetId, ((SwitchCompat)findViewById(R.id.previews)).isChecked(), this);
-
-        {
-            Intent intent = new Intent();
-            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
-            setResult(Activity.RESULT_OK, intent);
-        }
-
-        Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE, null, this, SubredditWidgetProvider.class);
-        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[] {appWidgetId});
-        sendBroadcast(intent);
-
-        this.finish();
 
     }
 

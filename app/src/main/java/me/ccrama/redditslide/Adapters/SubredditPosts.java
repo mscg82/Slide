@@ -12,13 +12,18 @@ import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
 import net.dean.jraw.models.Submission;
+import net.dean.jraw.paginators.DomainPaginator;
+import net.dean.jraw.paginators.Paginator;
 import net.dean.jraw.paginators.SubredditPaginator;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
+import me.ccrama.redditslide.Activities.BaseActivity;
 import me.ccrama.redditslide.Activities.MainActivity;
+import me.ccrama.redditslide.Activities.SubredditView;
 import me.ccrama.redditslide.Authentication;
 import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.ContentType;
@@ -45,12 +50,13 @@ import me.ccrama.redditslide.util.NetworkUtil;
 public class SubredditPosts implements PostLoader {
     public List<Submission> posts;
     public String subreddit;
+    public String subredditRandom;
     public boolean nomore = false;
     public boolean stillShow;
     public boolean offline;
     public boolean forced;
     public boolean loading;
-    private SubredditPaginator paginator;
+    private Paginator paginator;
     public OfflineSubreddit cached;
     boolean doneOnce;
     Context c;
@@ -231,15 +237,28 @@ public class SubredditPosts implements PostLoader {
                     ids[i] = s.getId();
                     i++;
                 }
-                if (!SettingValues.synccitName.isEmpty() && !offline) {
-                    new MySynccitReadTask().execute(ids);
-                }
+
                 // update online
 
                 displayer.updateSuccess(posts, start);
                 currentid = 0;
                 OfflineSubreddit.currentid = currentid;
 
+                if (c instanceof BaseActivity) {
+                    ((BaseActivity) c).setShareUrl("https://reddit.com/r/" + subreddit);
+                }
+
+                if(subreddit.equals("random") || subreddit.equals("myrandom") || subreddit.equals("nsfwrandom")){
+                    subredditRandom = submissions.get(0).getSubredditName();
+                }
+
+                if(c instanceof SubredditView && (subreddit.equals("random") || subreddit.equals("myrandom") || subreddit.equals("nsfwrandom"))){
+                    ((SubredditView)c).subreddit = subredditRandom;
+                    ((SubredditView)c).executeAsyncSubreddit(subredditRandom);
+                }
+                if (!SettingValues.synccitName.isEmpty() && !offline) {
+                    new MySynccitReadTask(displayer).execute(ids);
+                }
 
             } else if (submissions != null) {
                 // end of submissions
@@ -280,11 +299,13 @@ public class SubredditPosts implements PostLoader {
             if (reset || paginator == null) {
                 offline = false;
                 nomore = false;
-                if (subredditPaginators[0].toLowerCase().equals("frontpage")) {
+                String sub = subredditPaginators[0].toLowerCase();
+                if (sub.equals("frontpage")) {
                     paginator = new SubredditPaginator(Authentication.reddit);
+                } else if (!sub.contains(".")) {
+                    paginator = new SubredditPaginator(Authentication.reddit, sub);
                 } else {
-                    paginator = new SubredditPaginator(Authentication.reddit, subredditPaginators[0]);
-
+                    paginator = new DomainPaginator(Authentication.reddit, sub);
                 }
                 paginator.setSorting(Reddit.getSorting(subreddit));
                 paginator.setTimePeriod(Reddit.getTime(subreddit));
@@ -295,7 +316,8 @@ public class SubredditPosts implements PostLoader {
             List<Submission> filteredSubmissions = getNextFiltered();
 
 
-            loadPhotos(filteredSubmissions);
+            if (!SettingValues.noImages && ((!NetworkUtil.isConnectedWifi(c) && SettingValues.lowResMobile) || SettingValues.lowResAlways))
+                loadPhotos(filteredSubmissions);
             HasSeen.setHasSeenSubmission(filteredSubmissions);
             LastComments.setCommentsSince(filteredSubmissions);
             SubmissionCache.cacheSubmissions(filteredSubmissions, context, subreddit);
@@ -324,8 +346,8 @@ public class SubredditPosts implements PostLoader {
 
             try {
                 if (paginator != null && paginator.hasNext()) {
-                    if (force18) {
-                        paginator.setObeyOver18(false);
+                    if (force18 && paginator instanceof SubredditPaginator) {
+                        ((SubredditPaginator) paginator).setObeyOver18(false);
                     }
                     adding.addAll(paginator.next());
                 } else {
@@ -334,7 +356,7 @@ public class SubredditPosts implements PostLoader {
 
 
                 for (Submission s : adding) {
-                    if (!PostMatch.doesMatch(s, paginator.getSubreddit(), force18)) {
+                    if (!PostMatch.doesMatch(s, paginator instanceof SubredditPaginator ? ((SubredditPaginator) paginator).getSubreddit() : ((DomainPaginator) paginator).getDomain(), force18)) {
                         filteredSubmissions.add(s);
                     }
                 }
@@ -398,7 +420,7 @@ public class SubredditPosts implements PostLoader {
                     @Override
                     protected void onPostExecute(Void aVoid) {
 
-                        if (cached.submissions.size() > 0) {
+                        if (!cached.submissions.isEmpty()) {
                             stillShow = true;
                         } else {
                             displayer.updateOfflineError();

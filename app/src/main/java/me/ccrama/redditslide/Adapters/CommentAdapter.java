@@ -13,7 +13,6 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
@@ -57,17 +56,16 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.cocosw.bottomsheet.BottomSheet;
 import com.devspark.robototextview.util.RobotoTypefaceManager;
+import com.mikepenz.itemanimators.AlphaInAnimator;
+import com.mikepenz.itemanimators.SlideRightAlphaAnimator;
 
 import net.dean.jraw.ApiException;
-import net.dean.jraw.fluent.FlairReference;
-import net.dean.jraw.fluent.FluentRedditClient;
 import net.dean.jraw.managers.AccountManager;
 import net.dean.jraw.managers.ModerationManager;
 import net.dean.jraw.models.Comment;
 import net.dean.jraw.models.CommentNode;
 import net.dean.jraw.models.Contribution;
 import net.dean.jraw.models.DistinguishedStatus;
-import net.dean.jraw.models.FlairTemplate;
 import net.dean.jraw.models.Submission;
 import net.dean.jraw.models.VoteDirection;
 
@@ -76,7 +74,6 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -85,15 +82,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
-import jp.wasabeef.recyclerview.animators.FadeInAnimator;
-import jp.wasabeef.recyclerview.animators.FadeInDownAnimator;
-import jp.wasabeef.recyclerview.animators.ScaleInLeftAnimator;
 import me.ccrama.redditslide.ActionStates;
-import me.ccrama.redditslide.Activities.Internet;
-import me.ccrama.redditslide.Activities.MainActivity;
+import me.ccrama.redditslide.Activities.BaseActivity;
 import me.ccrama.redditslide.Activities.Profile;
 import me.ccrama.redditslide.Activities.Website;
 import me.ccrama.redditslide.Authentication;
+import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.Drafts;
 import me.ccrama.redditslide.Fragments.CommentPage;
 import me.ccrama.redditslide.OpenRedditLink;
@@ -109,7 +103,6 @@ import me.ccrama.redditslide.Views.CommentOverflow;
 import me.ccrama.redditslide.Views.DoEditorActions;
 import me.ccrama.redditslide.Views.PreCachingLayoutManagerComments;
 import me.ccrama.redditslide.Views.RoundedBackgroundSpan;
-import me.ccrama.redditslide.Views.TitleTextView;
 import me.ccrama.redditslide.Visuals.FontPreferences;
 import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.Vote;
@@ -230,11 +223,11 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                                     protected ArrayList<String> doInBackground(Void... params) {
 
                                         ArrayList<String> finalReports = new ArrayList<>();
-                                        for (String s : reports.keySet()) {
-                                            finalReports.add("x" + reports.get(s) + " " + s);
+                                        for (Map.Entry<String, Integer> entry : reports.entrySet()) {
+                                            finalReports.add("x" + entry.getValue() + " " + entry.getKey());
                                         }
-                                        for (String s : reports2.keySet()) {
-                                            finalReports.add(s + ": " + reports2.get(s));
+                                        for (Map.Entry<String, String> entry : reports2.entrySet()) {
+                                            finalReports.add(entry.getKey() + ": " + entry.getValue());
                                         }
                                         if (finalReports.isEmpty()) {
                                             finalReports.add(mContext.getString(R.string.mod_no_reports));
@@ -603,6 +596,10 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 i++;
             }
         }
+        mPage.resetScroll(true);
+        if (mContext instanceof BaseActivity) {
+            ((BaseActivity) mContext).setShareUrl("https://reddit.com" + submission.getPermalink());
+        }
     }
 
     public void reset(Context mContext, SubmissionComments dataSet, RecyclerView listView, Submission submission, boolean reset) {
@@ -622,7 +619,6 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         hiddenPersons = new ArrayList<>();
         toCollapse = new ArrayList<>();
-
         replie = new ArrayList<>();
 
 
@@ -650,6 +646,10 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
                 i++;
             }
+        }
+        mPage.resetScroll(true);
+        if (mContext instanceof BaseActivity) {
+            ((BaseActivity) mContext).setShareUrl("https://reddit.com" + submission.getPermalink());
         }
     }
 
@@ -830,7 +830,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             pinned.setSpan(new RoundedBackgroundSpan(holder.firstTextView.getCurrentTextColor(), color, false, mContext), 0, pinned.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             titleString.append(pinned);
             titleString.append(" ");
-        } else if(comment.getAuthorFlair() != null){
+        } else if (comment.getAuthorFlair() != null) {
             TypedValue typedValue = new TypedValue();
             Resources.Theme theme = mContext.getTheme();
             theme.resolveAttribute(R.attr.activity_background, typedValue, true);
@@ -843,6 +843,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         holder.content.setText(titleString);
     }
 
+
     @Override
     public void onBindViewHolder(final RecyclerView.ViewHolder firstHolder, int old) {
         int pos = old != 0 ? old - 1 : old;
@@ -852,8 +853,6 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             int nextPos = pos - 1;
 
             nextPos = getRealPosition(nextPos);
-            final int finalPos = nextPos;
-            final int finalPos1 = pos;
 
 
             if (pos > toShiftTo) {
@@ -862,6 +861,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (pos < shiftFrom) {
                 shifted = 0;
             }
+
             final CommentNode baseNode = users.get(nextPos).comment;
             final Comment comment = baseNode.getComment();
 
@@ -876,10 +876,8 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 if (!up.contains(comment.getFullName())) {
                     up.add(comment.getFullName());
                 }
-            } else if (comment.getVote() == VoteDirection.DOWNVOTE) {
-                if (!down.contains(comment.getFullName())) {
-                    down.add(comment.getFullName());
-                }
+            } else if (comment.getVote() == VoteDirection.DOWNVOTE && !down.contains(comment.getFullName())) {
+                down.add(comment.getFullName());
             }
 
             switch (comment.getVote()) {
@@ -895,18 +893,20 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     break;
             }
 
-
-            holder.firstTextView.setOnLongClickListener(new View.OnLongClickListener() {
+            View.OnLongClickListener onLongClickListener = new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
                     if (SettingValues.swap) {
                         doOnClick(holder, comment, baseNode);
                     } else {
-                        doLongClick(holder, comment, baseNode, finalPos, finalPos1);
+                        doLongClick(holder, comment, baseNode);
                     }
                     return true;
                 }
-            });
+            };
+
+            holder.firstTextView.setOnLongClickListener(onLongClickListener);
+            holder.commentOverflow.setOnLongClickListener(onLongClickListener);
 
             int type = new FontPreferences(mContext).getFontTypeComment().getTypeface();
             if (type >= 0) {
@@ -925,7 +925,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                         if (SettingValues.swap) {
                             doOnClick(holder, comment, baseNode);
                         } else {
-                            doLongClick(holder, comment, baseNode, finalPos, finalPos1);
+                            doLongClick(holder, comment, baseNode);
                         }
                     return true;
                 }
@@ -952,38 +952,39 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             } else {
                 holder.childrenNumber.setVisibility(View.GONE);
-                holder.firstTextView.setVisibility(View.VISIBLE);
+                if (!holder.firstTextView.getText().toString().isEmpty())
+                    holder.firstTextView.setVisibility(View.VISIBLE);
+                else
+                    holder.firstTextView.setVisibility(View.GONE);
                 holder.commentOverflow.setVisibility(View.VISIBLE);
             }
-
-            holder.itemView.setOnClickListener(new OnSingleClickListener() {
+            OnSingleClickListener singleClick = new OnSingleClickListener() {
                 @Override
                 public void onSingleClick(View v) {
                     if (!currentlyEditingId.equals(comment.getFullName()))
-
                         if (SettingValues.swap) {
-                            doLongClick(holder, comment, baseNode, finalPos, finalPos1);
+                            doLongClick(holder, comment, baseNode);
                         } else {
                             doOnClick(holder, comment, baseNode);
                         }
                 }
-            });
+            };
+            holder.itemView.setOnClickListener(singleClick);
+            holder.commentOverflow.setOnClickListener(singleClick);
 
             holder.firstTextView.setOnClickListener(new OnSingleClickListener() {
                 @Override
                 public void onSingleClick(View v) {
                     SpoilerRobotoTextView SpoilerRobotoTextView = (SpoilerRobotoTextView) v;
                     if (SettingValues.swap) {
-                        doLongClick(holder, comment, baseNode, finalPos, finalPos1);
+                        doLongClick(holder, comment, baseNode);
                     } else if (!SpoilerRobotoTextView.isSpoilerClicked()) {
                         doOnClick(holder, comment, baseNode);
                     } else if (SpoilerRobotoTextView.isSpoilerClicked()) {
                         SpoilerRobotoTextView.resetSpoilerClicked();
                     }
-
                 }
             });
-
             {
                 holder.dot.setVisibility(View.VISIBLE);
 
@@ -1018,7 +1019,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
 
             if (currentSelectedItem != null && comment.getFullName().contains(currentSelectedItem) && !currentSelectedItem.isEmpty() && !currentlyEditingId.equals(comment.getFullName())) {
-                doHighlighted(holder, comment, baseNode, finalPos, finalPos1, false);
+                doHighlighted(holder, comment, baseNode, false);
             } else if (!currentlyEditingId.equals(comment.getFullName())) {
                 doUnHighlighted(holder, baseNode, false);
             }
@@ -1029,7 +1030,8 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             }
 
             if (currentlyEditingId.equals(comment.getFullName())) {
-                doHighlightedStuff(holder, comment, baseNode, finalPos, finalPos1, true, false);
+                doUnHighlighted(holder, baseNode, false);
+                doHighlightedStuff(holder, comment, baseNode, true, false);
             }
 
         } else if (firstHolder instanceof SubmissionViewHolder && submission != null) {
@@ -1138,7 +1140,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
             final MoreChildItem baseNode = (MoreChildItem) users.get(nextPos);
             if (baseNode.children.getCount() > 0) {
-                holder.content.setText(mContext.getString(R.string.comment_load_more, baseNode.children.getCount()));
+                holder.content.setText(mContext.getString(R.string.comment_load_more_string, baseNode.children.getLocalizedCount()));
             } else if (!baseNode.children.getChildrenIds().isEmpty()) {
                 holder.content.setText(R.string.comment_load_more_number_unknown);
             } else {
@@ -1163,7 +1165,8 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     } else if (progress.getVisibility() == View.GONE) {
                         progress.setVisibility(View.VISIBLE);
                         holder.content.setText(R.string.comment_loading_more);
-                        new AsyncLoadMore(getRealPosition(holder.getAdapterPosition() - 2), holder.getAdapterPosition(), holder, finalNextPos).execute(baseNode);
+                        currentLoading = new AsyncLoadMore(getRealPosition(holder.getAdapterPosition() - 2), holder.getAdapterPosition(), holder, finalNextPos, baseNode.comment.getComment().getFullName());
+                        currentLoading.execute(baseNode);
                     }
                 }
             });
@@ -1173,11 +1176,16 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             holder.itemView.setLayoutParams(params);
         }
         if (firstHolder instanceof SpacerViewHolder) {
-            firstHolder.itemView.findViewById(R.id.height).setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, mPage.headerHeight));
+            //Make a space the size of the toolbar minus 1 so there isn't a gap
+            firstHolder.itemView.findViewById(R.id.height)
+                    .setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                            (Constants.SINGLE_HEADER_VIEW_OFFSET - Reddit.dpToPxVertical(1) + mPage.shownHeaders)));
         }
     }
 
-    public void setViews(String rawHTML, String subredditName, SpoilerRobotoTextView firstTextView, CommentOverflow commentOverflow) {
+    AsyncLoadMore currentLoading;
+
+    public void setViews(String rawHTML, String subredditName, final SpoilerRobotoTextView firstTextView, CommentOverflow commentOverflow) {
         if (rawHTML.isEmpty()) {
             return;
         }
@@ -1201,9 +1209,11 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             } else {
                 commentOverflow.setViews(blocks.subList(startIndex, blocks.size()), subredditName);
             }
+            commentOverflow.setLongClickable(false);
         } else {
             commentOverflow.removeAllViews();
         }
+
     }
 
     private void setViews(String rawHTML, String subredditName, CommentViewHolder holder) {
@@ -1433,22 +1443,36 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     CommentNode currentBaseNode;
 
-    public void doHighlightedStuff(final CommentViewHolder holder, final Comment n, final CommentNode baseNode, final int finalPos, final int finalPos1, boolean isReplying, boolean animate) {
+    public void doHighlightedStuff(final CommentViewHolder holder, final Comment n, final CommentNode baseNode, boolean isReplying, boolean animate) {
         if (currentlySelected != null && currentlySelected != holder) {
             doUnHighlighted(currentlySelected, currentBaseNode, true);
         }
+
+        if (mContext instanceof BaseActivity) {
+            ((BaseActivity) mContext).setShareUrl("https://reddit.com" + submission.getPermalink() + n.getFullName() + "?context=3");
+        }
+
         // If a comment is hidden and (Swap long press == true), then a single click will un-hide the comment
         // and expand to show all children comments
         if (SettingValues.swap && holder.firstTextView.getVisibility() == View.GONE && !isReplying) {
             hiddenPersons.remove(n.getFullName());
             unhideAll(baseNode, holder.getAdapterPosition() + 1);
+
+
             if (toCollapse.contains(n.getFullName()) && SettingValues.collapseComments)
                 setViews(n.getDataNode().get("body_html").asText(), submission.getSubredditName(), holder);
-            toCollapse.remove(n.getFullName());
+
 
             hideChildrenObject(holder.childrenNumber);
-            holder.firstTextView.setVisibility(View.VISIBLE);
+            if (!holder.firstTextView.getText().toString().isEmpty())
+                holder.firstTextView.setVisibility(View.VISIBLE);
+            else
+                holder.firstTextView.setVisibility(View.GONE);
             holder.commentOverflow.setVisibility(View.VISIBLE);
+
+
+            toCollapse.remove(n.getFullName());
+
         } else {
             currentlySelected = holder;
             currentBaseNode = baseNode;
@@ -1572,11 +1596,12 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                             dialoglayout.findViewById(R.id.submit).setOnClickListener(new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
+                                    final String text = e.getText().toString();
                                     new AsyncTask<Void, Void, Void>() {
                                         @Override
                                         protected Void doInBackground(Void... params) {
                                             try {
-                                                new AccountManager(Authentication.reddit).updateContribution(baseNode.getComment(), e.getText().toString());
+                                                new AccountManager(Authentication.reddit).updateContribution(baseNode.getComment(), text);
                                                 currentSelectedItem = baseNode.getComment().getFullName();
                                                 dataSet.loadMoreReply(CommentAdapter.this);
                                                 d.dismiss();
@@ -1714,13 +1739,15 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                         public void onFocusChange(View v, boolean hasFocus) {
                             if (hasFocus) {
                                 mPage.fastScroll.setVisibility(View.GONE);
-                                if (mPage.fab != null)
+                                if (mPage.fab != null) {
                                     mPage.fab.setVisibility(View.GONE);
+                                }
                                 mPage.overrideFab = true;
                             } else if (SettingValues.fastscroll) {
                                 mPage.fastScroll.setVisibility(View.VISIBLE);
-                                if (mPage.fab != null)
+                                if (mPage.fab != null) {
                                     mPage.fab.setVisibility(View.VISIBLE);
+                                }
                                 mPage.overrideFab = false;
                             }
                         }
@@ -1749,6 +1776,35 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     @Override
                     public void onSingleClick(View v) {
                         expand(baseView, true);
+
+                        //If the base theme is Light or Sepia, tint the Editor actions to be white
+                        if (SettingValues.currentTheme == 1 || SettingValues.currentTheme == 5) {
+                            ((ImageView) replyArea.findViewById(R.id.savedraft))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.draft))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.imagerep))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.link))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.bold))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.italics))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.bulletlist))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.numlist))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.quote))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.size))
+                                    .setColorFilter(Color.WHITE);
+                            ((ImageView) replyArea.findViewById(R.id.strike))
+                                    .setColorFilter(Color.WHITE);
+
+                            replyLine.getBackground().setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN);
+                        }
+
                         replyArea.setVisibility(View.VISIBLE);
                         menu.setVisibility(View.GONE);
                         DoEditorActions.doActions(replyLine, replyArea, fm, (Activity) mContext);
@@ -1787,7 +1843,6 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                             }
                         });
                         editingPosition = holder.getAdapterPosition();
-
                     }
                 });
                 send.setOnClickListener(new OnSingleClickListener() {
@@ -1805,7 +1860,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                         }
                         dataSet.refreshLayout.setRefreshing(true);
                         String text = currentlyEditing.getText().toString();
-                        new ReplyTaskComment(n, finalPos, finalPos1, baseNode, holder).execute(text);
+                        new ReplyTaskComment(n, baseNode, holder).execute(text);
                         currentlyEditing = null;
                         editingPosition = -1;
 
@@ -1815,7 +1870,6 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                             InputMethodManager imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
                             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                         }
-
                     }
                 });
                 discard.setOnClickListener(new OnSingleClickListener() {
@@ -1920,16 +1974,16 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-    public void doHighlighted(final CommentViewHolder holder, final Comment n, final CommentNode baseNode, final int finalPos, final int finalPos1, boolean animate) {
+    public void doHighlighted(final CommentViewHolder holder, final Comment n, final CommentNode baseNode, boolean animate) {
         if (mAnimator != null && mAnimator.isRunning()) {
             holder.itemView.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    doHighlightedStuff(holder, n, baseNode, finalPos, finalPos1, false, true);
+                    doHighlightedStuff(holder, n, baseNode, false, true);
                 }
             }, mAnimator.getDuration());
         } else {
-            doHighlightedStuff(holder, n, baseNode, finalPos, finalPos1, false, animate);
+            doHighlightedStuff(holder, n, baseNode, false, animate);
         }
     }
 
@@ -1998,10 +2052,16 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                                 InputMethodManager imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
                                 imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                             }
+                            if (mContext instanceof BaseActivity) {
+                                ((BaseActivity) mContext).setShareUrl("https://reddit.com" + submission.getPermalink());
+                            }
                         }
                     }).setNegativeButton(R.string.btn_no, null)
                     .show();
         } else {
+            if (mContext instanceof BaseActivity) {
+                ((BaseActivity) mContext).setShareUrl("https://freddit.com" + submission.getPermalink());
+            }
             currentlySelected = null;
             currentSelectedItem = "";
             if (animate) {
@@ -2028,7 +2088,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-    public void doLongClick(final CommentViewHolder holder, final Comment comment, final CommentNode baseNode, final int finalPos, final int finalPos1) {
+    public void doLongClick(final CommentViewHolder holder, final Comment comment, final CommentNode baseNode) {
         if (currentlyEditing != null && !currentlyEditing.getText().toString().isEmpty()) {
             new AlertDialogWrapper.Builder(mContext)
                     .setTitle(R.string.discard_comment_title)
@@ -2037,7 +2097,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
 
-                            doLongClick(holder, comment, baseNode, finalPos, finalPos1);
+                            doLongClick(holder, comment, baseNode);
                             currentlyEditing = null;
                             editingPosition = -1;
                             if (SettingValues.fastscroll) {
@@ -2061,7 +2121,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (currentSelectedItem != null && currentSelectedItem.contains(comment.getFullName())) {
                 doUnHighlighted(holder, comment, baseNode, true);
             } else {
-                doHighlighted(holder, comment, baseNode, finalPos, finalPos1, true);
+                doHighlighted(holder, comment, baseNode, true);
             }
         }
     }
@@ -2182,13 +2242,20 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 if (hiddenPersons.contains(comment.getFullName())) {
                     hiddenPersons.remove(comment.getFullName());
                     unhideAll(baseNode, holder.getAdapterPosition() + 1);
+
                     if (toCollapse.contains(comment.getFullName()) && SettingValues.collapseComments)
                         setViews(comment.getDataNode().get("body_html").asText(), submission.getSubredditName(), holder);
 
-                    toCollapse.remove(comment.getFullName());
                     hideChildrenObject(holder.childrenNumber);
-                    holder.firstTextView.setVisibility(View.VISIBLE);
+                    if (!holder.firstTextView.getText().toString().isEmpty())
+                        holder.firstTextView.setVisibility(View.VISIBLE);
+                    else
+                        holder.firstTextView.setVisibility(View.GONE);
                     holder.commentOverflow.setVisibility(View.VISIBLE);
+
+
+                    toCollapse.remove(comment.getFullName());
+
                 } else {
                     int childNumber = getChildNumber(baseNode);
                     if (childNumber > 0) {
@@ -2201,11 +2268,14 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                         }
                     }
                     toCollapse.add(comment.getFullName());
-                    if (holder.firstTextView.getVisibility() == View.VISIBLE && SettingValues.collapseComments) {
+                    if ((holder.firstTextView.getVisibility() == View.VISIBLE || holder.commentOverflow.getVisibility() == View.VISIBLE) && SettingValues.collapseComments) {
                         holder.firstTextView.setVisibility(View.GONE);
                         holder.commentOverflow.setVisibility(View.GONE);
                     } else if (SettingValues.collapseComments) {
-                        holder.firstTextView.setVisibility(View.VISIBLE);
+                        if (!holder.firstTextView.getText().toString().isEmpty())
+                            holder.firstTextView.setVisibility(View.VISIBLE);
+                        else
+                            holder.firstTextView.setVisibility(View.GONE);
                         holder.commentOverflow.setVisibility(View.VISIBLE);
                     }
                 }
@@ -2228,7 +2298,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemViewType(int position) {
-        if (position == 0 || (users != null && users.size() > 0 && position == (users.size() - hidden.size()) + 2) || (users != null && users.size() == 0 && position == 2)) {
+        if (position == 0 || (users != null && !users.isEmpty() && position == (users.size() - hidden.size()) + 2) || (users != null && users.isEmpty() && position == 2)) {
             return SPACER;
         } else {
             position -= 1;
@@ -2250,14 +2320,20 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     public void unhideAll(CommentNode n, int i) {
-        int counter = unhideNumber(n, 0);
-        if (SettingValues.collapseComments) {
-            listView.setItemAnimator(null);
-            notifyItemRangeInserted(i, counter);
-        } else {
-            listView.setItemAnimator(new ScaleInLeftAnimator());
-            listView.setItemAnimator(new FadeInAnimator());
-            notifyItemRangeInserted(i, counter);
+        try {
+            int counter = unhideNumber(n, 0);
+            if (SettingValues.collapseComments) {
+                listView.setItemAnimator(null);
+                notifyItemRangeInserted(i, counter);
+            } else {
+                try {
+                    listView.setItemAnimator(new AlphaInAnimator());
+                } catch (Exception e) {
+                }
+                notifyItemRangeInserted(i, counter);
+            }
+        } catch (Exception e) {
+
         }
     }
 
@@ -2268,7 +2344,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             listView.setItemAnimator(null);
             notifyDataSetChanged();
         } else {
-            listView.setItemAnimator(new FadeInDownAnimator());
+            listView.setItemAnimator(new AlphaInAnimator());
             notifyDataSetChanged();
         }
 
@@ -2281,7 +2357,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             listView.setItemAnimator(null);
             notifyItemRangeRemoved(i, counter);
         } else {
-            listView.setItemAnimator(new FadeInDownAnimator());
+            listView.setItemAnimator(new AlphaInAnimator());
             notifyItemRangeRemoved(i, counter);
         }
 
@@ -2348,6 +2424,9 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     hidden.add(fullname);
                 }
                 if (ignored.hasMoreComments()) {
+                    if (currentLoading != null && currentLoading.fullname.equals(fullname)) {
+                        currentLoading.cancel(true);
+                    }
                     fullname = fullname + "more";
 
                     if (!hidden.contains(fullname)) {
@@ -2383,7 +2462,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private int getHiddenCountUpTo(int location) {
         int count = 0;
-        for (int i = 0; i <= location; i++) {
+        for (int i = 0; (i <= location && i < users.size()); i++) {
             if (users.size() > i && hidden.contains(users.get(i).getName())) {
                 count++;
             }
@@ -2397,23 +2476,26 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         public int holderPos;
         public int position;
         public int dataPos;
+        public String fullname;
 
-        public AsyncLoadMore(int position, int holderPos, MoreCommentViewHolder holder, int dataPos) {
+        public AsyncLoadMore(int position, int holderPos, MoreCommentViewHolder holder, int dataPos, String fullname) {
             this.holderPos = holderPos;
             this.holder = holder;
             this.position = position;
             this.dataPos = dataPos;
+            this.fullname = fullname;
         }
 
         @Override
         public void onPostExecute(Integer data) {
-            if(data != null) {
-                listView.setItemAnimator(new ScaleInLeftAnimator());
+            currentLoading = null;
+            if (data != null) {
+                listView.setItemAnimator(new SlideRightAlphaAnimator());
                 notifyItemRangeInserted(holderPos, data);
                 currentPos = holderPos;
                 toShiftTo = ((LinearLayoutManager) listView.getLayoutManager()).findLastVisibleItemPosition();
                 shiftFrom = ((LinearLayoutManager) listView.getLayoutManager()).findFirstVisibleItemPosition();
-            } else if( users.get(dataPos) instanceof MoreChildItem){
+            } else if (users.get(dataPos) instanceof MoreChildItem) {
                 final MoreChildItem baseNode = (MoreChildItem) users.get(dataPos);
                 if (baseNode.children.getCount() > 0) {
                     holder.content.setText(mContext.getString(R.string.comment_load_more, baseNode.children.getCount()));
@@ -2581,9 +2663,9 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         @Override
         public void onPostExecute(Integer data) {
             if (data != -1) {
-                listView.setItemAnimator(new ScaleInLeftAnimator());
+                listView.setItemAnimator(new SlideRightAlphaAnimator());
 
-                notifyItemRangeInserted(holderPos + 1, data);
+                notifyItemInserted(holderPos + 1);
 
                 currentPos = holderPos + 1;
                 toShiftTo = ((LinearLayoutManager) listView.getLayoutManager()).findLastVisibleItemPosition();
@@ -2610,17 +2692,14 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         @Override
         protected Integer doInBackground(String... params) {
 
-            ArrayList<CommentObject> finalData = new ArrayList<>();
             int i = 0;
 
             if (params.length > 0) {
                 try {
                     node.insertComment(Authentication.reddit, "t1_" + params[0]);
-
                     for (CommentNode n : node.walkTree()) {
                         if (n.getComment().getFullName().contains(params[0])) {
-                            CommentObject obj = new CommentItem(n);
-                            finalData.add(obj);
+                            users.add(position, new CommentItem(n));
                             i++;
                         }
                     }
@@ -2631,7 +2710,6 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
 
                 shifted += i;
-                users.addAll(position - 1, finalData);
 
                 for (int i2 = 0; i2 < users.size(); i2++) {
                     keys.put(users.get(i2).getName(), i2);
@@ -2643,16 +2721,12 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public class ReplyTaskComment extends AsyncTask<String, Void, String> {
         public Contribution sub;
-        int finalPos;
-        int finalPos1;
         CommentNode node;
         CommentViewHolder holder;
         boolean isSubmission;
 
-        public ReplyTaskComment(Contribution n, int finalPos, int finalPos1, CommentNode node, CommentViewHolder holder) {
+        public ReplyTaskComment(Contribution n, CommentNode node, CommentViewHolder holder) {
             sub = n;
-            this.finalPos = finalPos;
-            this.finalPos1 = finalPos1;
             this.holder = holder;
             this.node = node;
         }
@@ -2682,9 +2756,9 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             } else {
                 if (isSubmission) {
-                    new AsyncForceLoadChild(1, 1, submission.getComments()).execute(s);
+                    new AsyncForceLoadChild(0, 0, submission.getComments()).execute(s);
                 } else {
-                    new AsyncForceLoadChild(getRealPosition(holder.getAdapterPosition()), holder.getAdapterPosition(), node).execute(s);
+                    new AsyncForceLoadChild(getRealPosition(holder.getAdapterPosition() - 1), holder.getAdapterPosition(), node).execute(s);
                 }
             }
         }
@@ -2774,33 +2848,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                                break;
 
                                case 3:
-                                   if (ActionStates.isSaved(n)) {
-                                       new AsyncTask<Void, Void, Void>() {
-                                           @Override
-                                           protected Void doInBackground(Void... params) {
-                                               try {
-                                                   ActionStates.setSaved(n, false);
-                                                   new AccountManager(Authentication.reddit).unsave(n);
-                                               } catch (ApiException e) {
-                                                   e.printStackTrace();
-                                               }
-                                               return null;
-                                           }
-                                       }.execute();
-                                   } else {
-                                       new AsyncTask<Void, Void, Void>() {
-                                           @Override
-                                           protected Void doInBackground(Void... params) {
-                                               try {
-                                                   ActionStates.setSaved(n, true);
-                                                   new AccountManager(Authentication.reddit).save(n);
-                                               } catch (ApiException e) {
-                                                   e.printStackTrace();
-                                               }
-                                               return null;
-                                           }
-                                       }.execute();
-                                   }
+                                   saveComment(n, mContext, holder);
                                    break;
                                case 23: {
                                    String s = "https://reddit.com" + submission.getPermalink() +
@@ -2863,17 +2911,15 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                                    int pos = (old < 2) ? 0 : old - 1;
                                    for (int i = pos - 1; i >= 0; i--) {
                                        CommentObject o = users.get(getRealPosition(i));
-                                       if (o instanceof CommentItem && pos - 1 != i) {
-                                           if (o.comment.getDepth() < n2.getDepth()) {
-                                               LayoutInflater inflater = ((Activity) mContext).getLayoutInflater();
-                                               final View dialoglayout = inflater.inflate(R.layout.parent_comment_dialog, null);
-                                               final AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(mContext);
-                                               Comment parent = o.comment.getComment();
-                                               setViews(parent.getDataNode().get("body_html").asText(), submission.getSubredditName(), (SpoilerRobotoTextView) dialoglayout.findViewById(R.id.firstTextView), (CommentOverflow) dialoglayout.findViewById(R.id.commentOverflow));
-                                               builder.setView(dialoglayout);
-                                               builder.show();
-                                               break;
-                                           }
+                                       if (o instanceof CommentItem && pos - 1 != i && o.comment.getDepth() < n2.getDepth()) {
+                                           LayoutInflater inflater = ((Activity) mContext).getLayoutInflater();
+                                           final View dialoglayout = inflater.inflate(R.layout.parent_comment_dialog, null);
+                                           final AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(mContext);
+                                           Comment parent = o.comment.getComment();
+                                           setViews(parent.getDataNode().get("body_html").asText(), submission.getSubredditName(), (SpoilerRobotoTextView) dialoglayout.findViewById(R.id.firstTextView), (CommentOverflow) dialoglayout.findViewById(R.id.commentOverflow));
+                                           builder.setView(dialoglayout);
+                                           builder.show();
+                                           break;
                                        }
                                    }
                                    break;
@@ -2894,5 +2940,180 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                    }
         );
         b.show();
+    }
+
+    private void saveComment(final Comment comment, final Context mContext, final CommentViewHolder holder) {
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    if (ActionStates.isSaved(comment)) {
+                        new AccountManager(Authentication.reddit).unsave(comment);
+                        ActionStates.setSaved(comment, false);
+                    } else {
+                        new AccountManager(Authentication.reddit).save(comment);
+                        ActionStates.setSaved(comment, true);
+                    }
+
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                }
+
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                Snackbar s;
+                if (ActionStates.isSaved(comment)) {
+                    s = Snackbar.make(holder.itemView, "Comment saved", Snackbar.LENGTH_LONG);
+                    if (Authentication.me.hasGold()) {
+                        s.setAction("CATEGORIZE", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                categorizeComment(comment, mContext);
+                            }
+                        });
+                    }
+                } else {
+                    s = Snackbar.make(holder.itemView, "Comment un-saved", Snackbar.LENGTH_SHORT);
+                }
+                View view = s.getView();
+                TextView tv = (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                tv.setTextColor(Color.WHITE);
+                s.show();
+            }
+        }.execute();
+    }
+
+    private void categorizeComment(final Comment comment, final Context mContext) {
+        new AsyncTask<Void, Void, List<String>>() {
+
+            Dialog d;
+
+            @Override
+            public void onPreExecute() {
+                d = new MaterialDialog.Builder(mContext).progress(true, 100).title("Loading categories").show();
+            }
+
+            @Override
+            protected List<String> doInBackground(Void... params) {
+                try {
+                    List<String> categories = new ArrayList<String>(new AccountManager(Authentication.reddit).getSavedCategories());
+                    categories.add("New category");
+                    return categories;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return new ArrayList<String>() {{
+                        add("New category");
+                    }};
+                }
+            }
+
+            @Override
+            public void onPostExecute(final List<String> data) {
+                try {
+                    new MaterialDialog.Builder(mContext).items(data)
+                            .title("Select flair")
+                            .itemsCallback(new MaterialDialog.ListCallback() {
+                                @Override
+                                public void onSelection(MaterialDialog dialog, final View itemView, int which, CharSequence text) {
+                                    final String t = data.get(which);
+                                    if (which == data.size() - 1) {
+                                        new MaterialDialog.Builder(mContext).title("Set category name")
+                                                .input("Category name", null, false, new MaterialDialog.InputCallback() {
+                                                    @Override
+                                                    public void onInput(MaterialDialog dialog, CharSequence input) {
+
+                                                    }
+                                                }).positiveText("Set")
+                                                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                                                    @Override
+                                                    public void onClick(MaterialDialog dialog, DialogAction which) {
+                                                        final String flair = dialog.getInputEditText().getText().toString();
+                                                        new AsyncTask<Void, Void, Boolean>() {
+                                                            @Override
+                                                            protected Boolean doInBackground(Void... params) {
+                                                                try {
+                                                                    new AccountManager(Authentication.reddit).save(comment, flair);
+                                                                    return true;
+                                                                } catch (ApiException e) {
+                                                                    e.printStackTrace();
+                                                                    return false;
+                                                                }
+                                                            }
+
+                                                            @Override
+                                                            protected void onPostExecute(Boolean done) {
+                                                                Snackbar s;
+                                                                if (done) {
+                                                                    if (itemView != null) {
+                                                                        s = Snackbar.make(itemView, R.string.submission_info_saved, Snackbar.LENGTH_SHORT);
+                                                                        View view = s.getView();
+                                                                        TextView tv = (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                                                                        tv.setTextColor(Color.WHITE);
+                                                                        s.show();
+                                                                    }
+                                                                } else {
+                                                                    if (itemView != null) {
+                                                                        s = Snackbar.make(itemView, "Error setting category", Snackbar.LENGTH_SHORT);
+                                                                        View view = s.getView();
+                                                                        TextView tv = (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                                                                        tv.setTextColor(Color.WHITE);
+                                                                        s.show();
+                                                                    }
+                                                                }
+
+                                                            }
+                                                        }.execute();
+                                                    }
+                                                }).negativeText(R.string.btn_cancel)
+                                                .show();
+                                    } else {
+                                        new AsyncTask<Void, Void, Boolean>() {
+                                            @Override
+                                            protected Boolean doInBackground(Void... params) {
+                                                try {
+                                                    new AccountManager(Authentication.reddit).save(comment, t);
+                                                    return true;
+                                                } catch (ApiException e) {
+                                                    e.printStackTrace();
+                                                    return false;
+                                                }
+                                            }
+
+                                            @Override
+                                            protected void onPostExecute(Boolean done) {
+                                                Snackbar s;
+                                                if (done) {
+                                                    if (itemView != null) {
+                                                        s = Snackbar.make(itemView, R.string.submission_info_saved, Snackbar.LENGTH_SHORT);
+                                                        View view = s.getView();
+                                                        TextView tv = (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                                                        tv.setTextColor(Color.WHITE);
+                                                        s.show();
+                                                    }
+                                                } else {
+                                                    if (itemView != null) {
+                                                        s = Snackbar.make(itemView, "Error setting category", Snackbar.LENGTH_SHORT);
+                                                        View view = s.getView();
+                                                        TextView tv = (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                                                        tv.setTextColor(Color.WHITE);
+                                                        s.show();
+                                                    }
+                                                }
+                                            }
+                                        }.execute();
+                                    }
+                                }
+                            }).show();
+                    if (d != null) {
+                        d.dismiss();
+                    }
+                } catch (Exception ignored) {
+
+                }
+            }
+        }.execute();
     }
 }

@@ -2,7 +2,12 @@ package me.ccrama.redditslide.Activities;
 
 import android.app.ActivityManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.NfcEvent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.IdRes;
@@ -36,13 +41,14 @@ import me.ccrama.redditslide.util.LogUtil;
  * and coloring of applicable views.
  */
 
-public class BaseActivity extends AppCompatActivity implements SwipeBackActivityBase {
+public class BaseActivity extends AppCompatActivity implements SwipeBackActivityBase, NfcAdapter.CreateNdefMessageCallback, NfcAdapter.OnNdefPushCompleteCallback {
     @Nullable
     public Toolbar mToolbar;
     protected SwipeBackActivityHelper mHelper;
     protected boolean overrideRedditSwipeAnywhere = false;
     protected boolean enableSwipeBackLayout = true;
     protected boolean overrideSwipeFromAnywhere = false;
+    NfcAdapter mNfcAdapter;
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -61,16 +67,23 @@ public class BaseActivity extends AppCompatActivity implements SwipeBackActivity
 
     public boolean shouldInterceptAlways = false;
 
+    /**
+     * Force English locale if setting is checked
+     *
+     */
+    public void applyOverrideLanguage(){
+        if (SettingValues.overrideLanguage) {
+                Locale locale = new Locale("en", "US");
+                Locale.setDefault(locale);
+                Configuration config = new Configuration();
+                config.locale = locale;
+                getBaseContext().getResources().updateConfiguration(config,
+                                getBaseContext().getResources().getDisplayMetrics());
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if(SettingValues.overrideLanguage) {
-            Locale locale = new Locale("en", "US");
-            Locale.setDefault(locale);
-            Configuration config = new Configuration();
-            config.locale = locale;
-            getBaseContext().getResources().updateConfiguration(config,
-                    getBaseContext().getResources().getDisplayMetrics());
-        }
+				applyOverrideLanguage();
 
         super.onCreate(savedInstanceState);
 
@@ -101,6 +114,7 @@ public class BaseActivity extends AppCompatActivity implements SwipeBackActivity
                 shouldInterceptAlways = true;
             }
         }
+
     }
 
     @Override
@@ -176,7 +190,7 @@ public class BaseActivity extends AppCompatActivity implements SwipeBackActivity
     /**
      * Applies the activity's base color theme based on the theme of a specific subreddit. Should
      * be called before inflating any layouts.
-     *
+     * <p/>
      * This will take the accent colors from the sub theme but return the AMOLED with contrast
      * base theme.
      *
@@ -188,6 +202,7 @@ public class BaseActivity extends AppCompatActivity implements SwipeBackActivity
         getTheme().applyStyle(new FontPreferences(this).getCommentFontStyle().getResId(), true);
 
     }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -345,6 +360,40 @@ public class BaseActivity extends AppCompatActivity implements SwipeBackActivity
         setRecentBar(subreddit, Palette.getColor(subreddit));
     }
 
+    public String shareUrl;
+
+    public void setShareUrl(String url) {
+        try {
+            if (url != null) {
+                shareUrl = url;
+                mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+                if (mNfcAdapter != null) {
+                    // Register callback to set NDEF message
+                    mNfcAdapter.setNdefPushMessageCallback(this, this);
+                    // Register callback to listen for message-sent success
+                    mNfcAdapter.setOnNdefPushCompleteCallback(this, this);
+                } else {
+                    Log.i("LinkDetails", "NFC is not available on this device");
+                }
+            }
+        } catch(Exception e){
+
+        }
+    }
+
+    @Override
+    public NdefMessage createNdefMessage(NfcEvent event) {
+        if (shareUrl != null)
+            return new NdefMessage(new NdefRecord[]{
+                    NdefRecord.createUri(shareUrl)
+            });
+        return null;
+    }
+
+    @Override
+    public void onNdefPushComplete(NfcEvent arg0) {
+    }
+
     /**
      * Sets the title in the recent overview with the given title and the default color
      *
@@ -359,7 +408,6 @@ public class BaseActivity extends AppCompatActivity implements SwipeBackActivity
 
             BitmapDrawable drawable = ((BitmapDrawable) ContextCompat.getDrawable(this,
                     title.equalsIgnoreCase("androidcirclejerk") ? R.drawable.matiasduarte : R.drawable.ic_launcher));
-
             setTaskDescription(new ActivityManager.TaskDescription(title, drawable.getBitmap(), color));
         }
     }

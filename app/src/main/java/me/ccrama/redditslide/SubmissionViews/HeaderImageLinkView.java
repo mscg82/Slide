@@ -75,9 +75,13 @@ public class HeaderImageLinkView extends RelativeLayout {
     String lastDone = "";
     ContentType.Type type;
 
+    public String loadedUrl;
+    public boolean lq;
+
     public void setSubmission(final Submission submission, final boolean full, String baseSub, ContentType.Type type) {
         this.type = type;
         if (!lastDone.equals(submission.getFullName())) {
+            lq = false;
             lastDone = submission.getFullName();
             backdrop.setImageResource(android.R.color.transparent); //reset the image view in case the placeholder is still visible
             thumbImage2.setImageResource(android.R.color.transparent);
@@ -101,9 +105,12 @@ public class HeaderImageLinkView extends RelativeLayout {
         String url = "";
         boolean forceThumb = false;
 
-        if (type == ContentType.Type.SELF && full && SettingValues.hideSelftextLeadImage) {
+        boolean loadLq = ((!NetworkUtil.isConnectedWifi(getContext()) && SettingValues.lowResMobile) || SettingValues.lowResAlways);
+
+        if (loadLq && type == ContentType.Type.SELF && SettingValues.hideSelftextLeadImage) {
             setVisibility(View.GONE);
-            wrapArea.setVisibility(View.GONE);
+            if (wrapArea != null)
+                wrapArea.setVisibility(View.GONE);
         } else {
             if (submission.getThumbnails() != null) {
 
@@ -138,7 +145,7 @@ public class HeaderImageLinkView extends RelativeLayout {
                     } else {
                         backdrop.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(200)));
                     }
-                } else if (fullImage ||  height >= dpToPx(50)) {
+                } else if (fullImage || height >= dpToPx(50)) {
                     double h = getHeightFromAspectRatio(height, width);
                     if (h != 0) {
                         if (h > 3200) {
@@ -160,9 +167,23 @@ public class HeaderImageLinkView extends RelativeLayout {
             }
 
             JsonNode thumbnail = submission.getDataNode().get("thumbnail");
-            Submission.ThumbnailType thumbnailType = submission.getThumbnailType();
+            Submission.ThumbnailType thumbnailType;
+            if (!submission.getDataNode().get("thumbnail").isNull()) {
+                thumbnailType = submission.getThumbnailType();
+            } else {
+                thumbnailType = Submission.ThumbnailType.NONE;
+            }
 
-            if (submission.isNsfw() && submission.getThumbnailType() == Submission.ThumbnailType.NSFW) {
+            if (SettingValues.noImages) {
+                setVisibility(View.GONE);
+                if (!full && !submission.isSelfPost()) {
+                    thumbImage2.setVisibility(View.VISIBLE);
+                } else {
+                    if(full)
+                    wrapArea.setVisibility(View.VISIBLE);
+                }
+                thumbImage2.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.web));
+            } else if (submission.isNsfw() && submission.getThumbnailType() == Submission.ThumbnailType.NSFW) {
                 setVisibility(View.GONE);
                 if (!full || forceThumb) {
                     thumbImage2.setVisibility(View.VISIBLE);
@@ -174,7 +195,7 @@ public class HeaderImageLinkView extends RelativeLayout {
                     thumbImage2.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.nsfw));
 
                 }
-            } else if (type != ContentType.Type.IMAGE && type != ContentType.Type.SELF && (!thumbnail.isNull() && ( thumbnailType != Submission.ThumbnailType.URL)) || thumbnail.asText().isEmpty() && !submission.isSelfPost()) {
+            } else if (type != ContentType.Type.IMAGE && type != ContentType.Type.SELF && (!thumbnail.isNull() && (thumbnailType != Submission.ThumbnailType.URL)) || thumbnail.asText().isEmpty() && !submission.isSelfPost()) {
 
                 setVisibility(View.GONE);
                 if (!full) {
@@ -185,10 +206,16 @@ public class HeaderImageLinkView extends RelativeLayout {
 
                 thumbImage2.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.web));
             } else if (type == ContentType.Type.IMAGE && !thumbnail.isNull() && !thumbnail.asText().isEmpty()) {
-                if (((!NetworkUtil.isConnectedWifi(getContext()) && SettingValues.lowResMobile) || SettingValues.lowResAlways) && submission.getThumbnails() != null && submission.getThumbnails().getVariations() != null && submission.getThumbnails().getVariations().length > 0) {
+                if (loadLq && submission.getThumbnails() != null && submission.getThumbnails().getVariations() != null && submission.getThumbnails().getVariations().length > 0) {
 
-                    int length = submission.getThumbnails().getVariations().length;
-                    url = Html.fromHtml(submission.getThumbnails().getVariations()[length / 2].getUrl()).toString(); //unescape url characters
+                    if (ContentType.isImgurImage(submission.getUrl())) {
+                        url = submission.getUrl();
+                        url = url.substring(0, url.lastIndexOf(".")) + (SettingValues.imgurLq ? "m" : "h") + url.substring(url.lastIndexOf("."), url.length());
+                    } else {
+                        int length = submission.getThumbnails().getVariations().length;
+                        url = Html.fromHtml(submission.getThumbnails().getVariations()[length / 2].getUrl()).toString(); //unescape url characters
+                    }
+                    lq = true;
 
                 } else {
                     if (submission.getDataNode().has("preview") && submission.getDataNode().get("preview").get("images").get(0).get("source").has("height")) { //Load the preview image which has probably already been cached in memory instead of the direct link
@@ -200,13 +227,14 @@ public class HeaderImageLinkView extends RelativeLayout {
 
                 if (!full && !SettingValues.isPicsEnabled(baseSub) || forceThumb) {
 
-                    if(!submission.isSelfPost() || full) {
+                    if (!submission.isSelfPost() || full) {
                         if (!full) {
                             thumbImage2.setVisibility(View.VISIBLE);
                         } else {
                             wrapArea.setVisibility(View.VISIBLE);
                         }
 
+                        loadedUrl = url;
                         if (!full) {
                             ((Reddit) getContext().getApplicationContext()).getImageLoader().displayImage(url, thumbImage2);
                         } else {
@@ -218,7 +246,7 @@ public class HeaderImageLinkView extends RelativeLayout {
                     setVisibility(View.GONE);
 
                 } else {
-
+                    loadedUrl = url;
                     if (!full) {
                         ((Reddit) getContext().getApplicationContext()).getImageLoader().displayImage(url, backdrop);
                     } else {
@@ -233,10 +261,15 @@ public class HeaderImageLinkView extends RelativeLayout {
                 }
             } else if (submission.getThumbnails() != null) {
 
-                if (((!NetworkUtil.isConnectedWifi(getContext()) && SettingValues.lowResMobile) || SettingValues.lowResAlways) && submission.getThumbnails().getVariations().length != 0) {
-
-                    int length = submission.getThumbnails().getVariations().length;
-                    url = Html.fromHtml(submission.getThumbnails().getVariations()[length / 2].getUrl()).toString(); //unescape url characters
+                if (loadLq && submission.getThumbnails().getVariations().length != 0) {
+                    if (ContentType.isImgurImage(submission.getUrl())) {
+                        url = submission.getUrl();
+                        url = url.substring(0, url.lastIndexOf(".")) + (SettingValues.imgurLq ? "m" : "h") + url.substring(url.lastIndexOf("."), url.length());
+                    } else {
+                        int length = submission.getThumbnails().getVariations().length;
+                        url = Html.fromHtml(submission.getThumbnails().getVariations()[length / 2].getUrl()).toString(); //unescape url characters
+                    }
+                    lq = true;
 
                 } else {
                     url = Html.fromHtml(submission.getThumbnails().getSource().getUrl()).toString(); //unescape url characters
@@ -248,10 +281,12 @@ public class HeaderImageLinkView extends RelativeLayout {
                     } else {
                         wrapArea.setVisibility(View.VISIBLE);
                     }
+                    loadedUrl = url;
                     ((Reddit) getContext().getApplicationContext()).getImageLoader().displayImage(url, thumbImage2);
                     setVisibility(View.GONE);
 
                 } else {
+                    loadedUrl = url;
 
                     if (!full) {
                         ((Reddit) getContext().getApplicationContext()).getImageLoader().displayImage(url, backdrop);
@@ -272,6 +307,8 @@ public class HeaderImageLinkView extends RelativeLayout {
                 } else {
                     wrapArea.setVisibility(View.VISIBLE);
                 }
+                loadedUrl = url;
+
                 ((Reddit) getContext().getApplicationContext()).getImageLoader().displayImage(url, thumbImage2);
                 setVisibility(View.GONE);
 

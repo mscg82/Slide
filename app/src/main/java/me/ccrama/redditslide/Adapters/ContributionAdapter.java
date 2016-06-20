@@ -35,6 +35,7 @@ import net.dean.jraw.models.Submission;
 import net.dean.jraw.models.VoteDirection;
 
 import java.util.List;
+import java.util.Locale;
 
 import me.ccrama.redditslide.ActionStates;
 import me.ccrama.redditslide.Activities.Profile;
@@ -83,12 +84,12 @@ public class ContributionAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     @Override
     public int getItemViewType(int position) {
-        if (position == 0 && dataSet.posts.size() != 0) {
+        if (position == 0 && !dataSet.posts.isEmpty()) {
             return SPACER;
-        } else if (dataSet.posts.size() != 0) {
+        } else if (!dataSet.posts.isEmpty()) {
             position -= 1;
         }
-        if (position == dataSet.posts.size() && dataSet.posts.size() != 0 && !dataSet.nomore) {
+        if (position == dataSet.posts.size() && !dataSet.posts.isEmpty() && !dataSet.nomore) {
             return LOADING_SPINNER;
         } else if (position == dataSet.posts.size() && dataSet.nomore) {
             return NO_MORE;
@@ -187,7 +188,8 @@ public class ContributionAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             SubmissionViewHolder holder = (SubmissionViewHolder) firstHolder;
             final Submission submission = (Submission) dataSet.posts.get(i);
             CreateCardView.resetColorCard(holder.itemView);
-            CreateCardView.colorCard(submission.getSubredditName().toLowerCase(), holder.itemView, "no_subreddit", false);
+            if (submission.getSubredditName() != null)
+                CreateCardView.colorCard(submission.getSubredditName().toLowerCase(), holder.itemView, "no_subreddit", false);
             holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
@@ -340,7 +342,22 @@ public class ContributionAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             ProfileCommentViewHolder holder = (ProfileCommentViewHolder) firstHolder;
             final Comment comment = (Comment) dataSet.posts.get(i);
 
-            holder.score.setText(comment.getScore() + " " + mContext.getResources().getQuantityString(R.plurals.points, comment.getScore()));
+            String scoreText;
+            if (comment.isScoreHidden()) {
+                scoreText = "[" + mContext.getString(R.string.misc_score_hidden).toUpperCase() + "]";
+            } else {
+                scoreText = String.format(Locale.getDefault(), "%d", comment.getScore());
+            }
+
+            SpannableStringBuilder score = new SpannableStringBuilder(scoreText);
+
+            if (score == null || score.toString().isEmpty()) {
+                score = new SpannableStringBuilder("0");
+            }
+            if (!scoreText.contains("[")) {
+                score.append(String.format(Locale.getDefault(), " %s", mContext.getResources().getQuantityString(R.plurals.points, comment.getScore())));
+            }
+            holder.score.setText(score);
 
             if (Authentication.isLoggedIn) {
                 if (ActionStates.getVoteDirection(comment) == VoteDirection.UPVOTE) {
@@ -444,7 +461,7 @@ public class ContributionAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     @Override
     public int getItemCount() {
-        if (dataSet.posts == null || dataSet.posts.size() == 0) {
+        if (dataSet.posts == null || dataSet.posts.isEmpty()) {
             return 0;
         } else {
             return dataSet.posts.size() + 2;

@@ -34,24 +34,44 @@ public class UserSubscriptions {
     public static SharedPreferences subscriptions;
     public static SharedPreferences multiNameToSubs;
 
-    public static void  setSubNameToProperties(String name, String descrption) {
+    public static void setSubNameToProperties(String name, String descrption) {
         multiNameToSubs.edit().putString(name, descrption).apply();
     }
 
-    public static Map<String, String> getMultiNameToSubs() {
+    public static Map<String, String> getMultiNameToSubs(boolean all) {
+        Map<String, String> multiNameToSubsMapBase = new HashMap<>();
+
+        Map<String, ?> multiNameToSubsObject = multiNameToSubs.getAll();
+
+        for (Map.Entry<String, ?> entry : multiNameToSubsObject.entrySet()) {
+            multiNameToSubsMapBase.put(entry.getKey(), entry.getValue().toString());
+        }
+        if (all)
+            multiNameToSubsMapBase.putAll(getSubsNameToMulti());
+
         Map<String, String> multiNameToSubsMap = new HashMap<>();
 
-        Map<String,?> multiNameToSubsObject = multiNameToSubs.getAll();
+        for (Map.Entry<String, String> entries : multiNameToSubsMapBase.entrySet()) {
+            multiNameToSubsMap.put(entries.getKey().toLowerCase(), entries.getValue());
+        }
 
-        for(Map.Entry<String,?> entry : multiNameToSubsObject.entrySet()){
-            multiNameToSubsMap.put(entry.getKey(), entry.getValue().toString());
+        return multiNameToSubsMap;
+    }
+
+    private static Map<String, String> getSubsNameToMulti() {
+        Map<String, String> multiNameToSubsMap = new HashMap<>();
+
+        Map<String, ?> multiNameToSubsObject = multiNameToSubs.getAll();
+
+        for (Map.Entry<String, ?> entry : multiNameToSubsObject.entrySet()) {
+            multiNameToSubsMap.put(entry.getValue().toString(), entry.getKey().toString());
         }
 
         return multiNameToSubsMap;
     }
 
     public static void doMainActivitySubs(MainActivity c) {
-        if(NetworkUtil.isConnected(c)) {
+        if (NetworkUtil.isConnected(c)) {
             String s = subscriptions.getString(Authentication.name, "");
             if (s.isEmpty()) {
                 //get online subs
@@ -63,7 +83,7 @@ public class UserSubscriptions {
                 }
                 c.updateSubs(subredditsForHome);
             }
-            c.updateMultiNameToSubs(getMultiNameToSubs());
+            c.updateMultiNameToSubs(getMultiNameToSubs(false));
 
         } else {
             String s = subscriptions.getString(Authentication.name, "");
@@ -75,20 +95,21 @@ public class UserSubscriptions {
             }
             ArrayList<String> finals = new ArrayList<>();
             List<String> offline = OfflineSubreddit.getAllFormatted();
-            for(String subs : subredditsForHome){
-                if(offline.contains(subs)){
+            for (String subs : subredditsForHome) {
+                if (offline.contains(subs)) {
                     finals.add(subs);
                 }
             }
-            for(String subs : offline){
-                if(!finals.contains(subs)){
+            for (String subs : offline) {
+                if (!finals.contains(subs)) {
                     finals.add(subs);
                 }
             }
             c.updateSubs(finals);
-            c.updateMultiNameToSubs(getMultiNameToSubs());
+            c.updateMultiNameToSubs(getMultiNameToSubs(false));
         }
     }
+
 
     public static class SyncMultireddits extends AsyncTask<Void, Void, Boolean> {
 
@@ -131,6 +152,21 @@ public class UserSubscriptions {
         }
     }
 
+    public static ArrayList<String> getSubscriptionsForShortcut(Context c) {
+        String s = subscriptions.getString(Authentication.name, "");
+        if (s.isEmpty()) {
+            //get online subs
+            return syncSubscriptionsOverwrite(c);
+        } else {
+            ArrayList<String> subredditsForHome = new ArrayList<>();
+            for (String s2 : s.split(",")) {
+                if (!s2.contains("/m/"))
+                    subredditsForHome.add(s2.toLowerCase());
+            }
+            return subredditsForHome;
+        }
+    }
+
     public static boolean hasSubs() {
         String s = subscriptions.getString(Authentication.name, "");
         return s.isEmpty();
@@ -138,7 +174,7 @@ public class UserSubscriptions {
 
     public static ArrayList<String> modOf;
     public static ArrayList<MultiReddit> multireddits;
-
+    public static HashMap<String, List<MultiReddit>> public_multireddits = new HashMap<String, List<MultiReddit>>();
 
     public static void doOnlineSyncing() {
         if (Authentication.mod) {
@@ -184,7 +220,7 @@ public class UserSubscriptions {
                         toReturn.add(s.getDisplayName().toLowerCase());
                     }
                 }
-                if (toReturn.size() == 0) {
+                if (toReturn.isEmpty()) {
                     for (String s : Arrays.asList("announcements", "Art", "AskReddit", "askscience", "aww", "blog", "books", "creepy", "dataisbeautiful", "DIY", "Documentaries", "EarthPorn", "explainlikeimfive", "Fitness", "food", "funny", "Futurology", "gadgets", "gaming", "GetMotivated", "gifs", "history", "IAmA", "InternetIsBeautiful", "Jokes", "LifeProTips", "listentothis", "mildlyinteresting", "movies", "Music", "news", "nosleep", "nottheonion", "OldSchoolCool", "personalfinance", "philosophy", "photoshopbattles", "pics", "science", "Showerthoughts", "space", "sports", "television", "tifu", "todayilearned", "TwoXChromosomes", "UpliftingNews", "videos", "worldnews", "WritingPrompts")) {
                         toReturn.add(s);
 
@@ -243,6 +279,32 @@ public class UserSubscriptions {
         }
     }
 
+    /**
+     * @return list of multireddits if they are available, null if could not fetch multireddits
+     */
+    public static List<MultiReddit> getPublicMultireddits(final String profile) {
+        if (profile.isEmpty()) {
+            return getMultireddits();
+        }
+
+        if (public_multireddits.get(profile) == null) {
+            // It appears your own multis are pre-loaded at some point
+            // but some other user's multis obviously can't be so
+            // don't return until we've loaded them.
+            loadPublicMultireddits(profile);
+        }
+        return public_multireddits.get(profile);
+    }
+
+    private static void loadPublicMultireddits(String profile) {
+        try {
+            public_multireddits.put(profile, new ArrayList<>(new MultiRedditManager(Authentication.reddit).getPublicMultis(profile)));
+        } catch (Exception e) {
+            public_multireddits.put(profile, null);
+            e.printStackTrace();
+        }
+    }
+
     private static ArrayList<String> doModOf() {
         ArrayList<String> finished = new ArrayList<>();
 
@@ -263,11 +325,12 @@ public class UserSubscriptions {
         return finished;
     }
 
-    public static void doFriendsOfMain(MainActivity main){
+    public static void doFriendsOfMain(MainActivity main) {
         main.doFriends(doFriendsOf());
     }
+
     private static List<String> doFriendsOf() {
-        if(friends == null || friends.isEmpty()) {
+        if (friends == null || friends.isEmpty()) {
             friends = new ArrayList<>();
             ArrayList<String> finished = new ArrayList<>();
 
@@ -300,22 +363,36 @@ public class UserSubscriptions {
         return null;
     }
 
+    public static MultiReddit getPublicMultiredditByDisplayName(String profile, String displayName) {
+        if (profile.isEmpty()) {
+            return getMultiredditByDisplayName(displayName);
+        }
+
+        if (public_multireddits.get(profile) != null)
+            for (MultiReddit multiReddit : public_multireddits.get(profile)) {
+                if (multiReddit.getDisplayName().equals(displayName)) {
+                    return multiReddit;
+                }
+            }
+        return null;
+    }
+
     //Gets user subscriptions + top 500 subs + subs in history
     public static ArrayList<String> getAllSubreddits(Context c) {
         ArrayList<String> finalReturn = new ArrayList<>();
         List<String> history = getHistory();
         List<String> defaults = getDefaults(c);
         finalReturn.addAll(getSubscriptions(c));
-        for(String s : finalReturn){
-            if(history.contains(s)){
+        for (String s : finalReturn) {
+            if (history.contains(s)) {
                 history.remove(s);
             }
-            if(defaults.contains(s)){
+            if (defaults.contains(s)) {
                 defaults.remove(s);
             }
         }
-        for(String s : history){
-            if(defaults.contains(s)){
+        for (String s : history) {
+            if (defaults.contains(s)) {
                 defaults.remove(s);
             }
         }

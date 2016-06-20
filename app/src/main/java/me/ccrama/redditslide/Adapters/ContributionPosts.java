@@ -19,12 +19,12 @@ import me.ccrama.redditslide.util.LogUtil;
  * Created by ccrama on 9/17/2015.
  */
 public class ContributionPosts extends GeneralPosts {
-    private final String where;
-    private final String subreddit;
+    protected final String where;
+    protected final String subreddit;
     public boolean loading;
     private UserContributionPaginator paginator;
-    private SwipeRefreshLayout refreshLayout;
-    private ContributionAdapter adapter;
+    protected SwipeRefreshLayout refreshLayout;
+    protected ContributionAdapter adapter;
 
     public ContributionPosts(String subreddit, String where) {
         this.subreddit = subreddit;

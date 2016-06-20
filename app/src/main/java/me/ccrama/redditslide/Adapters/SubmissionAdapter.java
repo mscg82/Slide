@@ -77,12 +77,12 @@ public class SubmissionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     @Override
     public int getItemViewType(int position) {
-        if (position <= 0 && dataSet.posts.size() != 0) {
+        if (position <= 0 && !dataSet.posts.isEmpty()) {
             return SPACER;
-        } else if (dataSet.posts.size() != 0) {
+        } else if (!dataSet.posts.isEmpty()) {
             position -= (1);
         }
-        if (position == dataSet.posts.size() && dataSet.posts.size() != 0 && !dataSet.offline && !dataSet.nomore) {
+        if (position == dataSet.posts.size() && !dataSet.posts.isEmpty() && !dataSet.offline && !dataSet.nomore) {
             return LOADING_SPINNER;
         } else if (position == dataSet.posts.size() && (dataSet.offline || dataSet.nomore)) {
             return NO_MORE;
@@ -108,7 +108,7 @@ public class SubmissionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             View v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.nomoreposts, viewGroup, false);
             return new SubmissionFooterViewHolder(v);
         } else {
-            View v = CreateCardView.CreateView(viewGroup, custom, subreddit);
+            View v = CreateCardView.CreateView(viewGroup);
             return new SubmissionViewHolder(v);
         }
     }
@@ -184,7 +184,7 @@ public class SubmissionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                                                                        ContentType.Type type = ContentType.getContentType(submission);
                                                                        if (submission.isNsfw() && !SettingValues.storeNSFWHistory) {
                                                                            //Do nothing if the post is NSFW and storeNSFWHistory is not enabled
-                                                                       } else {
+                                                                       } else if(SettingValues.storeHistory) {
                                                                            HasSeen.addSeen(submission.getFullName());
                                                                        }
                                                                        ((MainActivity.OverviewPagerAdapterComment) (a).adapter).storedFragment = (a).adapter.getCurrentFragment();
@@ -202,6 +202,7 @@ public class SubmissionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                                                                    Intent i2 = new Intent(context, CommentsScreen.class);
                                                                    i2.putExtra(CommentsScreen.EXTRA_PAGE, holder2.getAdapterPosition() - 1);
                                                                    i2.putExtra(CommentsScreen.EXTRA_SUBREDDIT, subreddit);
+                                                                   i2.putExtra("fullname", submission.getFullName());
                                                                    context.startActivityForResult(i2, 940);
                                                                    clicked = holder2.getAdapterPosition();
                                                                }
@@ -216,7 +217,7 @@ public class SubmissionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                                                                        ContentType.Type type = ContentType.getContentType(submission);
                                                                        if (submission.isNsfw() && !SettingValues.storeNSFWHistory) {
                                                                            //Do nothing if the post is NSFW and storeNSFWHistory is not enabled
-                                                                       } else {
+                                                                       } else if(SettingValues.storeHistory){
                                                                            HasSeen.addSeen(submission.getFullName());
                                                                        }
                                                                        ((SubredditView.OverviewPagerAdapterComment) (a).adapter).storedFragment = (a).adapter.getCurrentFragment();
@@ -234,6 +235,7 @@ public class SubmissionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                                                                    Intent i2 = new Intent(context, CommentsScreen.class);
                                                                    i2.putExtra(CommentsScreen.EXTRA_PAGE, holder2.getAdapterPosition() - 1);
                                                                    i2.putExtra(CommentsScreen.EXTRA_SUBREDDIT, subreddit);
+                                                                   i2.putExtra("fullname", submission.getFullName());
                                                                    context.startActivityForResult(i2, 940);
                                                                    clicked = holder2.getAdapterPosition();
                                                                }
@@ -339,7 +341,7 @@ public class SubmissionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     @Override
     public int getItemCount() {
-        if (dataSet.posts == null || dataSet.posts.size() == 0) {
+        if (dataSet.posts == null || dataSet.posts.isEmpty()) {
             return 0;
         } else {
             return dataSet.posts.size() + 2; // Always account for footer

@@ -34,6 +34,7 @@ import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.TimeUtils;
 import me.ccrama.redditslide.Visuals.Palette;
+import me.ccrama.redditslide.util.OnSingleClickListener;
 
 
 /**
@@ -144,7 +145,6 @@ public class SettingsGeneral extends BaseActivityAnim implements FolderChooserDi
         setContentView(R.layout.activity_settings_general);
         setupAppBar(R.id.toolbar, R.string.settings_title_general, true, true);
 
-
         {
             SwitchCompat single = (SwitchCompat) findViewById(R.id.forcelanguage);
 
@@ -155,7 +155,6 @@ public class SettingsGeneral extends BaseActivityAnim implements FolderChooserDi
                     SettingsTheme.changed = true;
                     SettingValues.overrideLanguage = isChecked;
                     SettingValues.prefs.edit().putBoolean(SettingValues.PREF_OVERRIDE_LANGUAGE, isChecked).apply();
-
                 }
             });
         }
@@ -181,19 +180,17 @@ public class SettingsGeneral extends BaseActivityAnim implements FolderChooserDi
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     SettingValues.expandedToolbar = isChecked;
                     SettingValues.prefs.edit().putBoolean(SettingValues.PREF_EXPANDED_TOOLBAR, isChecked).apply();
-
                 }
             });
         }
 
-        findViewById(R.id.viewtype).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.viewtype).setOnClickListener(new OnSingleClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onSingleClick(View v) {
                 Intent i = new Intent(SettingsGeneral.this, SettingsViewType.class);
                 startActivity(i);
             }
         });
-
 
         //FAB multi choice//
         ((TextView) findViewById(R.id.fab_current)).setText(SettingValues.fab ? (SettingValues.fabType == R.integer.FAB_DISMISS ? getString(R.string.fab_hide) : getString(R.string.fab_create)) : getString(R.string.fab_disabled));
@@ -234,8 +231,15 @@ public class SettingsGeneral extends BaseActivityAnim implements FolderChooserDi
             }
         });
 
-        //SettingValues.subredditSearchMethod == 1 for drawer, 2 for toolbar
-        ((TextView) findViewById(R.id.toolbar_search_current)).setText(SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR ? getString(R.string.subreddit_search_method_toolbar) : getString(R.string.subreddit_search_method_drawer));
+        //SettingValues.subredditSearchMethod == 1 for drawer, 2 for toolbar, 3 for both
+        final TextView currentMethodTitle = (TextView) findViewById(R.id.subreddit_search_method_current);
+        if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_DRAWER) {
+            currentMethodTitle.setText(getString(R.string.subreddit_search_method_drawer));
+        } else if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR) {
+            currentMethodTitle.setText(getString(R.string.subreddit_search_method_toolbar));
+        } else if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH) {
+            currentMethodTitle.setText(getString(R.string.subreddit_search_method_both));
+        }
 
         findViewById(R.id.subreddit_search_method).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -256,16 +260,26 @@ public class SettingsGeneral extends BaseActivityAnim implements FolderChooserDi
                                 SettingValues.prefs.edit().putInt(SettingValues.PREF_SUBREDDIT_SEARCH_METHOD, R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR).apply();
                                 SettingsGeneral.searchChanged = true;
                                 break;
+                            case R.id.subreddit_search_both:
+                                SettingValues.subredditSearchMethod = R.integer.SUBREDDIT_SEARCH_METHOD_BOTH;
+                                SettingValues.prefs.edit().putInt(SettingValues.PREF_SUBREDDIT_SEARCH_METHOD, R.integer.SUBREDDIT_SEARCH_METHOD_BOTH).apply();
+                                SettingsGeneral.searchChanged = true;
+                                break;
                         }
-                        ((TextView) findViewById(R.id.toolbar_search_current)).setText(SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR ? getString(R.string.subreddit_search_method_toolbar) : getString(R.string.subreddit_search_method_drawer));
 
+                        if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_DRAWER) {
+                            currentMethodTitle.setText(getString(R.string.subreddit_search_method_drawer));
+                        } else if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR) {
+                            currentMethodTitle.setText(getString(R.string.subreddit_search_method_toolbar));
+                        } else if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH) {
+                            currentMethodTitle.setText(getString(R.string.subreddit_search_method_both));
+                        }
                         return true;
                     }
                 });
                 popup.show();
             }
         });
-
 
 
         {
@@ -277,7 +291,6 @@ public class SettingsGeneral extends BaseActivityAnim implements FolderChooserDi
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     SettingValues.exit = isChecked;
                     SettingValues.prefs.edit().putBoolean(SettingValues.PREF_EXIT, isChecked).apply();
-
                 }
             });
         }
@@ -303,7 +316,7 @@ public class SettingsGeneral extends BaseActivityAnim implements FolderChooserDi
             findViewById(R.id.notifications).setAlpha(0.25f);
         }
 
-        ((TextView) findViewById(R.id.sorting_current)).setText(Reddit.getSortingStrings(getBaseContext())[Reddit.getSortingId("")]);
+        ((TextView) findViewById(R.id.sorting_current)).setText(Reddit.getSortingStrings(getBaseContext(), "", false)[Reddit.getSortingId("")]);
         {
             findViewById(R.id.sorting).setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -355,19 +368,35 @@ public class SettingsGeneral extends BaseActivityAnim implements FolderChooserDi
                                     Reddit.defaultSorting = Sorting.CONTROVERSIAL;
                                     Reddit.timePeriod = TimePeriod.DAY;
                                     break;
+                                case 11:
+                                    Reddit.defaultSorting = Sorting.CONTROVERSIAL;
+                                    Reddit.timePeriod = TimePeriod.WEEK;
+                                    break;
+                                case 12:
+                                    Reddit.defaultSorting = Sorting.CONTROVERSIAL;
+                                    Reddit.timePeriod = TimePeriod.MONTH;
+                                    break;
+                                case 13:
+                                    Reddit.defaultSorting = Sorting.CONTROVERSIAL;
+                                    Reddit.timePeriod = TimePeriod.YEAR;
+                                    break;
+                                case 14:
+                                    Reddit.defaultSorting = Sorting.CONTROVERSIAL;
+                                    Reddit.timePeriod = TimePeriod.ALL;
+                                    break;
                             }
                             SettingValues.prefs.edit().putString("defaultSorting", Reddit.defaultSorting.name()).apply();
                             SettingValues.prefs.edit().putString("timePeriod", Reddit.timePeriod.name()).apply();
                             SettingValues.defaultSorting = Reddit.defaultSorting;
                             SettingValues.timePeriod = Reddit.timePeriod;
                             ((TextView) findViewById(R.id.sorting_current)).setText(
-                                    Reddit.getSortingStrings(getBaseContext())[Reddit.getSortingId("")]);
+                                    Reddit.getSortingStrings(getBaseContext(), "", false)[Reddit.getSortingId("")]);
                         }
                     };
                     AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(SettingsGeneral.this);
                     builder.setTitle(R.string.sorting_choose);
                     builder.setSingleChoiceItems(
-                            Reddit.getSortingStrings(getBaseContext()), Reddit.getSortingId(""), l2);
+                            Reddit.getSortingStrings(getBaseContext(), "",false), Reddit.getSortingId(""), l2);
                     builder.show();
                 }
             });

@@ -62,10 +62,11 @@ public class SettingsSubAdapter extends RecyclerView.Adapter<SettingsSubAdapter.
         convertView.findViewById(R.id.color).setBackgroundResource(R.drawable.circle);
         convertView.findViewById(R.id.color).getBackground().setColorFilter(Palette.getColor(subreddit), PorterDuff.Mode.MULTIPLY);
 
+        final String DELETE_SUB_SETTINGS_TITLE = (subreddit.contains("/m/")) ? subreddit : ("/r/" + subreddit);
         convertView.findViewById(R.id.remove).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new AlertDialogWrapper.Builder(context).setTitle(context.getString(R.string.settings_delete_sub_settings, subreddit))
+                new AlertDialogWrapper.Builder(context).setTitle(context.getString(R.string.settings_delete_sub_settings, DELETE_SUB_SETTINGS_TITLE))
                         .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -119,7 +120,7 @@ public class SettingsSubAdapter extends RecyclerView.Adapter<SettingsSubAdapter.
      * @param dialoglayout The subchooser layout (R.layout.colorsub)
      */
     public static void showSubThemeEditor(final ArrayList<String> subreddits, final Activity context, View dialoglayout) {
-        if (subreddits.size() == 0) {
+        if (subreddits.isEmpty()) {
             return;
         }
 
@@ -304,7 +305,7 @@ public class SettingsSubAdapter extends RecyclerView.Adapter<SettingsSubAdapter.
 
             {
                 //Get all possible accent colors (for day theme)
-                int[] arrs = new int[ColorPreferences.Theme.values().length / 5];
+                int[] arrs = new int[ColorPreferences.Theme.values().length / 6];
                 int i = 0;
                 for (ColorPreferences.Theme type : ColorPreferences.Theme.values()) {
                     if (type.getThemeType() == 0) {
@@ -411,6 +412,8 @@ public class SettingsSubAdapter extends RecyclerView.Adapter<SettingsSubAdapter.
 
                                 if (newPrimaryColor != Palette.getDefaultColor()) {
                                     Palette.setColor(sub, newPrimaryColor);
+                                } else {
+                                    Palette.removeColor(sub);
                                 }
 
                                 // Set accent color
@@ -427,6 +430,8 @@ public class SettingsSubAdapter extends RecyclerView.Adapter<SettingsSubAdapter.
                                             break;
                                         }
                                     }
+                                } else {
+                                    new ColorPreferences(context).removeFontStyle(sub);
                                 }
 
                                 if (t != null) {

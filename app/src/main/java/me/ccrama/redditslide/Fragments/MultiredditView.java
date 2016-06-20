@@ -15,20 +15,21 @@ import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.mikepenz.itemanimators.AlphaInAnimator;
+import com.mikepenz.itemanimators.SlideUpAlphaAnimator;
 
+import net.dean.jraw.models.MultiReddit;
 import net.dean.jraw.models.MultiSubreddit;
 import net.dean.jraw.models.Submission;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import jp.wasabeef.recyclerview.animators.FadeInAnimator;
-import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
 import me.ccrama.redditslide.Activities.Submit;
 import me.ccrama.redditslide.Adapters.MultiredditAdapter;
 import me.ccrama.redditslide.Adapters.MultiredditPosts;
@@ -43,10 +44,13 @@ import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.UserSubscriptions;
 import me.ccrama.redditslide.Views.CatchStaggeredGridLayoutManager;
+import me.ccrama.redditslide.Views.CreateCardView;
 import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.handler.ToolbarScrollHideHandler;
 
 public class MultiredditView extends Fragment implements SubmissionDisplay {
+
+    private static final String EXTRA_PROFILE = "profile";
 
     public MultiredditAdapter adapter;
     public MultiredditPosts posts;
@@ -58,6 +62,7 @@ public class MultiredditView extends Fragment implements SubmissionDisplay {
     private int totalItemCount;
     private int visibleItemCount;
     private int pastVisiblesItems;
+    private String profile;
 
     @NonNull
     private RecyclerView.LayoutManager createLayoutManager(final int numColumns) {
@@ -178,16 +183,35 @@ public class MultiredditView extends Fragment implements SubmissionDisplay {
         }
         refreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.activity_main_swipe_refresh_layout);
 
-        if (UserSubscriptions.getMultireddits() != null && !UserSubscriptions.getMultireddits().isEmpty())
-            refreshLayout.setColorSchemeColors(Palette.getColors(UserSubscriptions.getMultireddits().get(id).getDisplayName(), getActivity()));
+        /**
+         * If using List view mode, we need to remove the start margin from the SwipeRefreshLayout.
+         * The scrollbar style of "outsideInset" creates a 4dp padding around it. To counter this,
+         * change the scrollbar style to "insideOverlay" when list view is enabled.
+         * To recap: this removes the margins from the start/end so list view is full-width.
+         */
+        if (SettingValues.defaultCardView == CreateCardView.CardEnum.LIST) {
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            params.setMarginStart(0);
+            rv.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+            refreshLayout.setLayoutParams(params);
+        }
+
+        List<MultiReddit> multireddits;
+        if (profile.isEmpty()) {
+            multireddits = UserSubscriptions.getMultireddits();
+        } else {
+            multireddits = UserSubscriptions.getPublicMultireddits(profile);
+        }
+
+        if ((multireddits != null) && !multireddits.isEmpty()) {
+            refreshLayout.setColorSchemeColors(Palette.getColors(multireddits.get(id).getDisplayName(), getActivity()));
+        }
 
         //If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
-        //So, we just do 13% of the device screen height as a general estimate for the Tabs view type
-        final int headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.13));
-
+        //So, we estimate the height of the header in dp
         refreshLayout.setProgressViewOffset(false,
-                headerOffset - Reddit.pxToDp(42, getContext()),
-                headerOffset + Reddit.pxToDp(42, getContext()));
+                Constants.TAB_HEADER_VIEW_OFFSET - Constants.PTR_OFFSET_TOP,
+                Constants.TAB_HEADER_VIEW_OFFSET + Constants.PTR_OFFSET_BOTTOM);
 
         refreshLayout.post(new Runnable() {
             @Override
@@ -195,12 +219,13 @@ public class MultiredditView extends Fragment implements SubmissionDisplay {
                 refreshLayout.setRefreshing(true);
             }
         });
-        if (UserSubscriptions.getMultireddits() != null && !UserSubscriptions.getMultireddits().isEmpty()) {
-            posts = new MultiredditPosts(UserSubscriptions.getMultireddits().get(id).getDisplayName());
+
+        if ((multireddits != null) && !multireddits.isEmpty()) {
+            posts = new MultiredditPosts(multireddits.get(id).getDisplayName(), profile);
 
             adapter = new MultiredditAdapter(getActivity(), posts, rv, refreshLayout, this);
             rv.setAdapter(adapter);
-            rv.setItemAnimator(new SlideInUpAnimator(new AccelerateDecelerateInterpolator()));
+            rv.setItemAnimator(new SlideUpAlphaAnimator());
             posts.loadMore(getActivity(), this, true, adapter);
 
             refreshLayout.setOnRefreshListener(
@@ -214,8 +239,9 @@ public class MultiredditView extends Fragment implements SubmissionDisplay {
                     }
             );
 
-            if (fab != null)
+            if (fab != null) {
                 fab.show();
+            }
 
             rv.addOnScrollListener(new ToolbarScrollHideHandler((Toolbar) (getActivity()).findViewById(R.id.toolbar), getActivity().findViewById(R.id.header)) {
                 @Override
@@ -230,10 +256,8 @@ public class MultiredditView extends Fragment implements SubmissionDisplay {
                     if (firstVisibleItems != null && firstVisibleItems.length > 0) {
                         for (int firstVisibleItem : firstVisibleItems) {
                             pastVisiblesItems = firstVisibleItem;
-                            if (SettingValues.scrollSeen) {
-                                if (pastVisiblesItems > 0) {
-                                    HasSeen.addSeen(posts.posts.get(pastVisiblesItems - 1).getFullName());
-                                }
+                            if (SettingValues.scrollSeen && pastVisiblesItems > 0) {
+                                HasSeen.addSeen(posts.posts.get(pastVisiblesItems - 1).getFullName());
                             }
                         }
                     }
@@ -277,12 +301,11 @@ public class MultiredditView extends Fragment implements SubmissionDisplay {
                             Hidden.setHidden(posts.posts.get(i));
                         }
                         o.clearPost(posts.posts.get(i));
-
                         posts.posts.remove(i);
-                        if (posts.posts.size() == 0) {
+                        if (posts.posts.isEmpty()) {
                             adapter.notifyDataSetChanged();
                         } else {
-                            rv.setItemAnimator(new FadeInAnimator());
+                            rv.setItemAnimator(new AlphaInAnimator());
                             adapter.notifyItemRemoved(i + 1);
                         }
                     }
@@ -290,8 +313,8 @@ public class MultiredditView extends Fragment implements SubmissionDisplay {
                     //Let the loop reset itself
                 }
             }
-            o.writeToMemory(getActivity());
-            rv.setItemAnimator(new SlideInUpAnimator(new AccelerateDecelerateInterpolator()));
+            o.writeToMemoryNoStorage();
+            rv.setItemAnimator(new SlideUpAlphaAnimator());
             return originalDataSetPosts;
         }
 
@@ -303,6 +326,7 @@ public class MultiredditView extends Fragment implements SubmissionDisplay {
         super.onCreate(savedInstanceState);
         Bundle bundle = this.getArguments();
         id = bundle.getInt("id", 0);
+        profile = bundle.getString(EXTRA_PROFILE, "");
     }
 
     @Override
@@ -348,5 +372,14 @@ public class MultiredditView extends Fragment implements SubmissionDisplay {
     @Override
     public void updateError() {
 
+    }
+
+    @Override
+    public void updateViews() {
+        try {
+            adapter.notifyItemRangeChanged(0, adapter.dataSet.getPosts().size());
+        } catch(Exception e){
+
+        }
     }
 }

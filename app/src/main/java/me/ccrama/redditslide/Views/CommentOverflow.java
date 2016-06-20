@@ -82,7 +82,7 @@ public class CommentOverflow extends LinearLayout {
         textColor = typedValue.data;
         TypedValue fontSizeTypedValue = new TypedValue();
         theme.resolveAttribute(R.attr.font_commentbody, fontSizeTypedValue, true);
-        TypedArray a = context.obtainStyledAttributes(null, new int[]{R.attr.font_commentbody},R.attr.font_commentbody, new FontPreferences(context).getCommentFontStyle().getResId());
+        TypedArray a = context.obtainStyledAttributes(null, new int[]{R.attr.font_commentbody}, R.attr.font_commentbody, new FontPreferences(context).getCommentFontStyle().getResId());
         fontSize = a.getDimensionPixelSize(0, -1);
         a.recycle();
         removeAllViews();
@@ -98,7 +98,7 @@ public class CommentOverflow extends LinearLayout {
                 scrollView.setScrollbarFadingEnabled(false);
                 TableLayout table = formatTable(block, subreddit);
                 scrollView.setLayoutParams(MARGIN_PARAMS);
-                table.setPaddingRelative(0, 0, 0, Reddit.pxToDp(10, context));
+                table.setPaddingRelative(0, 0, 0, Reddit.dpToPxVertical(10));
                 scrollView.addView(table);
                 addView(scrollView);
 
@@ -109,7 +109,7 @@ public class CommentOverflow extends LinearLayout {
                 newTextView.setTextHtml(block, subreddit);
                 setStyle(newTextView, subreddit);
                 scrollView.setLayoutParams(MARGIN_PARAMS);
-                newTextView.setPaddingRelative(0, 0, 0, Reddit.pxToDp(10, context));
+                newTextView.setPaddingRelative(0, 0, 0, Reddit.dpToPxVertical(10));
                 scrollView.addView(newTextView);
                 addView(scrollView);
 
@@ -123,6 +123,12 @@ public class CommentOverflow extends LinearLayout {
         }
     }
 
+    /*todo: possibly fix tapping issues, better method required (this disables scrolling the HorizontalScrollView)
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        super.dispatchTouchEvent(event);
+        return false;
+    }*/
     private TableLayout formatTable(String text, String subreddit) {
         TableRow.LayoutParams rowParams = new TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT, TableRow.LayoutParams.WRAP_CONTENT);
 
@@ -192,8 +198,8 @@ public class CommentOverflow extends LinearLayout {
     private void setStyle(SpoilerRobotoTextView textView, String subreddit) {
         textView.setTextColor(textColor);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize);
-        if(typeface != null)
-        textView.setTypeface(typeface);
+        if (typeface != null)
+            textView.setTypeface(typeface);
         textView.setLinkTextColor(colorPreferences.getColor(subreddit));
     }
 }

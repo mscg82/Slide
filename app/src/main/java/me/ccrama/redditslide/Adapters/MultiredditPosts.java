@@ -36,7 +36,7 @@ import me.ccrama.redditslide.util.NetworkUtil;
  * This class is reponsible for loading subreddit specific submissions
  * {@link loadMore(Context, SubmissionDisplay, boolean, String)} is implemented
  * asynchronously.
- * <p/>
+ * <p>
  * Created by ccrama on 9/17/2015.
  */
 public class MultiredditPosts implements PostLoader {
@@ -45,14 +45,25 @@ public class MultiredditPosts implements PostLoader {
     public boolean stillShow;
     public boolean offline;
     public boolean loading;
+    public String profile;
     private MultiRedditPaginator paginator;
     Context c;
     MultiredditAdapter adapter;
 
     public MultiredditPosts(String multireddit) {
-        posts = new ArrayList<>();
-        this.multiReddit = UserSubscriptions.getMultiredditByDisplayName(multireddit);
+        this(multireddit, "");
+    }
 
+    public MultiredditPosts(String multireddit, String profile) {
+        posts = new ArrayList<>();
+        LogUtil.e("MJWHITTA: Profile is " + profile + ".");
+        LogUtil.e("MJWHITTA: Multireddit is " + multireddit + ".");
+        if (profile.isEmpty()) {
+            this.multiReddit = UserSubscriptions.getMultiredditByDisplayName(multireddit);
+        } else {
+            this.multiReddit = UserSubscriptions.getPublicMultiredditByDisplayName(profile, multireddit);
+        }
+        this.profile = profile;
     }
 
     @Override
@@ -77,7 +88,7 @@ public class MultiredditPosts implements PostLoader {
                 int height = submission.getThumbnails().getSource().getHeight();
                 int width = submission.getThumbnails().getSource().getWidth();
 
-                 if (type != ContentType.Type.IMAGE && type != ContentType.Type.SELF && (submission.getThumbnailType() != Submission.ThumbnailType.URL)) {
+                if (type != ContentType.Type.IMAGE && type != ContentType.Type.SELF && (submission.getThumbnailType() != Submission.ThumbnailType.URL)) {
 
 
                 } else if (type == ContentType.Type.IMAGE) {
@@ -182,6 +193,7 @@ public class MultiredditPosts implements PostLoader {
     public List<Submission> getPosts() {
         return posts;
     }
+
     public MultiReddit multiReddit;
 
     @Override
@@ -258,7 +270,7 @@ public class MultiredditPosts implements PostLoader {
 
                 posts = finalSubs;
 
-                if (cached.submissions.size() > 0) {
+                if (!cached.submissions.isEmpty()) {
                     stillShow = true;
                 } else {
                     displayer.updateOfflineError();
@@ -273,7 +285,6 @@ public class MultiredditPosts implements PostLoader {
 
         @Override
         protected List<Submission> doInBackground(MultiReddit... subredditPaginators) {
-
             if (!NetworkUtil.isConnected(context)) {
                 offline = true;
                 return null;
@@ -320,7 +331,9 @@ public class MultiredditPosts implements PostLoader {
 
             HasSeen.setHasSeenSubmission(filteredSubmissions);
             SubmissionCache.cacheSubmissions(filteredSubmissions, context, paginator.getMultiReddit().getDisplayName());
-            loadPhotos(filteredSubmissions);
+
+            if (!SettingValues.noImages &&  ((!NetworkUtil.isConnectedWifi(c) && SettingValues.lowResMobile) || SettingValues.lowResAlways))
+                loadPhotos(filteredSubmissions);
 
             return things;
         }

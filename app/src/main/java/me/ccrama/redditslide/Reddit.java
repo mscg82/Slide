@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -32,21 +34,21 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.ref.WeakReference;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-import me.ccrama.redditslide.Activities.Internet;
 import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.Activities.Search;
 import me.ccrama.redditslide.Autocache.AutoCacheScheduler;
-import me.ccrama.redditslide.Notifications.NotificationJobScheduler;
 import me.ccrama.redditslide.ImgurAlbum.AlbumUtils;
+import me.ccrama.redditslide.Notifications.NotificationJobScheduler;
 import me.ccrama.redditslide.util.CustomTabUtil;
+import me.ccrama.redditslide.util.GifCache;
 import me.ccrama.redditslide.util.IabHelper;
 import me.ccrama.redditslide.util.IabResult;
 import me.ccrama.redditslide.util.LogUtil;
@@ -67,7 +69,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     public static IabHelper mHelper;
     public static SubmissionSearchPaginator.SearchSort search = SubmissionSearchPaginator.SearchSort.RELEVANCE;
     public static long enter_animation_time = enter_animation_time_original;
-    public static int enter_animation_time_multiplier = 1;
+    public static final int enter_animation_time_multiplier = 1;
 
     public static Authentication authentication;
 
@@ -83,14 +85,14 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     public static boolean videoPlugin;
     public static NotificationJobScheduler notifications;
     public static boolean isLoading = false;
-    public static long time = System.currentTimeMillis();
+    public static final long time = System.currentTimeMillis();
     public static boolean fabClear;
     public static ArrayList<Integer> lastposition;
     public static int currentPosition;
     public static int themeBack;
     public static SharedPreferences cachedData;
-    public static boolean noGapps = true; //for testing
-    public static boolean over18;
+    public static final boolean noGapps = true; //for testing
+    public static boolean over18 = true;
     public static boolean overrideLanguage;
     public static boolean isRestarting;
     public static AutoCacheScheduler autoCache;
@@ -100,24 +102,51 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
 
     public static void forceRestart(Context context) {
         if (appRestart.contains("back")) {
-            appRestart.edit().remove("back").commit();
+            appRestart.edit().remove("back").apply();
         }
 
-        appRestart.edit().putBoolean("isRestarting", true).commit();
+        appRestart.edit().putBoolean("isRestarting", true).apply();
         isRestarting = true;
         ProcessPhoenix.triggerRebirth(context.getApplicationContext());
+
     }
 
     public static void forceRestart(Context c, boolean forceLoadScreen) {
-        appRestart.edit().putString("startScreen", "").commit();
-        appRestart.edit().putBoolean("isRestarting", true).commit();
+        appRestart.edit().putString("startScreen", "").apply();
+        appRestart.edit().putBoolean("isRestarting", true).apply();
         forceRestart(c);
     }
 
-    public static int pxToDp(int dp, Context c) {
-        DisplayMetrics displayMetrics = c.getResources().getDisplayMetrics();
-        int px = Math.round(dp * (displayMetrics.ydpi / DisplayMetrics.DENSITY_DEFAULT));
-        return px;
+    /**
+     * Converts px to dp
+     *
+     * @param px to convert to dp
+     * @param c  context of view
+     * @return dp
+     */
+    public static int pxToDp(int px, Context c) {
+        final DisplayMetrics displayMetrics = c.getResources().getDisplayMetrics();
+        return Math.round(px / (displayMetrics.ydpi / DisplayMetrics.DENSITY_DEFAULT));
+    }
+
+    /**
+     * Converts dp to px, uses vertical density
+     * @param dp to convert to px
+     * @return px
+     */
+    public static int dpToPxVertical(int dp) {
+        final DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
+        return Math.round(dp * (displayMetrics.ydpi / DisplayMetrics.DENSITY_DEFAULT));
+    }
+
+    /**
+     * Converts dp to px, uses horizontal density
+     * @param dp to convert to px
+     * @return px
+     */
+    public static int dpToPxHorizontal(int dp) {
+        final DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
+        return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
     }
 
     public static void defaultShareText(String title, String url, Context c) {
@@ -189,6 +218,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
             return "";
         }
     }
+
     public static String arrayToString(ArrayList<String> array, String separator) {
         if (array != null) {
             StringBuilder b = new StringBuilder();
@@ -261,8 +291,12 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
                                 3;
     }
 
-    public static String[] getSortingStrings(Context c) {
-        return new String[] {
+    public static String[] getSortingStrings(Context c, String currentSub, boolean arrows) {
+        return getSortingStrings(c, getSorting(currentSub), getTime(currentSub), arrows);
+    }
+
+    public static String[] getSortingStrings(Context c, Sorting currentSort, TimePeriod currentTime, boolean arrows) {
+        String[] current = new String[]{
                 c.getString(R.string.sorting_hot),
                 c.getString(R.string.sorting_new),
                 c.getString(R.string.sorting_rising),
@@ -279,10 +313,52 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
                 c.getString(R.string.sorting_controversial) + " " + c.getString(R.string.sorting_year).toLowerCase(),
                 c.getString(R.string.sorting_controversial) + " " + c.getString(R.string.sorting_all).toLowerCase(),
         };
+        int pos = 0;
+        switch (currentSort) {
+
+            case HOT:
+                pos = 0;
+                break;
+            case NEW:
+                pos = 1;
+                break;
+            case RISING:
+                pos = 2;
+                break;
+            case CONTROVERSIAL:
+                pos = 9;
+                break;
+            case TOP:
+                pos = 3;
+                break;
+        }
+        if (pos > 2) {
+            switch (currentTime) {
+                case HOUR:
+                    break;
+                case DAY:
+                    pos += 1;
+                    break;
+                case WEEK:
+                    pos += 2;
+                    break;
+                case MONTH:
+                    pos += 3;
+                    break;
+                case YEAR:
+                    pos += 4;
+                    break;
+                case ALL:
+                    pos += 5;
+                    break;
+            }
+        }
+        current[pos] = (arrows ? "» " : "") + current[pos] + "";
+        return current;
     }
 
     public static String[] getSortingStringsComments(Context c) {
-        return new String[] {
+        return new String[]{
                 c.getString(R.string.sorting_best),
                 c.getString(R.string.sorting_top),
                 c.getString(R.string.sorting_new),
@@ -293,7 +369,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     }
 
     public static String[] getSearch(Context c) {
-        return new String[] {
+        return new String[]{
                 c.getString(R.string.search_relevance),
                 c.getString(R.string.search_top),
                 c.getString(R.string.search_new),
@@ -302,7 +378,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     }
 
     public static String[] getSortingStringsSearch(Context c) {
-        return new String[] {
+        return new String[]{
                 c.getString(R.string.sorting_search_hour),
                 c.getString(R.string.sorting_search_day),
                 c.getString(R.string.sorting_search_week),
@@ -331,9 +407,9 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
 
     @Override
     public void onActivityResumed(Activity activity) {
-        if(NetworkUtil.isConnected(activity) && authentication != null && Authentication.authentication.getLong("expires", 0) <= Calendar.getInstance().getTimeInMillis()){
+        if (authentication != null && Authentication.didOnline && Authentication.authentication.getLong("expires", 0) <= Calendar.getInstance().getTimeInMillis()) {
             authentication.updateToken(activity);
-        } else if(NetworkUtil.isConnected(activity) && authentication == null){
+        } else if (NetworkUtil.isConnected(activity) && authentication == null) {
             authentication = new Authentication(this);
         }
     }
@@ -438,10 +514,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
                     } else {
                         appRestart.edit().putString("startScreen", "a").apply(); //Force reload of data after crash incase state was not saved
 
-                        if (t instanceof UnknownHostException) {
-                            Intent i = new Intent(c, Internet.class);
-                            c.startActivity(i);
-                        } else {
+
                             try {
 
                                 SharedPreferences prefs = c.getSharedPreferences(
@@ -450,7 +523,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
 
                             } catch (Throwable ignored) {
                             }
-                        }
+
 
                         androidHandler.uncaughtException(thread, t);
                     }
@@ -499,7 +572,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
 
         cachedData = getSharedPreferences("cache", 0);
 
-        if(!cachedData.contains("hasReset")){
+        if (!cachedData.contains("hasReset")) {
             cachedData.edit().clear().putBoolean("hasReset", true).apply();
         }
 
@@ -514,7 +587,13 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
         colors = getSharedPreferences("COLOR", 0);
         tags = getSharedPreferences("TAGS", 0);
         KVStore.init(this, "SEEN");
-
+        if (SettingValues.overrideLanguage) {
+            Locale locale = new Locale("en_US");
+            Locale.setDefault(locale);
+            Configuration config = new Configuration();
+            config.locale = locale;
+            getResources().updateConfiguration(config, null);
+        }
         lastposition = new ArrayList<>();
 
         new SetupIAB().execute();
@@ -538,13 +617,8 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
         int widthDp = this.getResources().getConfiguration().screenWidthDp;
         int heightDp = this.getResources().getConfiguration().screenHeightDp;
 
-        int fina;
-        if (widthDp > heightDp) {
-            fina = widthDp;
-        } else {
-            fina = heightDp;
-        }
-        fina = ((fina + 99) / 100) * 100;
+        int fina = (widthDp > heightDp) ? widthDp : heightDp;
+        fina += 99;
 
         themeBack = new ColorPreferences(this).getFontStyle().getThemeType();
 
@@ -553,25 +627,27 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
         } else {
             dpWidth = fina / 300;
         }
+
         if (colors.contains("notificationOverride")) {
             notificationTime = colors.getInt("notificationOverride", 360);
         } else {
             notificationTime = 360;
         }
-        int defaultDPWidth = fina / 300;
 
-        SettingValues.tabletUI = isPackageInstalled(this);
+        SettingValues.tabletUI = isPackageInstalled(this) || FDroid.isFDroid;
         videoPlugin = isVideoPluginInstalled(this);
 
+        GifCache.init(this);
     }
 
     public static void setSorting(String s, Sorting sort) {
-        sorting.put(s, sort);
+        sorting.put(s.toLowerCase(), sort);
     }
 
-    public static Map<String, Sorting> sorting = new HashMap<>();
+    public static final Map<String, Sorting> sorting = new HashMap<>();
 
     public static Sorting getSorting(String subreddit) {
+        subreddit = subreddit.toLowerCase();
         if (sorting.containsKey(subreddit)) {
             return sorting.get(subreddit);
         } else {
@@ -580,12 +656,13 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     }
 
     public static void setTime(String s, TimePeriod sort) {
-        times.put(s, sort);
+        times.put(s.toLowerCase(), sort);
     }
 
-    public static Map<String, TimePeriod> times = new HashMap<>();
+    public static final Map<String, TimePeriod> times = new HashMap<>();
 
     public static TimePeriod getTime(String subreddit) {
+        subreddit = subreddit.toLowerCase();
         if (times.containsKey(subreddit)) {
             return times.get(subreddit);
         } else {

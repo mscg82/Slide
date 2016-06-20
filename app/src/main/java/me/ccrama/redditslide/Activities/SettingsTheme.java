@@ -49,7 +49,7 @@ public class SettingsTheme extends BaseActivityAnim {
 
                 final LineColorPicker colorPicker = (LineColorPicker) dialoglayout.findViewById(R.id.picker3);
 
-                int[] arrs = new int[ColorPreferences.Theme.values().length / 5];
+                int[] arrs = new int[ColorPreferences.Theme.values().length / 6];
                 int i = 0;
                 for (ColorPreferences.Theme type : ColorPreferences.Theme.values()) {
                     if (type.getThemeType() == 0) {
@@ -185,6 +185,30 @@ public class SettingsTheme extends BaseActivityAnim {
                         final String newName = name.replace("(", "");
                         for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
                             if (theme.toString().contains(newName) && theme.getThemeType() == 4) {
+                                Reddit.themeBack = theme.getThemeType();
+                                new ColorPreferences(SettingsTheme.this).setFontStyle(theme);
+                                Intent i = new Intent(SettingsTheme.this, SettingsTheme.class);
+                                i.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                                startActivity(i);
+                                overridePendingTransition(0, 0);
+
+                                finish();
+                                overridePendingTransition(0, 0);
+
+                                break;
+                            }
+                        }
+                    }
+                });
+                dialoglayout.findViewById(R.id.sepia).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        SettingsTheme.changed = true;
+                        String[] names = new ColorPreferences(SettingsTheme.this).getFontStyle().getTitle().split("_");
+                        String name = names[names.length - 1];
+                        final String newName = name.replace("(", "");
+                        for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
+                            if (theme.toString().contains(newName) && theme.getThemeType() == 5) {
                                 Reddit.themeBack = theme.getThemeType();
                                 new ColorPreferences(SettingsTheme.this).setFontStyle(theme);
                                 Intent i = new Intent(SettingsTheme.this, SettingsTheme.class);

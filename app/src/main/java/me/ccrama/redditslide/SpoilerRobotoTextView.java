@@ -16,6 +16,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Environment;
+import android.support.v4.content.ContextCompat;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -24,6 +25,7 @@ import android.text.style.BackgroundColorSpan;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
+import android.text.style.QuoteSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
@@ -48,11 +50,13 @@ import java.util.regex.Pattern;
 
 import me.ccrama.redditslide.Activities.Album;
 import me.ccrama.redditslide.Activities.AlbumPager;
-import me.ccrama.redditslide.Activities.GifView;
+import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.Activities.MediaView;
+import me.ccrama.redditslide.Views.CustomQuoteSpan;
 import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.handler.TextViewLinkHandler;
 import me.ccrama.redditslide.util.CustomTabUtil;
+import me.ccrama.redditslide.util.LogUtil;
 
 /**
  * Created by carlo_000 on 1/11/2016.
@@ -63,17 +67,18 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
     private List<Integer> storedSpoilerEnds = new ArrayList<>();
 
     public SpoilerRobotoTextView(Context context) {
-
         super(context);
-
+        setLineSpacing(0,1.1f);
     }
 
     public SpoilerRobotoTextView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        setLineSpacing(0,1.1f);
     }
 
     public SpoilerRobotoTextView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        setLineSpacing(0,1.1f);
     }
 
     public boolean isSpoilerClicked() {
@@ -116,12 +121,14 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
      * <p/>
      * The text must be valid html.
      *
-     * @param baseText      html text
+     * @param baseText  html text
      * @param subreddit the subreddit to theme
      */
     public void setTextHtml(CharSequence baseText, String subreddit) {
         String text = wrapAlternateSpoilers(saveEmotesFromDestruction(baseText.toString().trim()));
         SpannableStringBuilder builder = (SpannableStringBuilder) Html.fromHtml(text);
+
+        replaceQuoteSpans(builder); //replace the <blockquote> blue line with something more colorful
 
         if (text.contains("<a")) {
             setEmoteSpans(builder); //for emote enabled subreddits
@@ -130,12 +137,11 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
             setCodeFont(builder);
             setSpoilerStyle(builder, subreddit);
         }
-
         if (text.contains("[[d[")) {
             setStrikethrough(builder);
         }
 
-        if (!subreddit.isEmpty()) {
+        if (subreddit != null && !subreddit.isEmpty()) {
             setMovementMethod(new TextViewLinkHandler(this, subreddit, builder));
             setFocusable(false);
             setClickable(false);
@@ -150,7 +156,39 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
         super.setText(builder, BufferType.SPANNABLE);
     }
 
-    private String wrapAlternateSpoilers(String html){
+
+    /**
+     * Replaces the blue line produced by <blockquote>s with something more visible
+     * @param spannable parsed comment text #fromHtml
+     */
+    private void replaceQuoteSpans(Spannable spannable) {
+        QuoteSpan[] quoteSpans = spannable.getSpans(0, spannable.length(), QuoteSpan.class);
+
+        for (QuoteSpan quoteSpan : quoteSpans) {
+            final int start = spannable.getSpanStart(quoteSpan);
+            final int end = spannable.getSpanEnd(quoteSpan);
+            final int flags = spannable.getSpanFlags(quoteSpan);
+
+            spannable.removeSpan(quoteSpan);
+
+            //If the theme is Light or Sepia, use a darker blue; otherwise, use a lighter blue
+            final int barColor = (SettingValues.currentTheme == 1 || SettingValues.currentTheme == 5)
+                            ? ContextCompat.getColor(getContext(), R.color.md_blue_600)
+                            : ContextCompat.getColor(getContext(), R.color.md_blue_400);
+
+            final int BAR_WIDTH = 4;
+            final int GAP = 5;
+
+            spannable.setSpan(new CustomQuoteSpan(
+                            Color.TRANSPARENT, //background color
+                            barColor, //bar color
+                            BAR_WIDTH, //bar width
+                            GAP), //bar + text gap
+                    start, end, flags);
+        }
+    }
+
+    private String wrapAlternateSpoilers(String html) {
         Pattern htmlSpoilerPattern = Pattern.compile("<a href=\"(/spoiler|/s|/sp)\">(.*?)</a>");
         Matcher htmlSpoilerMatcher = htmlSpoilerPattern.matcher(html);
         while (htmlSpoilerMatcher.find()) {
@@ -267,6 +305,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
 
         if (!PostMatch.openExternal(url) || type == ContentType.Type.VIDEO) {
             switch (type) {
+                case DEVIANTART:
                 case IMGUR:
                     if (SettingValues.image) {
 
@@ -282,6 +321,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                     new OpenRedditLink(activity, url);
                     break;
                 case LINK:
+                    LogUtil.v("Opening link");
                     CustomTabUtil.openUrl(url, Palette.getColor(subreddit), activity);
                     break;
                 case SELF:
@@ -317,7 +357,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                 case NONE:
                     break;
                 case VIDEO:
-                    if(Reddit.videoPlugin){
+                    if (Reddit.videoPlugin) {
                         try {
                             Intent sharingIntent = new Intent(Intent.ACTION_SEND);
                             sharingIntent.setClassName("ccrama.me.slideyoutubeplugin",
@@ -430,9 +470,9 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
 
     private void openStreamable(String url) {
         if (SettingValues.video) { //todo maybe streamable here?
-            Intent myIntent = new Intent(getContext(), GifView.class);
+            Intent myIntent = new Intent(getContext(), MediaView.class);
 
-            myIntent.putExtra(GifView.EXTRA_STREAMABLE, url);
+            myIntent.putExtra(MediaView.EXTRA_URL, url);
             getContext().startActivity(myIntent);
 
         } else {
@@ -462,7 +502,12 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
         } else {
             for (int i = 1; i < storedSpoilerStarts.size(); i++) {
                 if (storedSpoilerStarts.get(i) < endOfLink + 2 && storedSpoilerEnds.get(i) > endOfLink + 2) {
-                    text.setSpan(storedSpoilerSpans.get(i), storedSpoilerStarts.get(i), storedSpoilerEnds.get(i) >text.toString().length()?storedSpoilerEnds.get(i)-1:storedSpoilerEnds.get(i), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    try {
+                        text.setSpan(storedSpoilerSpans.get(i), storedSpoilerStarts.get(i), storedSpoilerEnds.get(i) > text.toString().length() ? storedSpoilerEnds.get(i) - 1 : storedSpoilerEnds.get(i), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                    } catch (Exception ignored) {
+                        //catch out of bounds
+                        ignored.printStackTrace();
+                    }
                 }
             }
             setText(text);

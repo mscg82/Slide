@@ -3,6 +3,7 @@
     package="me.ccrama.redditslide">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="com.android.vending.BILLING" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -14,7 +15,7 @@
         android:fullBackupContent="true"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
-        android:installLocation="preferExternal"
+        android:installLocation="auto"
         android:label="@string/app_name"
         android:largeHeap="true"
         android:theme="@style/yellow_dark">
@@ -43,7 +44,7 @@
                 <data android:scheme="package" />
             </intent-filter>
         </receiver>
-
+        <receiver android:name=".Activities.MakeExternal"/>
         <activity
             android:name=".Activities.SettingsSynccit"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
@@ -63,10 +64,6 @@
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:theme="@style/swipeable" />
         <activity
-            android:name=".Activities.Internet"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
-            android:theme="@style/swipeable" />
-        <activity
             android:name=".Activities.SettingsViewType"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:theme="@style/swipeable" />
@@ -75,11 +72,11 @@
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:theme="@style/swipeable" />
         <activity
-            android:name=".Activities.Discover"
+            android:name=".Activities.Gallery"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:theme="@style/swipeable" />
         <activity
-            android:name=".Activities.FullscreenImage"
+            android:name=".Activities.Discover"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:theme="@style/swipeable" />
         <activity
@@ -92,10 +89,6 @@
             android:theme="@style/swipeable" />
         <activity
             android:name=".Activities.AlbumPager"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
-            android:theme="@style/swipeable" />
-        <activity
-            android:name=".Activities.Imgur"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:theme="@style/swipeable" />
         <activity
@@ -116,10 +109,6 @@
             android:theme="@style/swipeable" />
         <activity
             android:name=".Activities.Website"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
-            android:theme="@style/swipeable" />
-        <activity
-            android:name=".Activities.GifView"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:theme="@style/swipeable" />
         <activity
@@ -167,11 +156,28 @@
             android:label="View content">
             <intent-filter android:label="@string/app_name">
                 <action android:name="android.intent.action.VIEW" />
-
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <action android:name="android.nfc.action.TECH_DISCOVERED" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="http" />
+                <data
+                    android:host="*reddit.com"
+                    android:pathPattern=".*"
+                    android:scheme="https" />
+                <data
+                    android:host="*reddit.com"
+                    android:pathPattern=".*"
+                    android:scheme="http" />
+                <data
+                    android:host="redd.it"
+                    android:pathPattern=".*"
+                    android:scheme="https" />
+                <data
+                    android:host="redd.it"
+                    android:pathPattern=".*"
+                    android:scheme="http" />
                 <data android:scheme="https" />
                 <data android:host="*reddit.com" />
                 <data android:host="redd.it" />
@@ -279,8 +285,12 @@
         <activity
             android:name=".Activities.SetupWidget"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/swipeable" />
+            android:theme="@style/swipeable"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".Activities.CreateMulti"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
@@ -314,7 +324,8 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
         </receiver>
-        <service android:name=".Widget.ListViewWidgetService"
+        <service
+            android:name=".Widget.ListViewWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS" />
         <uses-library
             android:name="com.sec.android.app.multiwindow"

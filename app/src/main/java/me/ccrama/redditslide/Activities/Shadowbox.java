@@ -30,6 +30,7 @@ import me.ccrama.redditslide.SettingValues;
  * Created by ccrama on 9/17/2015.
  */
 public class Shadowbox extends FullScreenActivity implements SubmissionDisplay {
+    public static final String EXTRA_PROFILE = "profile";
     public static final String EXTRA_PAGE = "page";
     public static final String EXTRA_SUBREDDIT = "subreddit";
     public static final String EXTRA_MULTIREDDIT = "multireddit";
@@ -46,12 +47,18 @@ public class Shadowbox extends FullScreenActivity implements SubmissionDisplay {
         firstPage = getIntent().getExtras().getInt(EXTRA_PAGE, 0);
         subreddit = getIntent().getExtras().getString(EXTRA_SUBREDDIT);
         String multireddit = getIntent().getExtras().getString(EXTRA_MULTIREDDIT);
+        String profile = getIntent().getExtras().getString(EXTRA_PROFILE, "");
         if (multireddit != null) {
-            subredditPosts = new MultiredditPosts(multireddit);
+            subredditPosts = new MultiredditPosts(multireddit, profile);
         } else {
             subredditPosts = new SubredditPosts(subreddit, Shadowbox.this);
         }
         subreddit = multireddit == null ? subreddit : ("multi" + multireddit);
+
+        if(multireddit == null){
+            setShareUrl("https://reddit.com/r/" + subreddit);
+        }
+
         applyDarkColorTheme(subreddit);
         super.onCreate(savedInstance);
         setContentView(R.layout.activity_slide);
@@ -124,6 +131,11 @@ public class Shadowbox extends FullScreenActivity implements SubmissionDisplay {
 
     @Override
     public void updateError() {
+    }
+
+    @Override
+    public void updateViews() {
+
     }
 
     public class OverviewPagerAdapter extends FragmentStatePagerAdapter {

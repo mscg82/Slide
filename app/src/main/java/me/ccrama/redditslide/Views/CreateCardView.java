@@ -5,6 +5,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.os.Build;
 import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v7.widget.CardView;
 import android.util.TypedValue;
@@ -33,41 +34,38 @@ public class CreateCardView {
             case LARGE:
                 if (SettingValues.middleImage) {
                     v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.submission_largecard_middle, viewGroup, false);
-
                 } else {
                     v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.submission_largecard, viewGroup, false);
                 }
                 break;
             case LIST:
                 v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.submission_list, viewGroup, false);
-                break;
 
-        }
-
-        doHideObjects(v);
-        return v;
-    }
-
-    public static View CreateView(ViewGroup viewGroup, Boolean secondary, String sub) {
-        secondary = false; //removing secondary layouts for now
-        String subreddit = (secondary) ? "second" : "";
-        CardEnum cardEnum = CardEnum.valueOf(SettingValues.prefs.getString(subreddit + "defaultCardViewNew", SettingValues.defaultCardView.toString()).toUpperCase());
-        View v = null;
-        switch (cardEnum) {
-            case LARGE:
-                if (isMiddle(secondary)) {
-                    v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.submission_largecard_middle, viewGroup, false);
-
-                } else {
-                    v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.submission_largecard, viewGroup, false);
+                //if the radius is set to 0 on KitKat--it crashes.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    ((CardView) v.findViewById(R.id.card)).setRadius(0f);
                 }
                 break;
-
-            case LIST:
-                v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.submission_list, viewGroup, false);
-                break;
-
         }
+
+        View thumbImage = v.findViewById(R.id.thumbimage2);
+        /**
+         * If the user wants small thumbnails, revert the list style to the "old" list view.
+         * The "old" thumbnails were (70dp x 70dp).
+         * Adjusts the paddingTop of the innerrelative, and adjusts the margins on the thumbnail.
+         */
+        if (!SettingValues.bigThumbnails) {
+            final int SQUARE_THUMBNAIL_SIZE = 70;
+            thumbImage.getLayoutParams().height = Reddit.dpToPxVertical(SQUARE_THUMBNAIL_SIZE);
+            thumbImage.getLayoutParams().width = Reddit.dpToPxHorizontal(SQUARE_THUMBNAIL_SIZE);
+
+            final int EIGHT_DP_Y = Reddit.dpToPxVertical(8);
+            final int EIGHT_DP_X = Reddit.dpToPxHorizontal(8);
+            ((RelativeLayout.LayoutParams) thumbImage.getLayoutParams())
+                    .setMargins(EIGHT_DP_X * 2, EIGHT_DP_Y, EIGHT_DP_X, EIGHT_DP_Y);
+            v.findViewById(R.id.innerrelative).setPadding(0, EIGHT_DP_Y, 0, 0);
+        }
+
         doHideObjects(v);
         return v;
     }
@@ -100,6 +98,7 @@ public class CreateCardView {
             }
         }
     }
+
     public static void doColorSecond(ArrayList<View> v) {
         for (View v2 : v) {
             if (v2 instanceof TextView) {
@@ -110,6 +109,7 @@ public class CreateCardView {
             }
         }
     }
+
     public static void resetColor(ArrayList<View> v) {
         for (View v2 : v) {
             if (v2 instanceof TextView) {
@@ -157,25 +157,13 @@ public class CreateCardView {
     public static int getCurrentFontColor(Context v) {
         return getStyleAttribColorValue(v, R.attr.font, Color.WHITE);
     }
+
     public static int getSecondFontColor(Context v) {
         return getStyleAttribColorValue(v, R.attr.tint, Color.WHITE);
     }
+
     public static int getWhiteFontColor() {
         return Palette.ThemeEnum.DARK.getFontColor();
-
-    }
-
-    public static int getColorCard(String sec, String subToMatch, boolean secondary, Context c) {
-        if ((SettingValues.colorBack && Palette.getColor(sec) != Palette.getDefaultColor()) || (subToMatch.equals("nomatching") && (SettingValues.colorBack && Palette.getColor(sec) != Palette.getDefaultColor()))) {
-            if (!secondary && !SettingValues.colorEverywhere || secondary) {
-                return Palette.getColor(sec);
-
-
-            }
-        }
-        TypedValue background = new TypedValue();
-        c.getTheme().resolveAttribute(R.attr.card_background, background, true);
-        return background.data;
 
     }
 
@@ -209,92 +197,44 @@ public class CreateCardView {
 
     }
 
-    public static View setCardViewType(CardEnum cardEnum, ViewGroup parent, Boolean secondary, String sub) {
-        secondary = false; //removing secondary layouts for now
-
-        String subreddit = (secondary) ? "second" : "";
-        sub = sub.toLowerCase();
+    public static View setCardViewType(CardEnum cardEnum, ViewGroup parent) {
         SettingValues.prefs.edit().putBoolean("middleCard", false).apply();
         SettingValues.middleImage = false;
-        if (subreddit.isEmpty()) {
-            SettingValues.prefs.edit().putString("defaultCardViewNew", cardEnum.name()).apply();
-            SettingValues.defaultCardView = cardEnum;
-            return CreateView(parent);
 
-        } else {
-            SettingValues.prefs.edit().putString(subreddit + "defaultCardViewNew", cardEnum.name()).apply();
-            return CreateView(parent, secondary, sub);
+        SettingValues.prefs.edit().putString("defaultCardViewNew", cardEnum.name()).apply();
+        SettingValues.defaultCardView = cardEnum;
 
-        }
+        return CreateView(parent);
     }
 
-
     public static View setBigPicEnabled(Boolean b, ViewGroup parent) {
-
-
         SettingValues.prefs.edit().putBoolean("bigPicEnabled", b).apply();
-
         SettingValues.bigPicEnabled = b;
+
         SettingValues.prefs.edit().putBoolean("bigPicCropped", false).apply();
-
         SettingValues.bigPicCropped = false;
+
         return CreateView(parent);
-
-
     }
 
     public static View setBigPicCropped(Boolean b, ViewGroup parent) {
+        SettingValues.prefs.edit().putBoolean("bigPicCropped", b).apply();
+        SettingValues.bigPicCropped = b;
 
         SettingValues.prefs.edit().putBoolean("bigPicEnabled", b).apply();
-
         SettingValues.bigPicEnabled = b;
 
-        SettingValues.prefs.edit().putBoolean("bigPicCropped", b).apply();
-
-        SettingValues.bigPicCropped = b;
         return CreateView(parent);
-
-
     }
 
-    public static void setColorIndicicator(SettingValues.ColorIndicator b) {
-        String subreddit = "";
-        if (subreddit.isEmpty()) {
-
-
-            SettingValues.prefs.edit().putString("colorIndicatorNew", b.toString()).apply();
-
-            SettingValues.colorIndicator = b;
-
-        } else {
-            SettingValues.prefs.edit().putString(subreddit + "colorIndicatorNew", b.toString()).apply();
-        }
-
-    }
-
-
-    public static View setMiddleCard(boolean b, ViewGroup parent, Boolean secondary, String sub) {
-        secondary = false; //removing secondary layouts for now
-        String subreddit = (secondary) ? "second" : "";
-
-        sub = sub.toLowerCase();
+    public static View setMiddleCard(boolean b, ViewGroup parent) {
         SettingValues.prefs.edit().putString("defaultCardViewNew", CardEnum.LARGE.name()).apply();
         SettingValues.defaultCardView = CardEnum.LARGE;
 
-        sub = sub.toLowerCase();
-        if (subreddit.isEmpty()) {
+        SettingValues.prefs.edit().putBoolean("middleCard", b).apply();
+        SettingValues.middleImage = b;
 
-
-            SettingValues.prefs.edit().putBoolean("middleCard", b).apply();
-            SettingValues.middleImage = b;
-
-            return CreateView(parent);
-
-        } else {
-            SettingValues.prefs.edit().putBoolean(subreddit + "middleCard", b).apply();
-            return CreateView(parent, secondary, sub);
-
-        }
+        return CreateView(parent);
     }
 
     public static View setSwitchThumb(boolean b, ViewGroup parent) {
@@ -345,14 +285,14 @@ public class CreateCardView {
     public static void animateIn(View l) {
         l.setVisibility(View.VISIBLE);
 
-        ValueAnimator mAnimator = slideAnimator(0, Reddit.pxToDp(36, l.getContext()), l);
+        ValueAnimator mAnimator = slideAnimator(0, Reddit.dpToPxVertical(36), l);
 
         mAnimator.start();
     }
 
     public static void animateOut(final View l) {
 
-        ValueAnimator mAnimator = slideAnimator(Reddit.pxToDp(36, l.getContext()), 0, l);
+        ValueAnimator mAnimator = slideAnimator(Reddit.dpToPxVertical(36), 0, l);
         mAnimator.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
@@ -476,28 +416,16 @@ public class CreateCardView {
 
     }
 
-    public static boolean isCard(Boolean secondary) {
-        secondary = false; //removing secondary layouts for now
-
-        String subreddit = (secondary) ? "second" : "";
-
-        return CardEnum.valueOf(SettingValues.prefs.getString(subreddit + "defaultCardViewNew", SettingValues.defaultCardView.toString())) == CardEnum.LARGE;
+    public static boolean isCard() {
+        return CardEnum.valueOf(SettingValues.prefs.getString("defaultCardViewNew", SettingValues.defaultCardView.toString())) == CardEnum.LARGE;
     }
 
-    public static boolean isMiddle(Boolean secondary) {
-        secondary = false; //removing secondary layouts for now
-
-        String subreddit = (secondary) ? "second" : "";
-
-        return SettingValues.prefs.getBoolean(subreddit + "middleCard", false);
+    public static boolean isMiddle() {
+        return SettingValues.prefs.getBoolean("middleCard", false);
     }
 
-    public static CardEnum getCardView(Boolean secondary) {
-        secondary = false; //removing secondary layouts for now
-
-        String subreddit = (secondary) ? "second" : "";
-
-        return CardEnum.valueOf(SettingValues.prefs.getString(subreddit + "defaultCardViewNew", SettingValues.defaultCardView.toString()));
+    public static CardEnum getCardView() {
+        return CardEnum.valueOf(SettingValues.prefs.getString("defaultCardViewNew", SettingValues.defaultCardView.toString()));
     }
 
     public static SettingValues.ColorIndicator getColorIndicator() {
@@ -528,7 +456,6 @@ public class CreateCardView {
 
     }
 
-
     public enum CardEnum {
         LARGE("Big Card"),
         LIST("List");
@@ -542,6 +469,4 @@ public class CreateCardView {
             return displayName;
         }
     }
-
-
 }

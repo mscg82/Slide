@@ -8,11 +8,13 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.view.ContextThemeWrapper;
 import android.support.v7.widget.LinearLayoutManager;
@@ -49,7 +51,6 @@ import me.ccrama.redditslide.Activities.AlbumPager;
 import me.ccrama.redditslide.Activities.CommentSearch;
 import me.ccrama.redditslide.Activities.CommentsScreen;
 import me.ccrama.redditslide.Activities.FullscreenVideo;
-import me.ccrama.redditslide.Activities.GifView;
 import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.Activities.MediaView;
 import me.ccrama.redditslide.Activities.SubredditView;
@@ -140,7 +141,7 @@ public class CommentPage extends Fragment {
 
     }
 
-    RecyclerView.OnScrollListener toolbarScroll;
+    ToolbarScrollHideHandler toolbarScroll;
     public Toolbar toolbar;
     public int headerHeight;
     public int shownHeaders = 0;
@@ -150,11 +151,13 @@ public class CommentPage extends Fragment {
         locked = s.isLocked();
         doTopBar();
     }
+
     public void doTopBarNotify(Submission submission, CommentAdapter adapter2) {
         doTopBar(submission);
-        if(adapter2 != null)
-        adapter2.notifyItemChanged(0);
+        if (adapter2 != null)
+            adapter2.notifyItemChanged(0);
     }
+
     public void doRefresh(boolean b) {
         if (b) {
             v.findViewById(R.id.progress).setVisibility(View.VISIBLE);
@@ -206,6 +209,10 @@ public class CommentPage extends Fragment {
                     comments = new SubmissionComments(fullname, CommentPage.this, mSwipeRefreshLayout);
                     comments.setSorting(CommentSort.CONFIDENCE);
                     loadMore = false;
+
+                    mSwipeRefreshLayout.setProgressViewOffset(false,
+                            Constants.SINGLE_HEADER_VIEW_OFFSET - Constants.PTR_OFFSET_TOP,
+                            Constants.SINGLE_HEADER_VIEW_OFFSET + (Constants.PTR_OFFSET_BOTTOM + shownHeaders));
                 }
             });
 
@@ -234,24 +241,11 @@ public class CommentPage extends Fragment {
 
         headerHeight = headerV.getMeasuredHeight() + shownHeaders;
 
-        //If the "No participation" header was present, the offset has already been set
-        if (!np) {
-            //If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
-            //So, we just do 7% of the device screen height as a general estimate for just a toolbar.
-            //Don't use "headerHeight" for consistency
-            int headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.07));
-
-            //If the header has the "Load full thread", "Archived", or "Locked" header,
-            //account for the extra height
-            if (loadMore || archived || locked) {
-                headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.11));
-            }
-
-            mSwipeRefreshLayout.setProgressViewOffset(false,
-                    headerOffset - Reddit.pxToDp(42, getContext()),
-                    headerOffset + Reddit.pxToDp(42, getContext()));
-        }
-
+        //If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
+        //So, we estimate the height of the header in dp. Account for show headers.
+        mSwipeRefreshLayout.setProgressViewOffset(false,
+                Constants.SINGLE_HEADER_VIEW_OFFSET - Constants.PTR_OFFSET_TOP,
+                Constants.SINGLE_HEADER_VIEW_OFFSET + (Constants.PTR_OFFSET_BOTTOM + shownHeaders));
     }
 
     View v;
@@ -267,8 +261,10 @@ public class CommentPage extends Fragment {
         rv = (RecyclerView) v.findViewById(R.id.vertical_content);
         rv.setLayoutManager(mLayoutManager);
         rv.getLayoutManager().scrollToPosition(0);
+
         toolbar = (Toolbar) v.findViewById(R.id.toolbar);
         toolbar.setPopupTheme(new ColorPreferences(getActivity()).getFontStyle().getBaseId());
+
         if (!SettingValues.fabComments) {
             v.findViewById(R.id.comment_floating_action_button).setVisibility(View.GONE);
         } else {
@@ -287,6 +283,15 @@ public class CommentPage extends Fragment {
                     final AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(getActivity());
 
                     final EditText e = (EditText) dialoglayout.findViewById(R.id.entry);
+
+                    //Tint the replyLine appropriately if the base theme is Light or Sepia
+                    if (SettingValues.currentTheme == 1 || SettingValues.currentTheme == 5) {
+                        final int TINT = ContextCompat.getColor(getContext(), R.color.md_grey_600);
+
+                        e.setHintTextColor(TINT);
+                        e.getBackground().setColorFilter(TINT, PorterDuff.Mode.SRC_IN);
+                    }
+
                     DoEditorActions.doActions(e, dialoglayout, getActivity().getSupportFragmentManager(), getActivity());
 
                     builder.setView(dialoglayout);
@@ -314,29 +319,7 @@ public class CommentPage extends Fragment {
         }
         if (fab != null)
             fab.show();
-        toolbarScroll = new ToolbarScrollHideHandler(toolbar, v.findViewById(R.id.header), v.findViewById(R.id.progress), SettingValues.commentAutoHide ? v.findViewById(R.id.commentnav) : null) {
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                if (SettingValues.fabComments) {
-                    if (recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !overrideFab) {
-                        diff += dy;
-                    } else if (!overrideFab) {
-                        diff = 0;
-                    }
-                    if (fab != null && !overrideFab) {
-                        if (dy <= 0 && fab.getId() != 0) {
-                            if (recyclerView.getScrollState() != RecyclerView.SCROLL_STATE_DRAGGING || diff < -fab.getHeight() * 2)
-                                fab.show();
-                        } else {
-                            fab.hide();
-                        }
-                    }
-                }
-            }
-        };
-
-        rv.addOnScrollListener(toolbarScroll);
+        resetScroll(false);
         fastScroll = v.findViewById(R.id.commentnav);
         if (!SettingValues.fastscroll) {
             fastScroll.setVisibility(View.GONE);
@@ -356,7 +339,7 @@ public class CommentPage extends Fragment {
             v.findViewById(R.id.nav).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (adapter.users != null) {
+                    if (adapter != null && adapter.users != null) {
                         int parentCount, opCount, linkCount, gildCount;
                         parentCount = 0;
                         opCount = 0;
@@ -451,27 +434,8 @@ public class CommentPage extends Fragment {
 
         toolbar.setBackgroundColor(Palette.getColor(subreddit));
 
-
         mSwipeRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.activity_main_swipe_refresh_layout);
-
         mSwipeRefreshLayout.setColorSchemeColors(Palette.getColors(subreddit, getActivity()));
-
-        //If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
-        //So, we just do 7% of the device screen height as a general estimate for just a toolbar.
-        //Don't use "headerHeight" for consistency
-        int headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.07));
-
-        //If the header has the "Load full thread" & "No participation" header, account for the extra height
-        if (np && loadMore) {
-            headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.15));
-        } else if (np) { //If the header has the "No participation" header, account for the extra height
-            headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.11));
-        }
-
-        mSwipeRefreshLayout.setProgressViewOffset(false,
-                headerOffset - Reddit.pxToDp(42, getContext()),
-                headerOffset + Reddit.pxToDp(42, getContext()));
-
 
         mSwipeRefreshLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
@@ -525,9 +489,9 @@ public class CommentPage extends Fragment {
                                     case VID_ME:
                                     case STREAMABLE:
                                         if (SettingValues.video) {
-                                            Intent myIntent = new Intent(getActivity(), GifView.class);
+                                            Intent myIntent = new Intent(getActivity(), MediaView.class);
 
-                                            myIntent.putExtra(GifView.EXTRA_STREAMABLE, adapter.submission.getUrl());
+                                            myIntent.putExtra(MediaView.EXTRA_URL, adapter.submission.getUrl());
                                             getActivity().startActivity(myIntent);
 
                                         } else {
@@ -598,7 +562,7 @@ public class CommentPage extends Fragment {
                                         }
                                         break;
                                     case IMAGE:
-                                        PopulateSubmissionViewHolder.openImage(getActivity(), adapter.submission);
+                                        PopulateSubmissionViewHolder.openImage(getActivity(), adapter.submission, null);
                                         break;
                                     case GIF:
                                         PopulateSubmissionViewHolder.openGif(getActivity(), adapter.submission);
@@ -650,6 +614,7 @@ public class CommentPage extends Fragment {
             @Override
             public void onClick(View v) {
                 ((LinearLayoutManager) rv.getLayoutManager()).scrollToPositionWithOffset(1, headerHeight);
+                resetScroll(false);
             }
         });
         addClickFunctionSubName(toolbar);
@@ -684,27 +649,29 @@ public class CommentPage extends Fragment {
     }
 
     public CommentSort commentSorting;
+
     private void addClickFunctionSubName(Toolbar toolbar) {
-            TextView titleTv = null;
-            for (int i = 0; i < toolbar.getChildCount(); i++) {
-                View view = toolbar.getChildAt(i);
-                CharSequence text = null;
-                if (view instanceof TextView && (text = ((TextView) view).getText()) != null) {
-                    titleTv = (TextView) view;
+        TextView titleTv = null;
+        for (int i = 0; i < toolbar.getChildCount(); i++) {
+            View view = toolbar.getChildAt(i);
+            CharSequence text = null;
+            if (view instanceof TextView && (text = ((TextView) view).getText()) != null) {
+                titleTv = (TextView) view;
+            }
+        }
+        if (titleTv != null) {
+            final String text = titleTv.getText().toString();
+            titleTv.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent i = new Intent(getActivity(), SubredditView.class);
+                    i.putExtra(SubredditView.EXTRA_SUBREDDIT, text);
+                    startActivity(i);
                 }
-            }
-            if (titleTv != null) {
-                final String text = titleTv.getText().toString();
-               titleTv.setOnClickListener(new View.OnClickListener() {
-                   @Override
-                   public void onClick(View v) {
-                       Intent i = new Intent(getActivity(), SubredditView.class);
-                       i.putExtra(SubredditView.EXTRA_SUBREDDIT, text);
-                       startActivity(i);
-                   }
-               });
-            }
+            });
+        }
     }
+
     public void doAdapter(boolean load) {
         commentSorting = SettingValues.getCommentSorting(subreddit);
         if (load)
@@ -713,9 +680,11 @@ public class CommentPage extends Fragment {
             loaded = true;
         if (!single && getActivity() instanceof CommentsScreen && ((CommentsScreen) getActivity()).subredditPosts != null && Authentication.didOnline) {
             comments = new SubmissionComments(fullname, this, mSwipeRefreshLayout);
-            Submission s = ((CommentsScreen) getActivity()).subredditPosts.getPosts().get(page);
+            Submission s = ((CommentsScreen) getActivity()).currentPosts.get(page);
             if (s != null && s.getDataNode().has("suggested_sort") && !s.getDataNode().get("suggested_sort").asText().equalsIgnoreCase("null")) {
-                commentSorting = CommentSort.valueOf(s.getDataNode().get("suggested_sort").asText().toUpperCase());
+                String sorting = s.getDataNode().get("suggested_sort").asText().toUpperCase();
+                sorting = sorting.replace("İ", "I");
+                commentSorting = CommentSort.valueOf(sorting);
             } else if (s != null) {
                 commentSorting = SettingValues.getCommentSorting(s.getSubredditName());
             }
@@ -730,7 +699,9 @@ public class CommentPage extends Fragment {
                 comments = new SubmissionComments(fullname, this, mSwipeRefreshLayout);
                 Submission s = ((MainActivity) getActivity()).openingComments;
                 if (s != null && s.getDataNode().has("suggested_sort") && !s.getDataNode().get("suggested_sort").asText().equalsIgnoreCase("null")) {
-                    commentSorting = CommentSort.valueOf(s.getDataNode().get("suggested_sort").asText().toUpperCase());
+                    String sorting = s.getDataNode().get("suggested_sort").asText().toUpperCase();
+                    sorting = sorting.replace("İ", "I");
+                    commentSorting = CommentSort.valueOf(sorting);
                 } else if (s != null) {
                     commentSorting = SettingValues.getCommentSorting(s.getSubredditName());
                 }
@@ -756,6 +727,7 @@ public class CommentPage extends Fragment {
                 e.printStackTrace();
             }
             if (s != null && s.getComments() != null) {
+                doRefresh(false);
                 comments = new SubmissionComments(fullname, this, mSwipeRefreshLayout, s);
                 if (adapter == null) {
 
@@ -832,7 +804,6 @@ public class CommentPage extends Fragment {
         mLayoutManager = new PreCachingLayoutManagerComments(getActivity());
     }
 
-
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -860,6 +831,35 @@ public class CommentPage extends Fragment {
                 return 3;
         }
         return 0;
+    }
+
+    public void resetScroll(boolean override) {
+        if (toolbarScroll == null) {
+            toolbarScroll = new ToolbarScrollHideHandler(toolbar, v.findViewById(R.id.header), v.findViewById(R.id.progress), SettingValues.commentAutoHide ? v.findViewById(R.id.commentnav) : null) {
+                @Override
+                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                    super.onScrolled(recyclerView, dx, dy);
+                    if (SettingValues.fabComments) {
+                        if (recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !overrideFab) {
+                            diff += dy;
+                        } else if (!overrideFab) {
+                            diff = 0;
+                        }
+                        if (fab != null && !overrideFab) {
+                            if (dy <= 0 && fab.getId() != 0) {
+                                if (recyclerView.getScrollState() != RecyclerView.SCROLL_STATE_DRAGGING || diff < -fab.getHeight() * 2)
+                                    fab.show();
+                            } else {
+                                fab.hide();
+                            }
+                        }
+                    }
+                }
+            };
+            rv.addOnScrollListener(toolbarScroll);
+        } else if(!override){
+            toolbarScroll.reset = true;
+        }
     }
 
     public static class TopSnappedSmoothScroller extends LinearSmoothScroller {
@@ -1012,7 +1012,7 @@ public class CommentPage extends Fragment {
 
     private void goUp() {
         int toGoto = mLayoutManager.findFirstVisibleItemPosition();
-        if (adapter.users != null && adapter.users.size() > 0) {
+        if (adapter != null && adapter.users != null && !adapter.users.isEmpty()) {
             if (adapter.currentlyEditing != null && !adapter.currentlyEditing.getText().toString().isEmpty()) {
                 final int finalToGoto = toGoto;
                 new AlertDialogWrapper.Builder(getActivity())
@@ -1108,7 +1108,7 @@ public class CommentPage extends Fragment {
     private void goDown() {
         ((View) toolbar.getParent()).setTranslationY(-((View) toolbar.getParent()).getHeight());
         int toGoto = mLayoutManager.findFirstVisibleItemPosition();
-        if (adapter.users != null && adapter.users.size() > 0) {
+        if (adapter != null && adapter.users != null && !adapter.users.isEmpty()) {
             if (adapter.currentlyEditing != null && !adapter.currentlyEditing.getText().toString().isEmpty()) {
                 final int finalToGoto = toGoto;
                 new AlertDialogWrapper.Builder(getActivity())

@@ -7,7 +7,6 @@
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
     android:gravity="center"
-    android:layerType="hardware"
     android:orientation="vertical"
     cardview:cardBackgroundColor="?attr/card_background"
     cardview:cardCornerRadius="2dp">
@@ -27,16 +26,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/headerimage"
-            android:paddingTop="16dp">
+            android:paddingTop="8dp">
 
             <com.makeramen.roundedimageview.RoundedImageView
                 android:id="@+id/thumbimage2"
-                android:layout_width="65dp"
-                android:layout_height="65dp"
+                android:layout_width="@dimen/big_thumbnail_width"
+                android:layout_height="@dimen/big_thumbnail_height"
                 android:layout_alignParentTop="true"
                 android:layout_marginBottom="8dp"
-                android:layout_marginTop="4dp"
-                android:layout_marginLeft="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginLeft="18dp"
                 android:adjustViewBounds="true"
                 android:scaleType="centerCrop"
                 android:src="@drawable/chameleon"
@@ -51,6 +50,7 @@
                 android:layout_alignParentRight="true"
                 android:padding="8dp"
                 android:tag="tint"
+                android:layout_marginLeft="-4dp"
                 android:tint="?attr/tint"
                 app:srcCompat="@drawable/down" />
 
@@ -65,6 +65,7 @@
                     android:id="@+id/title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:layout_marginStart="16dp"
                     android:layout_marginEnd="16dp"
                     android:tag="tint"
@@ -164,6 +165,7 @@
                 android:tag="tintactionbar"
                 android:text="420"
                 android:textSize="?attr/font_cardinfo" />
+
             <ImageView
                 android:id="@+id/edit"
                 style="@style/Ripple.List"
@@ -175,6 +177,7 @@
                 android:tag="tintactionbar"
                 android:tint="?attr/tint"
                 app:srcCompat="@drawable/edit" />
+
             <ImageView
                 android:id="@+id/save"
                 style="@style/Ripple.List"
@@ -186,7 +189,6 @@
                 android:tag="tintactionbar"
                 android:tint="?attr/tint"
                 app:srcCompat="@drawable/iconstarfilled" />
-
 
             <ImageView
                 android:id="@+id/mod"

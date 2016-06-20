@@ -61,19 +61,23 @@ public class Shortcut extends BaseActivity {
 
     }
 
+    View header;
+
     public void doShortcut() {
 
         setContentView(R.layout.activity_setup_widget);
-        setupAppBar(R.id.toolbar, "New shortcut", true, false);
-
-        findViewById(R.id.tohide).setVisibility(View.GONE);
+        setupAppBar(R.id.toolbar, "New shortcut", true, true);
+        header = getLayoutInflater().inflate(R.layout.shortcut_header, null);
         ListView list = (ListView)findViewById(R.id.subs);
-        final ArrayList<String> sorted = UserSubscriptions.getSubscriptions(Shortcut.this);
+
+        list.addHeaderView(header);
+
+        final ArrayList<String> sorted = UserSubscriptions.getSubscriptionsForShortcut(Shortcut.this);
         final SubChooseAdapter adapter = new SubChooseAdapter(this, sorted, UserSubscriptions.getAllSubreddits(this));
         list.setAdapter(adapter);
 
-        (findViewById(R.id.sort)).clearFocus();
-        ((EditText)findViewById(R.id.sort)).addTextChangedListener(new TextWatcher() {
+        (header.findViewById(R.id.sort)).clearFocus();
+        ((EditText)header.findViewById(R.id.sort)).addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
 

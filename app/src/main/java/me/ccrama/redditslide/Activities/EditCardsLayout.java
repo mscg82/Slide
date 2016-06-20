@@ -15,6 +15,7 @@ import java.util.Map;
 
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.SettingValues;
+import me.ccrama.redditslide.SubmissionCache;
 import me.ccrama.redditslide.Views.CreateCardView;
 
 /**
@@ -35,11 +36,11 @@ public class EditCardsLayout extends BaseActivityAnim {
 
         final LinearLayout layout = (LinearLayout) findViewById(R.id.card);
         layout.removeAllViews();
-        layout.addView(CreateCardView.CreateView(layout, false, ""));
+        layout.addView(CreateCardView.CreateView(layout));
 
         //View type//
         //Cards or List//
-        ((TextView) findViewById(R.id.view_current)).setText(CreateCardView.isCard(false) ? (CreateCardView.isMiddle(false) ? getString(R.string.mode_centered) : getString(R.string.mode_card)) : getString(R.string.mode_list));
+        ((TextView) findViewById(R.id.view_current)).setText(CreateCardView.isCard() ? (CreateCardView.isMiddle() ? getString(R.string.mode_centered) : getString(R.string.mode_card)) : getString(R.string.mode_list));
 
         findViewById(R.id.view).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -52,18 +53,18 @@ public class EditCardsLayout extends BaseActivityAnim {
                         switch (item.getItemId()) {
                             case R.id.center:
                                 layout.removeAllViews();
-                                layout.addView(CreateCardView.setMiddleCard(true, layout, false, ""));
+                                layout.addView(CreateCardView.setMiddleCard(true, layout));
                                 break;
                             case R.id.card:
                                 layout.removeAllViews();
-                                layout.addView(CreateCardView.setCardViewType(CreateCardView.CardEnum.LARGE, layout, false, ""));
+                                layout.addView(CreateCardView.setCardViewType(CreateCardView.CardEnum.LARGE, layout));
                                 break;
                             case R.id.list:
                                 layout.removeAllViews();
-                                layout.addView(CreateCardView.setCardViewType(CreateCardView.CardEnum.LIST, layout, false, ""));
+                                layout.addView(CreateCardView.setCardViewType(CreateCardView.CardEnum.LIST, layout));
                                 break;
                         }
-                        ((TextView) findViewById(R.id.view_current)).setText(CreateCardView.isCard(false) ? (CreateCardView.isMiddle(false) ? getString(R.string.mode_centered) : getString(R.string.mode_card)) : getString(R.string.mode_list));
+                        ((TextView) findViewById(R.id.view_current)).setText(CreateCardView.isCard() ? (CreateCardView.isMiddle() ? getString(R.string.mode_centered) : getString(R.string.mode_card)) : getString(R.string.mode_list));
                         return true;
                     }
                 });
@@ -101,6 +102,32 @@ public class EditCardsLayout extends BaseActivityAnim {
             });
         }
         {
+            SwitchCompat single = (SwitchCompat) findViewById(R.id.votes);
+            single.setChecked(SettingValues.votesInfoLine);
+            single.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    SettingValues.votesInfoLine = isChecked;
+                    SettingValues.prefs.edit().putBoolean(SettingValues.PREF_VOTES_INFO_LINE, isChecked).apply();
+                    SubmissionCache.evictAll();
+                }
+            });
+        }
+        {
+            SwitchCompat single = (SwitchCompat) findViewById(R.id.contenttype);
+            single.setChecked(SettingValues.typeInfoLine);
+            single.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    SettingValues.typeInfoLine = isChecked;
+                    SettingValues.prefs.edit().putBoolean(SettingValues.PREF_TYPE_INFO_LINE, isChecked).apply();
+                    SubmissionCache.evictAll();
+
+                }
+            });
+        }
+
+        {
             SwitchCompat single = (SwitchCompat) findViewById(R.id.selftext);
 
             single.setChecked(SettingValues.cardText);
@@ -114,8 +141,16 @@ public class EditCardsLayout extends BaseActivityAnim {
             });
         }
         //Pic modes//
+        final TextView CURRENT_PICTURE = (TextView) findViewById(R.id.picture_current);
+        assert CURRENT_PICTURE != null; //it won't be
 
-        ((TextView) findViewById(R.id.picture_current)).setText(SettingValues.bigPicEnabled ? (SettingValues.bigPicCropped ? getString(R.string.mode_cropped) : getString(R.string.mode_bigpic)) : getString(R.string.mode_thumbnail));
+        if (SettingValues.bigPicCropped) {
+            CURRENT_PICTURE.setText(R.string.mode_cropped);
+        } else if (SettingValues.bigPicEnabled) {
+            CURRENT_PICTURE.setText(R.string.mode_bigpic);
+        } else {
+            CURRENT_PICTURE.setText(R.string.mode_thumbnail);
+        }
 
         findViewById(R.id.picture).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -157,19 +192,49 @@ public class EditCardsLayout extends BaseActivityAnim {
                             }
                             break;
                         }
-                        ((TextView) findViewById(R.id.picture_current)).setText(SettingValues.bigPicEnabled ? (SettingValues.bigPicCropped ? getString(R.string.mode_cropped) : getString(R.string.mode_bigpic)) : getString(R.string.mode_thumbnail));
+
+                        if (SettingValues.bigPicCropped) {
+                            CURRENT_PICTURE.setText(R.string.mode_cropped);
+                        } else if (SettingValues.bigPicEnabled) {
+                            CURRENT_PICTURE.setText(R.string.mode_bigpic);
+                        } else {
+                            CURRENT_PICTURE.setText(R.string.mode_thumbnail);
+                        }
                         return true;
                     }
                 });
-
                 popup.show();
             }
         });
 
+        final SwitchCompat bigThumbnails = (SwitchCompat) findViewById(R.id.bigThumbnails);
+        assert bigThumbnails != null; //def won't be null
+
+        bigThumbnails.setChecked(SettingValues.bigThumbnails);
+        bigThumbnails.setOnCheckedChangeListener(new SwitchCompat.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                SettingValues.prefs.edit().putBoolean("bigThumbnails", isChecked).apply();
+                SettingValues.bigThumbnails = isChecked;
+
+                if (!SettingValues.bigPicCropped && !SettingValues.bigPicCropped) {
+                    layout.removeAllViews();
+
+                    layout.addView(CreateCardView.setBigPicEnabled(false, layout));
+                    {
+                        SharedPreferences.Editor e = SettingValues.prefs.edit();
+                        for (Map.Entry<String, ?> map : SettingValues.prefs.getAll().entrySet()) {
+                            if (map.getKey().startsWith("picsenabled")) {
+                                e.remove(map.getKey()); //reset all overridden values
+                            }
+                        }
+                        e.apply();
+                    }
+                }
+            }
+        });
 
         //Actionbar//
-
-
         ((TextView) findViewById(R.id.actionbar_current)).setText(!SettingValues.actionbarVisible ? (SettingValues.actionbarTap ? getString(R.string.tap_actionbar) : getString(R.string.press_actionbar)) : getString(R.string.always_actionbar));
 
         findViewById(R.id.actionbar).setOnClickListener(new View.OnClickListener() {
@@ -242,7 +307,6 @@ public class EditCardsLayout extends BaseActivityAnim {
         });
 
         //Smaller tags//
-
         final SwitchCompat smallTag = (SwitchCompat) findViewById(R.id.tagsetting);
 
         smallTag.setChecked(SettingValues.smallTag);
@@ -269,6 +333,4 @@ public class EditCardsLayout extends BaseActivityAnim {
 
 
     }
-
-
 }

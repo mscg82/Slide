@@ -18,14 +18,18 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.Activities.SubredditView;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.SantitizeField;
 import me.ccrama.redditslide.SettingValues;
+import me.ccrama.redditslide.UserSubscriptions;
 import me.ccrama.redditslide.Visuals.Palette;
 
 
@@ -47,6 +51,7 @@ public class SideArrayAdapter extends ArrayAdapter<String> {
         fitems = new ArrayList<>(objects);
         baseItems = new ArrayList<>(objects);
         parentL = view;
+        multiToMatch = UserSubscriptions.getMultiNameToSubs(true);
     }
 
     @Override
@@ -69,15 +74,23 @@ public class SideArrayAdapter extends ArrayAdapter<String> {
     }
 
     int height;
+    Map<String, String> multiToMatch;
 
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
         if (position < fitems.size()) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.subforsublist, parent, false);
 
+            final String sub;
+            final String base = fitems.get(position);
+            if(multiToMatch.containsKey(fitems.get(position)) && !fitems.get(position).contains("/m/")){
+                sub = multiToMatch.get(fitems.get(position));
+            } else {
+                sub = fitems.get(position);
+            }
             final TextView t =
                     ((TextView) convertView.findViewById(R.id.name));
-            t.setText(fitems.get(position));
+            t.setText(sub);
 
             if (height == 0) {
                 final View finalConvertView = convertView;
@@ -90,17 +103,18 @@ public class SideArrayAdapter extends ArrayAdapter<String> {
                 });
             }
 
-            final String subreddit = (fitems.get(position).contains("+") || fitems.get(position).contains("/m/")) ? fitems.get(position) : SantitizeField.sanitizeString(fitems.get(position).replace(getContext().getString(R.string.search_goto) + " ", ""));
+            final String subreddit = (sub.contains("+") || sub.contains("/m/")) ? sub : SantitizeField.sanitizeString(sub.replace(getContext().getString(R.string.search_goto) + " ", ""));
 
             convertView.findViewById(R.id.color).setBackgroundResource(R.drawable.circle);
             convertView.findViewById(R.id.color).getBackground().setColorFilter(Palette.getColor(subreddit), PorterDuff.Mode.MULTIPLY);
             convertView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (fitems.get(position).startsWith(getContext().getString(R.string.search_goto) + " ") || !((MainActivity) getContext()).usedArray.contains(fitems.get(position))) {
+                    if (base.startsWith(getContext().getString(R.string.search_goto) + " ") || !((MainActivity) getContext()).usedArray.contains(base)) {
                         try {
                             //Hide the toolbar search UI without an animation because we're starting a new activity
-                            if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR
+                            if ((SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR
+                                    || SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH)
                                     && ((MainActivity) getContext()).findViewById(R.id.toolbar_search).getVisibility() == View.VISIBLE) {
                                 ((MainActivity) getContext()).findViewById(R.id.toolbar_search_suggestions).setVisibility(View.GONE);
                                 ((MainActivity) getContext()).findViewById(R.id.toolbar_search).setVisibility(View.GONE);
@@ -130,11 +144,12 @@ public class SideArrayAdapter extends ArrayAdapter<String> {
                             ((MainActivity) getContext()).toOpenComments = -1;
                             ((MainActivity.OverviewPagerAdapterComment) ((MainActivity) getContext()).adapter).size = (((MainActivity) getContext()).usedArray.size() + 1);
                             ((MainActivity) getContext()).adapter.notifyDataSetChanged();
-                            ((MainActivity) getContext()).doPageSelectedComments(((MainActivity) getContext()).usedArray.indexOf(fitems.get(position)));
+                            ((MainActivity) getContext()).doPageSelectedComments(((MainActivity) getContext()).usedArray.indexOf(base));
                         }
                         try {
                             //Hide the toolbar search UI with an animation because we're just changing tabs
-                            if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR
+                            if ((SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR
+                                    || SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH)
                                     && ((MainActivity) getContext()).findViewById(R.id.toolbar_search).getVisibility() == View.VISIBLE) {
                                 ((MainActivity) getContext()).findViewById(R.id.close_search_toolbar).performClick();
                             }
@@ -142,16 +157,22 @@ public class SideArrayAdapter extends ArrayAdapter<String> {
                             Log.e(getClass().getName(), npe.getMessage());
                         }
 
-                        ((MainActivity) getContext()).pager.setCurrentItem(((MainActivity) getContext()).usedArray.indexOf(fitems.get(position)));
+                        ((MainActivity) getContext()).pager.setCurrentItem(((MainActivity) getContext()).usedArray.indexOf(base));
                     }
                     InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                     imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
 
                     ((MainActivity) getContext()).drawerLayout.closeDrawers();
+
+                    if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_DRAWER
+                            || SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH) {
+                        ((MainActivity) getContext()).drawerSearch.setText("");
+                    }
                 }
             });
         } else {
-            if ((fitems.size() * height) < parentL.getHeight() && (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_DRAWER)) {
+            if ((fitems.size() * height) < parentL.getHeight() && (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_DRAWER
+                    || SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH)) {
                 convertView = LayoutInflater.from(getContext()).inflate(R.layout.spacer, parent, false);
                 ViewGroup.LayoutParams params = convertView.findViewById(R.id.height).getLayoutParams();
                 params.height = (parentL.getHeight() - (getCount() - 1) * height);
@@ -171,13 +192,22 @@ public class SideArrayAdapter extends ArrayAdapter<String> {
         return fitems.size() + 1;
     }
 
+    public void updateHistory(ArrayList<String> history) {
+        for(String s : history){
+            if(!objects.contains(s)){
+                objects.add(s);
+            }
+        }
+        notifyDataSetChanged();
+    }
+
     private class SubFilter extends Filter {
         @Override
         protected FilterResults performFiltering(CharSequence constraint) {
             FilterResults results = new FilterResults();
             String prefix = constraint.toString().toLowerCase();
 
-            if (prefix == null || prefix.length() == 0) {
+            if (prefix == null || prefix.isEmpty()) {
                 ArrayList<String> list = new ArrayList<>(baseItems);
                 results.values = list;
                 results.count = list.size();
@@ -187,7 +217,7 @@ public class SideArrayAdapter extends ArrayAdapter<String> {
                 final ArrayList<String> nlist = new ArrayList<>();
 
                 for (String sub : list) {
-                    if (sub.contains(prefix))
+                    if (StringUtils.containsIgnoreCase(sub, prefix))
                         nlist.add(sub);
                     if (sub.equals(prefix))
                         openInSubView = false;

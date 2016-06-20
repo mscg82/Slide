@@ -20,7 +20,9 @@ public class SettingValues {
     public static final String PREF_DAY_TIME = "day";
     public static final String PREF_NIGHT_TIME = "nightTime";
     public static final String PREF_AUTOHIDE_COMMENTS = "autohideComments";
+    public static final String PREF_NO_IMAGES = "noImages";
     public static final String PREF_AUTOTHEME = "autotime";
+    public static final String PREVIEWS_LEFT = "previewsLeft";
     public static final String PREF_COLOR_BACK = "colorBack";
     public static final String PREF_COLOR_NAV_BAR = "colorNavBar";
     public static final String PREF_COLOR_EVERYWHERE = "colorEverywhere";
@@ -41,6 +43,8 @@ public class SettingValues {
     public static final String PREF_DRAFTS = "drafts";
     public static final String PREF_SUBREDDIT_FILTERS = "subredditFilters";
     public static final String PREF_COMMENT_LAST_VISIT = "commentLastVisit";
+    public static final String PREF_VOTES_INFO_LINE = "votesInfoLine";
+    public static final String PREF_TYPE_INFO_LINE = "typeInfoLine";
     public static final String PREF_COMMENT_PAGER = "commentPager";
     public static final String PREF_COLLAPSE_COMMENTS = "collapseCOmments";
     public static final String PREF_COLLAPSE_COMMENTS_DEFAULT = "collapseCommentsDefault";
@@ -49,6 +53,7 @@ public class SettingValues {
     public static final String PREF_CROP_IMAGE = "cropImage";
     public static final String PREF_COMMENT_FAB = "commentFab";
     public static final String PREF_SWITCH_THUMB = "switchThumb";
+    public static final String PREF_BIG_THUMBS = "bigThumbnails";
     public static final String PREF_LOW_RES_ALWAYS = "lowResAlways";
     public static final String PREF_LOW_RES_MOBILE = "lowRes";
     public static final String PREF_IMAGE_LQ = "imageLq";
@@ -58,6 +63,7 @@ public class SettingValues {
     public static final String PREF_CARD_TEXT = "cardText";
     public static final String PREF_ZOOM_DEFAULT = "zoomDefault";
     public static final String PREF_SUBREDDIT_SEARCH_METHOD = "subredditSearchMethod";
+    public static final String PREF_IMGUR_LQ = "imgurLq";
 
     public static final String PREF_FULL_COMMENT_OVERRIDE = "fullCommentOverride";
     public static final String PREF_ALBUM = "album";
@@ -105,6 +111,7 @@ public class SettingValues {
     public static boolean commentAutoHide;
     public static boolean fullCommentOverride;
     public static boolean lowResAlways;
+    public static boolean noImages;
     public static boolean lowResMobile;
     public static boolean blurCheck;
     public static boolean swipeAnywhere;
@@ -122,10 +129,14 @@ public class SettingValues {
     public static boolean exit;
     public static boolean cropImage;
     public static boolean smallTag;
+    public static boolean typeInfoLine;
+    public static boolean votesInfoLine;
     public static boolean collapseComments;
     public static boolean collapseCommentsDefault;
     public static boolean rightHandedCommentMenu;
     public static int subredditSearchMethod;
+
+    public static int previews;
 
     public static String synccitName;
     public static String synccitAuth;
@@ -149,6 +160,7 @@ public class SettingValues {
     public static boolean autoTime;
     public static boolean albumSwipe;
     public static boolean switchThumb;
+    public static boolean bigThumbnails;
     public static boolean commentPager;
     public static boolean colorSubName;
     public static boolean hideSelftextLeadImage;
@@ -156,11 +168,13 @@ public class SettingValues {
     public static boolean showDomain;
     public static boolean cardText;
     public static boolean alwaysZoom;
+    public static boolean imgurLq = true;
+    public static int currentTheme; //current base theme (Light, Dark, Dark blue, etc.)
 
     public static void setAllValues(SharedPreferences settings) {
         prefs = settings;
         defaultCardView = CreateCardView.CardEnum.valueOf(settings.getString("defaultCardViewNew", "LARGE").toUpperCase());
-        middleImage = settings.getBoolean("middleImage", false);
+        middleImage = settings.getBoolean("middleCard", false);
 
         bigPicCropped = settings.getBoolean("bigPicCropped", true);
         bigPicEnabled = settings.getBoolean("bigPicEnabled", true);
@@ -195,6 +209,12 @@ public class SettingValues {
         rightHandedCommentMenu = prefs.getBoolean(PREF_RIGHT_HANDED_COMMENT_MENU, false);
         commentAutoHide = prefs.getBoolean(PREF_AUTOHIDE_COMMENTS, false);
 
+        typeInfoLine = prefs.getBoolean(PREF_TYPE_INFO_LINE, false);
+        votesInfoLine = prefs.getBoolean(PREF_VOTES_INFO_LINE, false);
+
+        imgurLq = prefs.getBoolean(PREF_IMGUR_LQ, true);
+        noImages = prefs.getBoolean(PREF_NO_IMAGES, false);
+
         lowResAlways = prefs.getBoolean(PREF_LOW_RES_ALWAYS, false);
         lowResMobile = prefs.getBoolean(PREF_LOW_RES_MOBILE, false);
         loadImageLq = prefs.getBoolean(PREF_IMAGE_LQ, false);
@@ -217,6 +237,8 @@ public class SettingValues {
         synccitName = prefs.getString(SYNCCIT_NAME, "");
         synccitAuth = prefs.getString(SYNCCIT_AUTH, "");
 
+        previews = prefs.getInt(PREVIEWS_LEFT, 10);
+
         fabComments = prefs.getBoolean(PREF_COMMENT_FAB, false);
         titleFilters = prefs.getString(PREF_TITLE_FILTERS, "");
         textFilters = prefs.getString(PREF_TEXT_FILTERS, "");
@@ -229,6 +251,7 @@ public class SettingValues {
 
         cropImage = prefs.getBoolean(PREF_CROP_IMAGE, true);
         switchThumb = prefs.getBoolean(PREF_SWITCH_THUMB, true);
+        bigThumbnails = prefs.getBoolean(PREF_BIG_THUMBS, false);
 
         swipeAnywhere = true; //override this always now
         album = prefs.getBoolean(PREF_ALBUM, true);

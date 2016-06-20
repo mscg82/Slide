@@ -26,6 +26,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
@@ -51,7 +52,6 @@ import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.Views.PreCachingLayoutManager;
 import me.ccrama.redditslide.Views.ToolbarColorizeHelper;
-
 
 /**
  * Created by ccrama on 3/5/2015.
@@ -239,6 +239,9 @@ public class Album extends FullScreenActivity implements FolderChooserDialogCrea
         getTheme().applyStyle(new ColorPreferences(this).getDarkThemeSubreddit(ColorPreferences.FONT_STYLE), true);
         setContentView(R.layout.album);
 
+        //Keep the screen on
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         final ViewPager pager = (ViewPager) findViewById(R.id.images);
 
         album = new OverviewPagerAdapter(getSupportFragmentManager());
@@ -250,7 +253,7 @@ public class Album extends FullScreenActivity implements FolderChooserDialogCrea
                                               if (position == 0 && positionOffsetPixels == 0) {
                                                   finish();
                                               }
-                                              if (position == 0) {
+                                              if (position == 0 && ((OverviewPagerAdapter) pager.getAdapter()).blankPage != null) {
                                                   if (((OverviewPagerAdapter) pager.getAdapter()).blankPage != null)
                                                       ((OverviewPagerAdapter) pager.getAdapter()).blankPage.doOffset(positionOffset);
                                                   ((OverviewPagerAdapter) pager.getAdapter()).blankPage.realBack.setBackgroundColor(adjustAlpha(positionOffset * 0.7f));
@@ -334,6 +337,8 @@ public class Album extends FullScreenActivity implements FolderChooserDialogCrea
             recyclerView.setLayoutManager(mLayoutManager);
             ((Album) getActivity()).url = getActivity().getIntent().getExtras().getString(EXTRA_URL, "");
 
+            ((BaseActivity) getActivity()).setShareUrl(((Album) getActivity()).url);
+
             new LoadIntoRecycler(((Album) getActivity()).url, getActivity()).execute();
             ((Album) getActivity()).mToolbar = (Toolbar) rootView.findViewById(R.id.toolbar);
             ((Album) getActivity()).mToolbar.setTitle(R.string.type_album);
@@ -341,7 +346,7 @@ public class Album extends FullScreenActivity implements FolderChooserDialogCrea
             ((Album) getActivity()).setSupportActionBar(((Album) getActivity()).mToolbar);
             ((Album) getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-            ((Album) getActivity()).mToolbar.setPopupTheme(new ColorPreferences(((Album) getActivity())).getDarkThemeSubreddit(ColorPreferences.FONT_STYLE));
+            ((Album) getActivity()).mToolbar.setPopupTheme(new ColorPreferences(getActivity()).getDarkThemeSubreddit(ColorPreferences.FONT_STYLE));
             return rootView;
         }
 
@@ -355,7 +360,7 @@ public class Album extends FullScreenActivity implements FolderChooserDialogCrea
             }
 
             @Override
-            public void onError(){
+            public void onError() {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -378,7 +383,7 @@ public class Album extends FullScreenActivity implements FolderChooserDialogCrea
                                             getActivity().finish();
                                         }
                                     }).show();
-                        } catch(Exception e){
+                        } catch (Exception e) {
 
                         }
                     }
@@ -388,11 +393,13 @@ public class Album extends FullScreenActivity implements FolderChooserDialogCrea
 
             @Override
             public void doWithData(final List<Image> jsonElements) {
-                getActivity().findViewById(R.id.progress).setVisibility(View.GONE);
-                ((Album) getActivity()).images = new ArrayList<>(jsonElements);
-                AlbumView adapter = new AlbumView(baseActivity, ((Album) getActivity()).images, getActivity().findViewById(R.id.toolbar).getHeight());
-                recyclerView.setAdapter(adapter);
-
+                super.doWithData(jsonElements);
+                if(getActivity() != null) {
+                    getActivity().findViewById(R.id.progress).setVisibility(View.GONE);
+                    ((Album) getActivity()).images = new ArrayList<>(jsonElements);
+                    AlbumView adapter = new AlbumView(baseActivity, ((Album) getActivity()).images, getActivity().findViewById(R.id.toolbar).getHeight());
+                    recyclerView.setAdapter(adapter);
+                }
             }
         }
     }

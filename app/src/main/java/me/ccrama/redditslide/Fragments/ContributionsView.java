@@ -9,11 +9,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import me.ccrama.redditslide.Activities.Profile;
 import me.ccrama.redditslide.Adapters.ContributionAdapter;
 import me.ccrama.redditslide.Adapters.ContributionPosts;
+import me.ccrama.redditslide.Adapters.ContributionPostsSaved;
 import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.R;
-import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.Views.CatchStaggeredGridLayoutManager;
 import me.ccrama.redditslide.Views.PreCachingLayoutManager;
 import me.ccrama.redditslide.Visuals.Palette;
@@ -49,12 +50,10 @@ public class ContributionsView extends Fragment {
         mSwipeRefreshLayout.setColorSchemeColors(Palette.getColors(id, getActivity()));
 
         //If we use 'findViewById(R.id.header).getMeasuredHeight()', 0 is always returned.
-        //So, we just do 13% of the phone screen height as a general estimate for the Tabs view type
-        final int headerOffset = Math.round((float) (Constants.SCREEN_HEIGHT * 0.13));
-
+        //So, we estimate the height of the header in dp
         mSwipeRefreshLayout.setProgressViewOffset(false,
-                headerOffset - Reddit.pxToDp(42, getContext()),
-                headerOffset + Reddit.pxToDp(42, getContext()));
+                Constants.TAB_HEADER_VIEW_OFFSET - Constants.PTR_OFFSET_TOP,
+                Constants.TAB_HEADER_VIEW_OFFSET + Constants.PTR_OFFSET_BOTTOM);
 
         mSwipeRefreshLayout.post(new Runnable() {
             @Override
@@ -63,7 +62,11 @@ public class ContributionsView extends Fragment {
             }
         });
 
-        posts = new ContributionPosts(id, where);
+        if (where.equals("saved") && getActivity() instanceof Profile)
+            posts = new ContributionPostsSaved(id, where, ((Profile) getActivity()).category);
+        else
+            posts = new ContributionPosts(id, where);
+
         //noinspection StringEquality
         if (where == "hidden") adapter = new ContributionAdapter(getActivity(), posts, rv, true);
         else adapter = new ContributionAdapter(getActivity(), posts, rv);
@@ -76,7 +79,6 @@ public class ContributionsView extends Fragment {
                     @Override
                     public void onRefresh() {
                         posts.loadMore(adapter, id, true);
-
                         //TODO catch errors
                     }
                 }

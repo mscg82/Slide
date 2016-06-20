@@ -22,6 +22,7 @@ import java.util.List;
 
 import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SecretConstants;
+import me.ccrama.redditslide.util.LogUtil;
 
 /**
  * Created by carlo_000 on 2/1/2016.
@@ -32,6 +33,12 @@ public class AlbumUtils {
 
     private static String getHash(String s) {
         String next = s.substring(s.lastIndexOf("/"), s.length());
+        if (next.contains(".")) {
+            next = next.substring(0, next.indexOf("."));
+        }
+        if (next.startsWith("/")) {
+            next = next.substring(1, next.length());
+        }
         if (next.length() < 5) {
             return getHash(s.replace(next, ""));
         } else {
@@ -70,20 +77,22 @@ public class AlbumUtils {
                 rawDat = rawDat.substring(0, rawDat.length() - 1);
             }
 
-            String rawdat2 = rawDat;
-            if (rawdat2.substring(rawDat.lastIndexOf("/"), rawdat2.length()).length() < 4) {
-                rawDat = rawDat.replace(rawDat.substring(rawDat.lastIndexOf("/"), rawdat2.length()), "");
+            if (rawDat.substring(rawDat.lastIndexOf("/")+1, rawDat.length()).length() < 4) {
+                rawDat = rawDat.replace(rawDat.substring(rawDat.lastIndexOf("/"), rawDat.length()), "");
             }
             if (rawDat.contains("?")) {
                 rawDat = rawDat.substring(0, rawDat.indexOf("?"));
             }
+
             hash = getHash(rawDat);
 
         }
 
 
         public void doWithData(List<Image> data) {
-
+            if(data == null || data.isEmpty()){
+                onError();
+            }
         }
 
         public void doWithDataSingle(final SingleImage data) {
@@ -97,9 +106,13 @@ public class AlbumUtils {
         public Image convertToSingle(SingleImage data) {
             try {
                 final Image toDo = new Image();
-                toDo.setAnimated(data.getAnimated());
+                toDo.setAnimated(data.getAnimated() || data.getLink().contains(".gif"));
                 toDo.setDescription(data.getDescription());
-                toDo.setHash(getHash(data.getLink()));
+                if(data.getAdditionalProperties().keySet().contains("mp4")){
+                    toDo.setHash(getHash(data.getAdditionalProperties().get("mp4").toString()));
+                } else {
+                    toDo.setHash(getHash(data.getLink()));
+                }
                 toDo.setTitle(data.getTitle());
                 toDo.setExt(data.getLink().substring(data.getLink().lastIndexOf("."), data.getLink().length()));
                 toDo.setHeight(data.getHeight());
@@ -131,6 +144,10 @@ public class AlbumUtils {
                                 @Override
                                 public void onCompleted(Exception e, JsonObject obj) {
                                     try {
+                                        if(obj == null) {
+                                            onError();
+                                            return;
+                                        }
                                         SingleImage single = new ObjectMapper().readValue(obj.toString(), SingleAlbumImage.class).getData();
                                         if (single.getLink() != null)
                                             doWithDataSingle(single);
@@ -138,7 +155,7 @@ public class AlbumUtils {
                                             onError();
 
 
-                                    } catch (IOException e1) {
+                                    } catch (Exception e1) {
                                         e1.printStackTrace();
                                     }
                                 }
@@ -176,6 +193,7 @@ public class AlbumUtils {
                                     if (el != null) {
                                         try {
                                             SingleImage single = new ObjectMapper().readValue(el.toString(), SingleAlbumImage.class).getData();
+                                            LogUtil.v(el.toString());
                                             jsons.add(convertToSingle(single));
                                         } catch (IOException e1) {
                                             e1.printStackTrace();

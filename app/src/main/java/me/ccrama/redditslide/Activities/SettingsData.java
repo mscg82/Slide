@@ -22,19 +22,54 @@ public class SettingsData extends BaseActivityAnim {
         applyColorTheme();
         setContentView(R.layout.activity_settings_datasaving);
         setupAppBar(R.id.toolbar, "Data saving", true, true);
-
         final SwitchCompat single = (SwitchCompat) findViewById(R.id.imagelq);
+        {
 
-        single.setChecked(SettingValues.loadImageLq);
-        single.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                SettingValues.loadImageLq = isChecked;
-                SettingValues.prefs.edit().putBoolean(SettingValues.PREF_IMAGE_LQ, isChecked).apply();
+            single.setChecked(SettingValues.loadImageLq);
+            single.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    SettingValues.loadImageLq = isChecked;
+                    SettingValues.prefs.edit().putBoolean(SettingValues.PREF_IMAGE_LQ, isChecked).apply();
 
-            }
-        });
+                }
+            });
+        }
+        {
+            SwitchCompat single2 = (SwitchCompat) findViewById(R.id.selftextcomment);
+            single2.setChecked(SettingValues.hideSelftextLeadImage);
+            single2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    SettingValues.hideSelftextLeadImage = isChecked;
+                    SettingValues.prefs.edit().putBoolean(SettingValues.PREF_SELFTEXT_IMAGE_COMMENT, isChecked).apply();
+                }
+            });
+        }
+        {
+            SwitchCompat single2 = (SwitchCompat) findViewById(R.id.noload);
+            single2.setChecked(SettingValues.noImages);
+            single2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    SettingValues.noImages = isChecked;
+                    SettingValues.prefs.edit().putBoolean(SettingValues.PREF_NO_IMAGES, isChecked).apply();
+                }
+            });
+        }
+        {
+            final SwitchCompat single2 = (SwitchCompat) findViewById(R.id.imgurlq);
 
+            single2.setChecked(SettingValues.imgurLq);
+            single2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    SettingValues.imgurLq = isChecked;
+                    SettingValues.prefs.edit().putBoolean(SettingValues.PREF_IMGUR_LQ, isChecked).apply();
+
+                }
+            });
+        }
         //Datasaving type multi choice
         ((TextView) findViewById(R.id.lowquality)).setText(SettingValues.lowResMobile ? (SettingValues.lowResAlways ? getString(R.string.datasave_always) : getString(R.string.datasave_mobile)) : getString(R.string.never));
 

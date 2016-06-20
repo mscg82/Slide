@@ -24,6 +24,7 @@ import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioButton;
+import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.afollestad.materialdialogs.MaterialDialog;
@@ -33,6 +34,7 @@ import net.dean.jraw.managers.AccountManager;
 import net.dean.jraw.managers.CaptchaHelper;
 import net.dean.jraw.models.Captcha;
 import net.dean.jraw.models.Submission;
+import net.dean.jraw.models.Subreddit;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -48,6 +50,7 @@ import java.net.URL;
 import java.util.List;
 
 import me.ccrama.redditslide.Authentication;
+import me.ccrama.redditslide.Drafts;
 import me.ccrama.redditslide.OpenRedditLink;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
@@ -65,16 +68,31 @@ import me.ccrama.redditslide.util.TitleExtractor;
  * Created by ccrama on 3/5/2015.
  */
 public class Submit extends BaseActivity {
-    public static final String EXTRA_SUBREDDIT = "subreddit";
-    String trying;
-    private View image;
-    private View self;
 
-    private View link;
-    private SwitchCompat inboxReplies;
+    private boolean sent;
+    private String trying;
     private String URL;
+    private SwitchCompat inboxReplies;
+    private View image;
+    private View link;
+    private View self;
+    public static final String EXTRA_SUBREDDIT = "subreddit";
 
-    AsyncTask<Void, Void, String> tchange;
+    AsyncTask<Void, Void, Subreddit> tchange;
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        try {
+            String text = ((EditText) findViewById(R.id.bodytext)).getText().toString();
+            if (!text.isEmpty() && sent) {
+                Drafts.addDraft(text);
+                Toast.makeText(getApplicationContext(), R.string.msg_save_draft, Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e){
+
+        }
+    }
 
     public void onCreate(Bundle savedInstanceState) {
         disableSwipeBackLayout();
@@ -92,8 +110,6 @@ public class Submit extends BaseActivity {
         inboxReplies = (SwitchCompat) findViewById(R.id.replies);
 
         Intent intent = getIntent();
-
-
         final String subreddit = intent.getStringExtra(EXTRA_SUBREDDIT);
 
         self = findViewById(R.id.selftext);
@@ -104,8 +120,13 @@ public class Submit extends BaseActivity {
         image.setVisibility(View.GONE);
         link.setVisibility(View.GONE);
 
-        subredditText.setText(subreddit);
-        ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, UserSubscriptions.getAllSubreddits(this));
+        if (subreddit != null && !subreddit.equals("frontpage") && !subreddit.equals("all")
+                && !subreddit.equals("friends") && !subreddit.equals("mod")
+                && !subreddit.contains("/m/")&& !subreddit.contains("+")) {
+            subredditText.setText(subreddit);
+        }
+        ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1,
+                UserSubscriptions.getAllSubreddits(this));
 
         subredditText.setAdapter(adapter);
         subredditText.setThreshold(2);
@@ -118,10 +139,10 @@ public class Submit extends BaseActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (tchange != null)
+                if (tchange != null) {
                     tchange.cancel(true);
+                }
                 findViewById(R.id.submittext).setVisibility(View.GONE);
-
             }
 
             @Override
@@ -135,11 +156,11 @@ public class Submit extends BaseActivity {
             public void onFocusChange(View v, boolean hasFocus) {
                 findViewById(R.id.submittext).setVisibility(View.GONE);
                 if (!hasFocus) {
-                    tchange = new AsyncTask<Void, Void, String>() {
+                    tchange = new AsyncTask<Void, Void, Subreddit>() {
                         @Override
-                        protected String doInBackground(Void... params) {
+                        protected Subreddit doInBackground(Void... params) {
                             try {
-                                return Authentication.reddit.getSubreddit(subredditText.getText().toString()).getDataNode().get("submit_text_html").asText();
+                                return Authentication.reddit.getSubreddit(subredditText.getText().toString());
                             } catch (Exception ignored) {
 
                             }
@@ -147,10 +168,22 @@ public class Submit extends BaseActivity {
                         }
 
                         @Override
-                        protected void onPostExecute(String s) {
-                            if (s != null && !s.isEmpty() && !s.equals("null")) {
-                                findViewById(R.id.submittext).setVisibility(View.VISIBLE);
-                                setViews(s, subredditText.getText().toString(), (SpoilerRobotoTextView) findViewById(R.id.submittext), (CommentOverflow) findViewById(R.id.commentOverflow));
+                        protected void onPostExecute(Subreddit s) {
+
+                            if(s != null) {
+                                String text = s.getDataNode().get("submit_text_html").asText();
+                                if (text != null && !text.isEmpty() && !text.equals("null")) {
+                                    findViewById(R.id.submittext).setVisibility(View.VISIBLE);
+                                    setViews(text, subredditText.getText().toString(), (SpoilerRobotoTextView) findViewById(R.id.submittext), (CommentOverflow) findViewById(R.id.commentOverflow));
+                                }
+                                if (s.getSubredditType().equals("RESTRICTED")) {
+                                    subredditText.setText("");
+                                    new AlertDialogWrapper.Builder(Submit.this).setTitle("This subreddit is restricted")
+                                            .setMessage("You are not allowed to post here. Please choose another subreddit")
+                                            .setPositiveButton(R.string.btn_ok, null).show();
+                                }
+                            } else {
+                                findViewById(R.id.submittext).setVisibility(View.GONE);
                             }
                         }
                     };
@@ -283,13 +316,11 @@ public class Submit extends BaseActivity {
     private void setImage(final String URL) {
         this.URL = URL;
 
-
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 findViewById(R.id.imagepost).setVisibility(View.VISIBLE);
                 ((Reddit) getApplication()).getImageLoader().displayImage(URL, ((ImageView) findViewById(R.id.imagepost)));
-
             }
         });
     }
@@ -332,10 +363,9 @@ public class Submit extends BaseActivity {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-
         LogUtil.v("Got result");
-        if (resultCode == RESULT_OK && requestCode == 1) {
 
+        if (resultCode == RESULT_OK && requestCode == 1) {
             Uri selectedImageUri = data.getData();
             try {
                 File f = new File(selectedImageUri.getPath());
@@ -343,7 +373,6 @@ public class Submit extends BaseActivity {
                 new UploadImgur(f.getName().contains(".jpg") || f.getName().contains(".jpeg")).execute(bitmap);
             } catch (IOException e) {
                 e.printStackTrace();
-
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
@@ -356,7 +385,6 @@ public class Submit extends BaseActivity {
         protected Void doInBackground(Void... voids) {
             try {
                 if (self.getVisibility() == View.VISIBLE) {
-
                     try {
                         if (new CaptchaHelper(Authentication.reddit).isNecessary()) {
                             //display capacha
@@ -369,8 +397,8 @@ public class Submit extends BaseActivity {
                                     final View dialoglayout = inflater.inflate(R.layout.capatcha, null);
                                     final AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(Submit.this);
 
-
-                                    ((Reddit) getApplication()).getImageLoader().displayImage(c.getImageUrl().toString(), (ImageView) dialoglayout.findViewById(R.id.cap));
+                                    ((Reddit) getApplication()).getImageLoader().displayImage(c.getImageUrl().toString(),
+                                            (ImageView) dialoglayout.findViewById(R.id.cap));
 
                                     final Dialog dialog = builder.setView(dialoglayout).create();
                                     dialog.show();
@@ -378,7 +406,6 @@ public class Submit extends BaseActivity {
                                         @Override
                                         public void onDismiss(DialogInterface dialog) {
                                             ((FloatingActionButton) findViewById(R.id.send)).show();
-
                                         }
                                     });
                                     dialoglayout.findViewById(R.id.ok).setOnClickListener(new View.OnClickListener() {
@@ -386,22 +413,24 @@ public class Submit extends BaseActivity {
                                         public void onClick(View d) {
                                             trying = ((EditText) dialoglayout.findViewById(R.id.entry)).getText().toString();
                                             dialog.dismiss();
+                                            final String text = ((EditText) findViewById(R.id.bodytext)).getText().toString();
                                             new AsyncTask<Void, Void, Boolean>() {
                                                 @Override
                                                 protected Boolean doInBackground(Void... params) {
                                                     try {
-                                                        Submission s = new AccountManager(Authentication.reddit).submit(new AccountManager.SubmissionBuilder(((EditText) findViewById(R.id.bodytext)).getText().toString(), ((AutoCompleteTextView) findViewById(R.id.subreddittext)).getText().toString(), ((EditText) findViewById(R.id.titletext)).getText().toString()), c, trying);
+                                                        Submission s = new AccountManager(Authentication.reddit).submit(new AccountManager.SubmissionBuilder(text, ((AutoCompleteTextView) findViewById(R.id.subreddittext)).getText().toString(), ((EditText) findViewById(R.id.titletext)).getText().toString()), c, trying);
                                                         new AccountManager(Authentication.reddit).sendRepliesToInbox(s, inboxReplies.isChecked());
                                                         new OpenRedditLink(Submit.this, "reddit.com/r/" + ((AutoCompleteTextView) findViewById(R.id.subreddittext)).getText().toString() + "/comments/" + s.getFullName().substring(3, s.getFullName().length()));
-                                                        Submit.this.finish();
 
+                                                        Submit.this.finish();
                                                     } catch (ApiException e) {
+                                                        Drafts.addDraft(text);
                                                         runOnUiThread(new Runnable() {
                                                             @Override
                                                             public void run() {
                                                                 new AlertDialogWrapper.Builder(Submit.this)
                                                                         .setTitle(R.string.err_title)
-                                                                        .setMessage(R.string.misc_retry)
+                                                                        .setMessage(R.string.misc_retry_draft)
                                                                         .setNegativeButton(R.string.btn_no, new DialogInterface.OnClickListener() {
                                                                             @Override
                                                                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -411,36 +440,29 @@ public class Submit extends BaseActivity {
                                                                     @Override
                                                                     public void onClick(DialogInterface dialogInterface, int i) {
                                                                         ((FloatingActionButton) findViewById(R.id.send)).show();
-
                                                                     }
                                                                 }).create().show();
-
                                                             }
                                                         });
                                                         return false;
                                                     }
+                                                    sent = true;
                                                     Submit.this.finish();
                                                     return true;
                                                 }
 
 
                                             }.execute();
-
-
                                         }
                                     });
-
                                 }
                             });
-
-
                         } else {
                             Submission s = new AccountManager(Authentication.reddit).submit(new AccountManager.SubmissionBuilder(((EditText) findViewById(R.id.bodytext)).getText().toString(), ((AutoCompleteTextView) findViewById(R.id.subreddittext)).getText().toString(), ((EditText) findViewById(R.id.titletext)).getText().toString()));
                             new AccountManager(Authentication.reddit).sendRepliesToInbox(s, inboxReplies.isChecked());
                             new OpenRedditLink(Submit.this, "reddit.com/r/" + ((AutoCompleteTextView) findViewById(R.id.subreddittext)).getText().toString() + "/comments/" + s.getFullName().substring(3, s.getFullName().length()));
                             Submit.this.finish();
                         }
-
                     } catch (final ApiException e) {
                         runOnUiThread(new Runnable() {
                             @Override
@@ -457,22 +479,23 @@ public class Submit extends BaseActivity {
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
                                         ((FloatingActionButton) findViewById(R.id.send)).show();
-
+                                    }
+                                }).setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                    @Override
+                                    public void onDismiss(DialogInterface dialog) {
+                                        ((FloatingActionButton) findViewById(R.id.send)).show();
                                     }
                                 }).create().show();
                             }
                         });
-
                     }
                 } else if (link.getVisibility() == View.VISIBLE) {
-
                     try {
                         Submission s = new AccountManager(Authentication.reddit).submit(new AccountManager.SubmissionBuilder(new URL(((EditText) findViewById(R.id.urltext)).getText().toString()), ((AutoCompleteTextView) findViewById(R.id.subreddittext)).getText().toString(), ((EditText) findViewById(R.id.titletext)).getText().toString()));
                         new AccountManager(Authentication.reddit).sendRepliesToInbox(s, inboxReplies.isChecked());
                         new OpenRedditLink(Submit.this, "reddit.com/r/" + ((AutoCompleteTextView) findViewById(R.id.subreddittext)).getText().toString() + "/comments/" + s.getFullName().substring(3, s.getFullName().length()));
 
                         Submit.this.finish();
-
                     } catch (final ApiException e) {
                         runOnUiThread(new Runnable() {
                             @Override
@@ -490,7 +513,11 @@ public class Submit extends BaseActivity {
                                         @Override
                                         public void onClick(DialogInterface dialogInterface, int i) {
                                             ((FloatingActionButton) findViewById(R.id.send)).show();
-
+                                        }
+                                    }).setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                        @Override
+                                        public void onDismiss(DialogInterface dialog) {
+                                            ((FloatingActionButton) findViewById(R.id.send)).show();
                                         }
                                     }).create().show();
                                 } else {
@@ -506,13 +533,11 @@ public class Submit extends BaseActivity {
                                         @Override
                                         public void onClick(DialogInterface dialogInterface, int i) {
                                             ((FloatingActionButton) findViewById(R.id.send)).show();
-
                                         }
                                     }).create().show();
                                 }
                             }
                         });
-
                     }
                 } else if (image.getVisibility() == View.VISIBLE) {
                     try {
@@ -521,8 +546,6 @@ public class Submit extends BaseActivity {
                         new OpenRedditLink(Submit.this, "reddit.com/r/" + ((AutoCompleteTextView) findViewById(R.id.subreddittext)).getText().toString() + "/comments/" + s.getFullName().substring(3, s.getFullName().length()));
 
                         Submit.this.finish();
-
-
                     } catch (final Exception e) {
                         runOnUiThread(new Runnable() {
                             @Override
@@ -540,7 +563,11 @@ public class Submit extends BaseActivity {
                                         @Override
                                         public void onClick(DialogInterface dialogInterface, int i) {
                                             ((FloatingActionButton) findViewById(R.id.send)).show();
-
+                                        }
+                                    }).setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                        @Override
+                                        public void onDismiss(DialogInterface dialog) {
+                                            ((FloatingActionButton) findViewById(R.id.send)).show();
                                         }
                                     }).create().show();
                                 } else {
@@ -556,13 +583,16 @@ public class Submit extends BaseActivity {
                                         @Override
                                         public void onClick(DialogInterface dialogInterface, int i) {
                                             ((FloatingActionButton) findViewById(R.id.send)).show();
-
+                                        }
+                                    }).setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                        @Override
+                                        public void onDismiss(DialogInterface dialog) {
+                                            ((FloatingActionButton) findViewById(R.id.send)).show();
                                         }
                                     }).create().show();
                                 }
                             }
                         });
-
                     }
                 }
             } catch (Exception e) {
@@ -581,15 +611,17 @@ public class Submit extends BaseActivity {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 ((FloatingActionButton) findViewById(R.id.send)).show();
-
+                            }
+                        }).setOnDismissListener(new DialogInterface.OnDismissListener() {
+                            @Override
+                            public void onDismiss(DialogInterface dialog) {
+                                ((FloatingActionButton) findViewById(R.id.send)).show();
                             }
                         }).create().show();
-
                     }
                 });
             }
             return null;
-
         }
     }
 

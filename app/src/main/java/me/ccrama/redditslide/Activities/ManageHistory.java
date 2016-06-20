@@ -2,6 +2,7 @@ package me.ccrama.redditslide.Activities;
 
 import android.content.DialogInterface;
 import android.content.res.Resources;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.widget.SwitchCompat;
 import android.util.TypedValue;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import me.ccrama.redditslide.Autocache.AutoCacheScheduler;
 import me.ccrama.redditslide.ColorPreferences;
@@ -126,7 +128,8 @@ public class ManageHistory extends BaseActivityAnim {
                 final TimePickerDialog d = new TimePickerDialog(ManageHistory.this);
                 d.hour(Reddit.cachedData.getInt("hour", 0));
                 d.minute(Reddit.cachedData.getInt("minute", 0));
-                d.applyStyle(new ColorPreferences(ManageHistory.this).getFontStyle().getBaseId());
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                    d.applyStyle(new ColorPreferences(ManageHistory.this).getFontStyle().getBaseId());
                 d.positiveAction("SET");
                 TypedValue typedValue = new TypedValue();
                 Resources.Theme theme = getTheme();
@@ -188,15 +191,19 @@ public class ManageHistory extends BaseActivityAnim {
     List<String> subsToBack;
 
     public void updateFilters() {
-        domains = new ArrayList<>();
+        Map<String, String> multiNameToSubsMap = UserSubscriptions.getMultiNameToSubs(true);
 
+        domains = new ArrayList<>();
         ((LinearLayout) findViewById(R.id.domainlist)).removeAllViews();
         for (final String s : OfflineSubreddit.getAll()) {
             if (!s.isEmpty()) {
 
                 String[] split = s.split(",");
-
-                final String name = "/r/" + split[0] + " → " + (Long.valueOf(split[1]) == 0 ? "submission only" : TimeUtils.getTimeAgo(Long.valueOf(split[1]), ManageHistory.this) + " (comments)");
+                String sub = split[0];
+                if (multiNameToSubsMap.containsKey(sub)) {
+                    sub = multiNameToSubsMap.get(sub);
+                }
+                final String name = (sub.contains("/m/") ? sub : "/r/" + sub) + " → " + (Long.valueOf(split[1]) == 0 ? "submission only" : TimeUtils.getTimeAgo(Long.valueOf(split[1]), ManageHistory.this) + " (comments)");
                 domains.add(name);
 
                 final View t = getLayoutInflater().inflate(R.layout.account_textview, ((LinearLayout) findViewById(R.id.domainlist)), false);

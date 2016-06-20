@@ -17,6 +17,7 @@ import me.ccrama.redditslide.Activities.OpenContent;
 import me.ccrama.redditslide.Activities.SetupWidget;
 import me.ccrama.redditslide.Activities.SubredditView;
 import me.ccrama.redditslide.R;
+import me.ccrama.redditslide.Visuals.Palette;
 
 public class SubredditWidgetProvider extends AppWidgetProvider {
     public static final String UPDATE_MEETING_ACTION = "android.appwidget.action.APPWIDGET_UPDATE";
@@ -40,6 +41,8 @@ public class SubredditWidgetProvider extends AppWidgetProvider {
             }
             RemoteViews rv = new RemoteViews(context.getPackageName(), view);
             rv.setViewVisibility(R.id.loading, View.GONE);
+            rv.setViewVisibility(R.id.refresh, View.VISIBLE);
+
             mgr.partiallyUpdateAppWidget(appWidgetId, rv);
         } else if (intent.getAction().contains(REFRESH)) {
             int appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, 0);
@@ -68,21 +71,24 @@ public class SubredditWidgetProvider extends AppWidgetProvider {
     public static int getThemeFromId(int id, Context mContext) {
         return mContext.getSharedPreferences("widget", 0).getInt(id + "_sub_theme", 0);
     }
-
-    public static boolean getLargePreviews(int id, Context mContext) {
-        return mContext.getSharedPreferences("widget", 0).getBoolean(id + "_sub_pics", false);
+    public static int getViewType(int id, Context mContext) {
+        return mContext.getSharedPreferences("widget", 0).getInt(id + "_sub_view", 0);
     }
     public static void setSubFromid(int id, String sub, Context mContext) {
         mContext.getSharedPreferences("widget", 0).edit().putString(id + "_sub", sub).apply();
     }
-
     public static void setThemeToId(int id, int theme, Context mContext) {
         mContext.getSharedPreferences("widget", 0).edit().putInt(id + "_sub_theme", theme).apply();
     }
-    public static void setLargePreviews(int id, boolean checked, SetupWidget mContext) {
-        mContext.getSharedPreferences("widget", 0).edit().putBoolean(id + "_sub_pics", checked).apply();
+    public static void setViewType(int id, int checked, SetupWidget mContext) {
+        mContext.getSharedPreferences("widget", 0).edit().putInt(id + "_sub_view", checked).apply();
     }
-
+    public static void setSorting(int id, int sorting, SetupWidget mContext) {
+        mContext.getSharedPreferences("widget", 0).edit().putInt(id + "_sub_sort", sorting).apply();
+    }
+    public static int getSorting(int id, Context mContext) {
+        return mContext.getSharedPreferences("widget", 0).getInt(id + "_sub_sort", 0);
+    }
     public void onUpdate(Context context, AppWidgetManager appWidgetManager,
                          int[] appWidgetIds) {
         // update each of the app widgets with the remote adapter
@@ -143,6 +149,8 @@ public class SubredditWidgetProvider extends AppWidgetProvider {
         // It should be in the same layout used to instantiate the RemoteViews  object above.
         rv.setEmptyView(R.id.list_view, R.id.empty_view);
         rv.setTextViewText(R.id.subreddit, sub);
+        rv.setTextColor(R.id.subreddit, Palette.getColor(sub));
+
         //
         // Do additional processing specific to this app widget...
         //
@@ -181,6 +189,7 @@ public class SubredditWidgetProvider extends AppWidgetProvider {
         // This is how you populate the data.
         rv.setRemoteAdapter(appWidgetId, R.id.list_view, intent);
         rv.setViewVisibility(R.id.loading, View.VISIBLE);
+        rv.setViewVisibility(R.id.refresh, View.GONE);
 
         // Trigger listview item click
         String sub = getSubFromId(appWidgetId, context);
@@ -207,6 +216,8 @@ public class SubredditWidgetProvider extends AppWidgetProvider {
         // It should be in the same layout used to instantiate the RemoteViews  object above.
         rv.setEmptyView(R.id.list_view, R.id.empty_view);
         rv.setTextViewText(R.id.subreddit, sub);
+        rv.setTextColor(R.id.subreddit, Palette.getColor(sub));
+
         //
         // Do additional processing specific to this app widget...
         //
@@ -216,6 +227,7 @@ public class SubredditWidgetProvider extends AppWidgetProvider {
 
         appWidgetManager.updateAppWidget(appWidgetId, rv);
     }
+
 
 
 }

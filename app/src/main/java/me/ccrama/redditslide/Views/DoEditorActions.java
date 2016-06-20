@@ -15,6 +15,7 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.ContextCompat;
 import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,8 +27,13 @@ import android.widget.TextView;
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.github.rjeschke.txtmark.Processor;
 
+import org.commonmark.Extension;
+import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension;
+import org.commonmark.ext.gfm.tables.TablesExtension;
+import org.commonmark.html.HtmlRenderer;
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -40,6 +46,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import me.ccrama.redditslide.Activities.MainActivity;
@@ -47,6 +54,7 @@ import me.ccrama.redditslide.ColorPreferences;
 import me.ccrama.redditslide.Drafts;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.SecretConstants;
+import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.SpoilerRobotoTextView;
 import me.ccrama.redditslide.util.LogUtil;
 import me.ccrama.redditslide.util.SubmissionParser;
@@ -82,6 +90,20 @@ public class DoEditorActions {
                     editText.getText().insert(pos, "*");
                     editText.getText().insert(pos + 1, "*");
                     editText.setSelection(pos + 1); //put the cursor between the symbols
+                }
+            }
+        });
+        baseView.findViewById(R.id.strike).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (editText.hasSelection()) {
+                    wrapString("~~", editText); //If the user has text selected, wrap that text in the symbols
+                } else {
+                    //If the user doesn't have text selected, put the symbols around the cursor's position
+                    int pos = editText.getSelectionStart();
+                    editText.getText().insert(pos, "~~");
+                    editText.getText().insert(pos + 1, "~~");
+                    editText.setSelection(pos + 2); //put the cursor between the symbols
                 }
             }
         });
@@ -247,7 +269,11 @@ public class DoEditorActions {
         baseView.findViewById(R.id.preview).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String html = Processor.process(editText.getText().toString());
+                List<Extension> extensions = Arrays.asList(TablesExtension.create(), StrikethroughExtension.create());
+                Parser parser = Parser.builder().extensions(extensions).build();
+                HtmlRenderer renderer = HtmlRenderer.builder().extensions(extensions).build();
+                Node document = parser.parse(editText.getText().toString());
+                String html = renderer.render(document);
                 LayoutInflater inflater = a.getLayoutInflater();
                 final View dialoglayout = inflater.inflate(R.layout.parent_comment_dialog, null);
                 final AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(a);
@@ -278,12 +304,21 @@ public class DoEditorActions {
                                 final EditText titleBox = (EditText) dialog.findViewById(R.id.title_box);
                                 final EditText descriptionBox = (EditText) dialog.findViewById(R.id.description_box);
                                 dialog.dismiss();
+
                                 String s = "[" + descriptionBox.getText().toString() + "](" + titleBox.getText().toString() + ")";
                                 int start = Math.max(editText.getSelectionStart(), 0);
                                 int end = Math.max(editText.getSelectionEnd(), 0);
                                 editText.getText().insert(Math.max(start, end), s);
                             }
                         }).build();
+
+                //Tint the hint text if the base theme is Sepia
+                if (SettingValues.currentTheme == 5) {
+                    ((EditText) dialog.findViewById(R.id.title_box))
+                            .setHintTextColor(ContextCompat.getColor(dialog.getContext(), R.color.md_grey_600));
+                    ((EditText) dialog.findViewById(R.id.description_box))
+                            .setHintTextColor(ContextCompat.getColor(dialog.getContext(), R.color.md_grey_600));
+                }
                 dialog.show();
             }
         });

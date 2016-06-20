@@ -5,12 +5,13 @@
     android:id="@+id/card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="2dp"
+    android:layout_marginBottom="1dp"
     android:gravity="center"
-    android:layerType="hardware"
     android:orientation="vertical"
     cardview:cardBackgroundColor="?attr/card_background"
-    cardview:cardCornerRadius="0dp">
+    cardview:cardCornerRadius="1dp"
+    cardview:cardElevation="0dp"
+    cardview:cardMaxElevation="0dp">
 
     <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
@@ -28,15 +29,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/headerimage"
-            android:paddingTop="8dp">
+            android:paddingTop="12dp">
 
             <com.makeramen.roundedimageview.RoundedImageView
                 android:id="@+id/thumbimage2"
-                android:layout_width="65dp"
-                android:layout_height="65dp"
+                android:layout_width="@dimen/big_thumbnail_width"
+                android:layout_height="@dimen/big_thumbnail_height"
                 android:layout_alignParentTop="true"
+                android:layout_marginTop="6dp"
                 android:layout_marginBottom="8dp"
-                android:layout_marginLeft="8dp"
+                android:layout_marginLeft="18dp"
                 android:adjustViewBounds="true"
                 android:scaleType="centerCrop"
                 android:src="@drawable/chameleon"
@@ -52,6 +54,7 @@
                 android:padding="8dp"
                 android:tag="tint"
                 android:tint="?attr/tint"
+                android:layout_marginLeft="-4dp"
                 app:srcCompat="@drawable/down" />
 
             <RelativeLayout
