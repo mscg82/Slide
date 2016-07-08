@@ -16,6 +16,7 @@
 
 package me.ccrama.redditslide.Activities;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.PorterDuff;
 import android.os.AsyncTask;
@@ -31,6 +32,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.afollestad.materialdialogs.DialogAction;
@@ -50,6 +52,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.ccrama.redditslide.Authentication;
+import me.ccrama.redditslide.DragSort.ReorderSubreddits;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.UserSubscriptions;
 import me.ccrama.redditslide.Visuals.Palette;
@@ -112,37 +115,49 @@ public class CreateMulti extends BaseActivityAnim {
     }
 
     public void showSelectDialog() {
-        ArrayList<String> sorted = UserSubscriptions.sort(UserSubscriptions.getSubscriptions(this));
+        //List of all subreddits of the multi
+        List<String> sorted = new ArrayList<>();
+        List<String> multiSubs = new ArrayList<>();
+        multiSubs.addAll(subs);
         sorted.addAll(subs);
-        final List<String> s2 = new ArrayList<>(subs);
+
+        //Add all user subs that aren't already on the list
+        for (String s : UserSubscriptions.sort(UserSubscriptions.getSubscriptions(this))) {
+            if (!sorted.contains(s)) sorted.add(s);
+        }
+
+        //Array of all subs
         all = new String[sorted.size()];
+        //Contains which subreddits are checked
         boolean[] checked = new boolean[all.length];
 
+
+        //Remove special subreddits from list and store it in "all"
         int i = 0;
         for (String s : sorted) {
-            if (!s.equals("all") && !s.equals("frontpage") && !s.contains("+")) {
+            if (!s.equals("all") && !s.equals("frontpage") && !s.contains("+") && !s.contains(".") && !s.contains("/m/")) {
                 all[i] = s;
-                if (s2.contains(s)) {
+                i++;
+            }
+        }
+
+        //Remove empty entries & store which subreddits are checked
+        List<String> list = new ArrayList<>();
+        i = 0;
+        for (String s : all) {
+            if (s != null && !s.isEmpty()) {
+                list.add(s);
+                if (multiSubs.contains(s)) {
                     checked[i] = true;
                 }
                 i++;
             }
         }
 
-        List<String> list = new ArrayList<>();
-
-        for (String s : all) {
-            if (s != null && !s.isEmpty()) {
-                if (!s2.contains(s) && !s.equals("all") && !s.equals("frontpage") && !s.contains("+")&& !s.contains(".")&& !s.contains("/m/"))
-                    list.add(s);
-            }
-        }
-
+        //Convert List back to Array
         all = list.toArray(new String[list.size()]);
 
         final ArrayList<String> toCheck = new ArrayList<>();
-
-
         toCheck.addAll(subs);
         new AlertDialogWrapper.Builder(this)
                 .setMultiChoiceItems(all, checked, new DialogInterface.OnMultiChoiceClickListener() {
@@ -324,7 +339,6 @@ public class CreateMulti extends BaseActivityAnim {
                 if (delete) {
                     Log.v(LogUtil.getTag(), "Deleting");
                     new MultiRedditManager(Authentication.reddit).delete(old);
-
                 } else {
                     if (old != null && !old.isEmpty() && !old.replace(" ", "").equals(multiName)) {
                         Log.v(LogUtil.getTag(), "Renaming");
@@ -340,6 +354,16 @@ public class CreateMulti extends BaseActivityAnim {
                         }
                     });
                 }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Context context = getApplicationContext();
+                        CharSequence text = "Successfully saved";
+                        int duration = Toast.LENGTH_SHORT;
+                        Toast toast = Toast.makeText(context, text, duration);
+                        toast.show();
+                    }
+                });
             } catch (final NetworkException | ApiException e) {
                 runOnUiThread(new Runnable() {
                     @Override
@@ -460,6 +484,9 @@ public class CreateMulti extends BaseActivityAnim {
                 } else {
                     new SaveMulti().execute();
                 }
+                return true;
+            case android.R.id.home:
+                onBackPressed();
                 return true;
             default:
                 return false;

@@ -9,6 +9,7 @@ import android.os.AsyncTask;
 import net.dean.jraw.ApiException;
 import net.dean.jraw.managers.MultiRedditManager;
 import net.dean.jraw.models.MultiReddit;
+import net.dean.jraw.models.MultiSubreddit;
 import net.dean.jraw.models.Subreddit;
 import net.dean.jraw.models.UserRecord;
 import net.dean.jraw.paginators.ImportantUserPaginator;
@@ -24,6 +25,7 @@ import java.util.Map;
 import me.ccrama.redditslide.Activities.Login;
 import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.Activities.MultiredditOverview;
+import me.ccrama.redditslide.DragSort.ReorderSubreddits;
 import me.ccrama.redditslide.util.NetworkUtil;
 
 /**
@@ -31,6 +33,7 @@ import me.ccrama.redditslide.util.NetworkUtil;
  */
 public class UserSubscriptions {
     public static final String SUB_NAME_TO_PROPERTIES = "multiNameToSubs";
+    public static final List<String> defaultSubs = Arrays.asList("frontpage", "all", "announcements", "Art", "AskReddit", "askscience", "aww", "blog", "books", "creepy", "dataisbeautiful", "DIY", "Documentaries", "EarthPorn", "explainlikeimfive", "Fitness", "food", "funny", "Futurology", "gadgets", "gaming", "GetMotivated", "gifs", "history", "IAmA", "InternetIsBeautiful", "Jokes", "LifeProTips", "listentothis", "mildlyinteresting", "movies", "Music", "news", "nosleep", "nottheonion", "OldSchoolCool", "personalfinance", "philosophy", "photoshopbattles", "pics", "science", "Showerthoughts", "space", "sports", "television", "tifu", "todayilearned", "TwoXChromosomes", "UpliftingNews", "videos", "worldnews", "WritingPrompts");
     public static SharedPreferences subscriptions;
     public static SharedPreferences multiNameToSubs;
 
@@ -128,12 +131,7 @@ public class UserSubscriptions {
 
         @Override
         public Boolean doInBackground(Void... params) {
-            try {
-                multireddits = new ArrayList<>(new MultiRedditManager(Authentication.reddit).mine());
-                return null;
-            } catch (ApiException e) {
-                e.printStackTrace();
-            }
+            syncMultiReddits(c);
             return null;
         }
     }
@@ -201,9 +199,7 @@ public class UserSubscriptions {
 
         if (toreturn.isEmpty()) {
             //failed, load defaults
-            for (String s : Arrays.asList("frontpage", "all", "announcements", "Art", "AskReddit", "askscience", "aww", "blog", "books", "creepy", "dataisbeautiful", "DIY", "Documentaries", "EarthPorn", "explainlikeimfive", "Fitness", "food", "funny", "Futurology", "gadgets", "gaming", "GetMotivated", "gifs", "history", "IAmA", "InternetIsBeautiful", "Jokes", "LifeProTips", "listentothis", "mildlyinteresting", "movies", "Music", "news", "nosleep", "nottheonion", "OldSchoolCool", "personalfinance", "philosophy", "photoshopbattles", "pics", "science", "Showerthoughts", "space", "sports", "television", "tifu", "todayilearned", "TwoXChromosomes", "UpliftingNews", "videos", "worldnews", "WritingPrompts")) {
-                toreturn.add(s);
-            }
+            toreturn.addAll(defaultSubs);
         }
 
         return toreturn;
@@ -220,11 +216,8 @@ public class UserSubscriptions {
                         toReturn.add(s.getDisplayName().toLowerCase());
                     }
                 }
-                if (toReturn.isEmpty()) {
-                    for (String s : Arrays.asList("announcements", "Art", "AskReddit", "askscience", "aww", "blog", "books", "creepy", "dataisbeautiful", "DIY", "Documentaries", "EarthPorn", "explainlikeimfive", "Fitness", "food", "funny", "Futurology", "gadgets", "gaming", "GetMotivated", "gifs", "history", "IAmA", "InternetIsBeautiful", "Jokes", "LifeProTips", "listentothis", "mildlyinteresting", "movies", "Music", "news", "nosleep", "nottheonion", "OldSchoolCool", "personalfinance", "philosophy", "photoshopbattles", "pics", "science", "Showerthoughts", "space", "sports", "television", "tifu", "todayilearned", "TwoXChromosomes", "UpliftingNews", "videos", "worldnews", "WritingPrompts")) {
-                        toReturn.add(s);
-
-                    }
+                if (toReturn.isEmpty() && subscriptions.getString(Authentication.name, "").isEmpty()) {
+                    toreturn.addAll(defaultSubs);
                 }
             } catch (Exception e) {
                 //failed;
@@ -233,8 +226,27 @@ public class UserSubscriptions {
             addSubsToHistory(toReturn, true);
             return toReturn;
         } else {
-            toReturn.addAll(Arrays.asList("announcements", "Art", "AskReddit", "askscience", "aww", "blog", "books", "creepy", "dataisbeautiful", "DIY", "Documentaries", "EarthPorn", "explainlikeimfive", "Fitness", "food", "funny", "Futurology", "gadgets", "gaming", "GetMotivated", "gifs", "history", "IAmA", "InternetIsBeautiful", "Jokes", "LifeProTips", "listentothis", "mildlyinteresting", "movies", "Music", "news", "nosleep", "nottheonion", "OldSchoolCool", "personalfinance", "philosophy", "photoshopbattles", "pics", "science", "Showerthoughts", "space", "sports", "television", "tifu", "todayilearned", "TwoXChromosomes", "UpliftingNews", "videos", "worldnews", "WritingPrompts"));
+            toReturn.addAll(defaultSubs);
             return toReturn;
+        }
+    }
+
+    public static void syncMultiReddits(Context c) {
+        try {
+            multireddits = new ArrayList<>(new MultiRedditManager(Authentication.reddit).mine());
+            for (MultiReddit multiReddit : multireddits) {
+                if (MainActivity.multiNameToSubsMap.containsKey(ReorderSubreddits.MULTI_REDDIT+ multiReddit.getDisplayName())) {
+                    StringBuilder concatenatedSubs = new StringBuilder();
+                    for (MultiSubreddit subreddit : multiReddit.getSubreddits()) {
+                        concatenatedSubs.append(subreddit.getDisplayName());
+                        concatenatedSubs.append("+");
+                    }
+                    MainActivity.multiNameToSubsMap.put(ReorderSubreddits.MULTI_REDDIT+ multiReddit.getDisplayName(), concatenatedSubs.toString());
+                    UserSubscriptions.setSubNameToProperties(ReorderSubreddits.MULTI_REDDIT + multiReddit.getDisplayName(), concatenatedSubs.toString());
+                }
+            }
+        } catch (ApiException e) {
+            e.printStackTrace();
         }
     }
 

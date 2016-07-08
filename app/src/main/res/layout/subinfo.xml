@@ -52,7 +52,6 @@
                     android:layout_below="@+id/sub_infotitle"
                     android:layout_toStartOf="@+id/subimage"
                     android:paddingStart="16dp"
-                    android:text="65,892 subscribers"
                     android:textColor="@color/white"
                     android:textSize="14sp" />
 
@@ -63,10 +62,9 @@
                     android:layout_below="@id/subscribers"
                     android:layout_toStartOf="@+id/subimage"
                     android:paddingStart="16dp"
-                    android:text="12,345 here now"
                     android:textColor="@color/white"
-                    android:textStyle="italic"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textStyle="italic" />
 
                 <ImageView
                     android:id="@+id/subimage"
@@ -81,7 +79,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="16dp"
-                android:text="Android news, reviews, tips, and discussions about rooting, tutorials, and apps. Generic discussion about phones/tablets is allowed, but technical-support and carrier-related issues should be asked in their respective subreddits!"
                 android:textColor="@color/white"
                 android:textSize="14sp" />
 
@@ -123,25 +120,44 @@
                     android:text="@string/submission_stickied"
                     android:textAllCaps="true"
                     android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColorHint="?attr/font"
+                    android:visibility="gone" />
 
-                <CheckBox
-                    android:id="@+id/subscribed"
+                <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginTop="8dp"
-                    android:background="?android:selectableItemBackground"
-                    android:backgroundTint="?attr/tint"
-                    android:button="@null"
-                    android:buttonTint="?attr/tint"
-                    android:drawableRight="?android:attr/listChoiceIndicatorMultiple"
-                    android:drawableTint="?attr/tint"
-                    android:hapticFeedbackEnabled="true"
-                    android:text="@string/misc_subscribed"
-                    android:textAllCaps="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:layout_height="wrap_content">
+
+                    <CheckBox
+                        android:id="@+id/subscribed"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginBottom="8dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_toStartOf="@id/collection"
+                        android:background="?android:selectableItemBackground"
+                        android:backgroundTint="?attr/tint"
+                        android:button="@null"
+                        android:buttonTint="?attr/tint"
+                        android:drawableEnd="?android:attr/listChoiceIndicatorMultiple"
+                        android:drawableTint="?attr/tint"
+                        android:hapticFeedbackEnabled="true"
+                        android:text="@string/misc_subscribed"
+                        android:textAllCaps="true"
+                        android:textColor="?attr/font"
+                        android:textColorHint="?attr/font" />
+
+                    <ImageView
+                        android:id="@+id/collection"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="20dp"
+                        android:padding="4dp"
+                        android:src="@drawable/collection"
+                        android:theme="@style/Ripple.List"
+                        android:tint="?attr/tint" />
+                </RelativeLayout>
 
                 <View
                     android:layout_width="match_parent"
@@ -270,7 +286,8 @@
                     android:id="@+id/flair"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="?android:selectableItemBackground">
+                    android:background="?android:selectableItemBackground"
+                    android:visibility="gone">
 
                     <ImageView
                         android:layout_width="48dp"
