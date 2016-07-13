@@ -130,14 +130,14 @@ public class PopulateSubmissionViewHolder {
                                 if (SettingValues.video) {
                                     Intent myIntent = new Intent(contextActivity, MediaView.class);
                                     myIntent.putExtra(MediaView.EXTRA_URL, submission.getUrl());
-                                    addAdaptorPosition(myIntent, submission,  holder.getAdapterPosition());
+                                    addAdaptorPosition(myIntent, submission);
                                     contextActivity.startActivity(myIntent);
                                 } else {
                                     Reddit.defaultShare(submission.getUrl(), contextActivity);
                                 }
                                 break;
                             case IMGUR:
-                                openImage(contextActivity, submission, holder.leadImage, holder.getAdapterPosition());
+                                openImage(contextActivity, submission, holder.leadImage);
                                 break;
                             case EMBEDDED:
                                 if (SettingValues.video) {
@@ -173,7 +173,7 @@ public class PopulateSubmissionViewHolder {
                                         i = new Intent(contextActivity, Album.class);
                                         i.putExtra(Album.EXTRA_URL, submission.getUrl());
                                     }
-                                    addAdaptorPosition(i, submission, holder.getAdapterPosition());
+                                    addAdaptorPosition(i, submission);
                                     contextActivity.startActivity(i);
                                     contextActivity.overridePendingTransition(R.anim.slideright, R.anim.fade_out);
                                 } else {
@@ -183,10 +183,10 @@ public class PopulateSubmissionViewHolder {
                                 break;
                             case DEVIANTART:
                             case IMAGE:
-                                openImage(contextActivity, submission, holder.leadImage, holder.getAdapterPosition());
+                                openImage(contextActivity, submission, holder.leadImage);
                                 break;
                             case GIF:
-                                openGif(contextActivity, submission, holder.getAdapterPosition());
+                                openGif(contextActivity, submission);
                                 break;
                             case NONE:
                                 if (holder != null) {
@@ -228,7 +228,7 @@ public class PopulateSubmissionViewHolder {
         new OpenRedditLink(c, url);
     }
 
-    public static void openImage(Activity contextActivity, Submission submission, HeaderImageLinkView baseView, int adapterPosition) {
+    public static void openImage(Activity contextActivity, Submission submission, HeaderImageLinkView baseView) {
         if (SettingValues.image) {
             Intent myIntent = new Intent(contextActivity, MediaView.class);
             String url;
@@ -246,7 +246,7 @@ public class PopulateSubmissionViewHolder {
                     myIntent.putExtra(MediaView.EXTRA_DISPLAY_URL, baseView.loadedUrl);
             }
             myIntent.putExtra(MediaView.EXTRA_URL, url);
-            addAdaptorPosition(myIntent, submission, adapterPosition);
+            addAdaptorPosition(myIntent, submission);
             myIntent.putExtra(MediaView.EXTRA_SHARE_URL, submission.getUrl());
 
             contextActivity.startActivity(myIntent);
@@ -256,13 +256,11 @@ public class PopulateSubmissionViewHolder {
 
     }
 
-    private static void addAdaptorPosition(Intent myIntent, Submission submission, int adapterPosition) {
-        if (submission.getComments() == null && adapterPosition != -1) {
-            myIntent.putExtra(MediaView.ADAPTER_POSITION, adapterPosition);
-        }
+    private static void addAdaptorPosition(Intent myIntent, Submission submission) {
+            myIntent.putExtra(MediaView.SUBMISSION_URL, submission.getPermalink());
     }
 
-    public static void openGif(Activity contextActivity, Submission submission, int adapterPosition) {
+    public static void openGif(Activity contextActivity, Submission submission) {
         if (SettingValues.gif) {
             DataShare.sharedSubmission = submission;
 
@@ -274,7 +272,7 @@ public class PopulateSubmissionViewHolder {
                 String previewUrl = submission.getDataNode().get("preview").get("images").get(0).get("source").get("url").asText();
                 myIntent.putExtra(MediaView.EXTRA_DISPLAY_URL, previewUrl);
             }
-            addAdaptorPosition(myIntent, submission, adapterPosition);
+            addAdaptorPosition(myIntent, submission);
             contextActivity.startActivity(myIntent);
         } else {
             Reddit.defaultShare(submission.getUrl(), contextActivity);
@@ -575,7 +573,7 @@ public class PopulateSubmissionViewHolder {
                     TextView tv = (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
                     tv.setTextColor(Color.WHITE);
                     s.show();
-                } catch(Exception ignored){
+                } catch (Exception ignored) {
 
                 }
             }
@@ -783,6 +781,7 @@ public class PopulateSubmissionViewHolder {
         final Drawable flair = ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.ic_format_quote_white_48dp, null);
         final Drawable remove = ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.close, null);
         final Drawable remove_reason = ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.reportreason, null);
+        final Drawable ban = ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.ban, null);
 
 
         profile.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
@@ -794,6 +793,7 @@ public class PopulateSubmissionViewHolder {
         flair.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         remove.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         remove_reason.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+        ban.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
 
         ta.recycle();
 
@@ -814,6 +814,9 @@ public class PopulateSubmissionViewHolder {
             b.sheet(1, approve, res.getString(R.string.mod_btn_approved, whoApproved));
         }
 
+        b.sheet(6, remove, mContext.getString(R.string.mod_btn_remove))
+                .sheet(7, remove_reason, res.getString(R.string.mod_btn_remove_reason));
+
         // b.sheet(2, spam, mContext.getString(R.string.mod_btn_spam)) todo this
         b.sheet(20, flair, res.getString(R.string.mod_btn_submission_flair));
 
@@ -833,10 +836,9 @@ public class PopulateSubmissionViewHolder {
 
         final String finalWhoApproved = whoApproved;
         final boolean finalApproved = approved;
-        b.sheet(6, remove, mContext.getString(R.string.mod_btn_remove))
-                .sheet(7, remove_reason, res.getString(R.string.mod_btn_remove_reason))
-                .sheet(8, profile, res.getString(R.string.mod_btn_author))
-                .listener(new DialogInterface.OnClickListener() {
+        b.sheet(8, profile, res.getString(R.string.mod_btn_author));
+               //todo this b.sheet(23, ban, "Ban user" );
+                b.listener(new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         switch (which) {
@@ -1316,6 +1318,15 @@ public class PopulateSubmissionViewHolder {
                                 i.putExtra(Profile.EXTRA_PROFILE, submission.getAuthor());
                                 mContext.startActivity(i);
                                 break;
+                            case 23:
+                                new AsyncTask<Void, Void, Void>() {
+                                    @Override
+                                    protected Void doInBackground(Void... params) {
+                                       //todo this new ModerationManager(Authentication.reddit).
+                                        return null;
+                                    }
+                                }.execute();
+                                break;
                             case 20:
                                 new AsyncTask<Void, Void, ArrayList<String>>() {
                                     List<FlairTemplate> flair;
@@ -1680,7 +1691,7 @@ public class PopulateSubmissionViewHolder {
 
         doInfoLine(holder, submission, mContext, baseSub, full);
 
-        if (!full && SettingValues.isSelftextEnabled(baseSub) && submission.isSelfPost() && !submission.getSelftext().isEmpty() && !submission.isNsfw() && !submission.getDataNode().get("selftext_html").asText().toString().trim().isEmpty()) {
+        if (!full && SettingValues.isSelftextEnabled(baseSub) && submission.isSelfPost() && !submission.getSelftext().isEmpty() && !submission.isNsfw() && !submission.getDataNode().get("selftext_html").asText().trim().isEmpty()) {
             holder.body.setVisibility(View.VISIBLE);
             String text = submission.getDataNode().get("selftext_html").asText();
             int typef = new FontPreferences(mContext).getFontTypeComment().getTypeface();

@@ -1,5 +1,6 @@
 package me.ccrama.redditslide.Fragments;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -131,7 +132,7 @@ public class CommentPage extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 423 && resultCode == getActivity().RESULT_OK) {
+        if (requestCode == 423 && resultCode == Activity.RESULT_OK) {
             doResult(data);
         } else if (requestCode == 3333) {
             for (Fragment fragment : getFragmentManager().getFragments()) {
@@ -562,10 +563,10 @@ public class CommentPage extends Fragment {
                                         }
                                         break;
                                     case IMAGE:
-                                        PopulateSubmissionViewHolder.openImage(getActivity(), adapter.submission, null, -1);
+                                        PopulateSubmissionViewHolder.openImage(getActivity(), adapter.submission, null);
                                         break;
                                     case GIF:
-                                        PopulateSubmissionViewHolder.openGif(getActivity(), adapter.submission, -1);
+                                        PopulateSubmissionViewHolder.openGif(getActivity(), adapter.submission);
                                         break;
                                     case VIDEO:
                                         if (Reddit.videoPlugin) {
