@@ -23,7 +23,6 @@ import android.os.Environment;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.v7.app.NotificationCompat;
-import android.text.TextUtils;
 import android.view.View;
 import android.widget.MediaController;
 import android.widget.ProgressBar;
@@ -49,8 +48,6 @@ import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.Views.MediaVideoView;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 /**
  * Created by carlo_000 on 1/29/2016.
@@ -120,7 +117,7 @@ public class GifUtils {
                     stream.close();
                     is.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.e(e, "Error cancelling");
                 }
         }
         @Override
@@ -239,11 +236,11 @@ public class GifUtils {
             switch (videoType) {
                 case GFYCAT:
                     showProgressBar(c, progressBar, true);
-
+                    String gfycatUrl = "https://gfycat.com/cajax/get" + url.substring(url.lastIndexOf("/", url.length()));
                     try {
-                        LogUtil.v("https://gfycat.com/cajax/get" + url.substring(url.lastIndexOf("/", url.length())));
+                        LogUtil.v(gfycatUrl);
                         final JsonObject result =
-                                getJsonObject(client, gson, "https://gfycat.com/cajax/get" + url.substring(url.lastIndexOf("/", url.length())));
+                                HttpUtil.getJsonObject(client, gson, gfycatUrl);
                         String obj = "";
                         if (result == null || result.get("gfyItem") == null || result.getAsJsonObject("gfyItem").get("mp4Url").isJsonNull()) {
 
@@ -276,23 +273,24 @@ public class GifUtils {
                         final URL finalUrl = new URL(obj);
                         writeGif(finalUrl, progressBar, c, AsyncLoadGif.this);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LogUtil.e(e, "Error loading gfycat video url = [" + url + "] gfycatUrl = [" + gfycatUrl + "]");
                     }
                     break;
                 case DIRECT:
                 case IMGUR:
                     try {
                         writeGif(new URL(url), progressBar, c, AsyncLoadGif.this);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
+                    } catch (Exception e) {
+                        LogUtil.e(e, "Error loading URL " + url);
                     }
                     break;
                 case STREAMABLE:
                     String hash = url.substring(url.lastIndexOf("/") + 1, url.length());
-                    LogUtil.v("https://api.streamable.com/videos/" + hash);
+                    String streamableUrl = "https://api.streamable.com/videos/" + hash;
+                    LogUtil.v(streamableUrl);
                     try {
                         final JsonObject result =
-                                getJsonObject(client, gson, "https://api.streamable.com/videos/" + hash);
+                                HttpUtil.getJsonObject(client, gson, streamableUrl);
                         String obj = "";
                         if (result == null || result.get("files") == null || !(result.getAsJsonObject("files").has("mp4") || result.getAsJsonObject("files").has("mp4-mobile"))) {
 
@@ -323,13 +321,14 @@ public class GifUtils {
                         final URL finalUrl = new URL(obj);
                         writeGif(finalUrl, progressBar, c, AsyncLoadGif.this);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LogUtil.e(e, "Error loading streamable video url = [" + url + "] streamableUrl = [" + streamableUrl + "]");
                     }
                     break;
                 case VID_ME:
-                    LogUtil.v("https://api.vid.me/videoByUrl?url=" + url);
+                    String vidmeUrl = "https://api.vid.me/videoByUrl?url=" + url;
+                    LogUtil.v(vidmeUrl);
                     try {
-                        final JsonObject result = getJsonObject(client, gson, "https://api.vid.me/videoByUrl?url=" + url);
+                        final JsonObject result = HttpUtil.getJsonObject(client, gson, vidmeUrl);
                         String obj = "";
                         if (result == null || result.isJsonNull() || !result.has("video") || result.get("video").isJsonNull() || !result.get("video").getAsJsonObject().has("complete_url") || result.get("video").getAsJsonObject().get("complete_url").isJsonNull()) {
 
@@ -346,7 +345,7 @@ public class GifUtils {
                         final URL finalUrl = new URL(obj);
                         writeGif(finalUrl, progressBar, c, AsyncLoadGif.this);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LogUtil.e(e, "Error loading vid.me video url = [" + url + "] vidmeUrl = [" + vidmeUrl + "]");
                     }
 
                     break;
@@ -355,7 +354,7 @@ public class GifUtils {
                     LogUtil.v("https://gfycat.com/cajax/checkUrl/" + Uri.encode(url));
                     try {
                         final JsonObject result =
-                                getJsonObject(client, gson, "https://gfycat.com/cajax/checkUrl/" + Uri.encode(url));
+                                HttpUtil.getJsonObject(client, gson, "https://gfycat.com/cajax/checkUrl/" + Uri.encode(url));
                         if (result != null && result.has("urlKnown") && result.get("urlKnown").getAsBoolean()) {
                             final URL finalUrl = new URL(getSmallerGfy(result.get("mp4Url").getAsString()));
                             writeGif(finalUrl, progressBar, c, AsyncLoadGif.this);
@@ -363,7 +362,7 @@ public class GifUtils {
                             LogUtil.v("https://upload.gfycat.com/transcode?fetchUrl=" + Uri.encode(url));
                             showProgressBar(c, progressBar, true);
                             final JsonObject transcodeResult =
-                                    getJsonObject(client, gson, "https://upload.gfycat.com/transcode?fetchUrl=" + Uri.encode(url));
+                                    HttpUtil.getJsonObject(client, gson, "https://upload.gfycat.com/transcode?fetchUrl=" + Uri.encode(url));
 
                             // Handle the transcode result
                             showProgressBar(c, progressBar, false);
@@ -418,7 +417,7 @@ public class GifUtils {
                         }
 
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LogUtil.e(e, "Error loading media url = [" + url + "]");
                     }
                     break;
             }
@@ -493,7 +492,7 @@ public class GifUtils {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                LogUtil.e("Error writing GIF: url = [" + url + "], progressBar = [" + progressBar + "], c = [" + c + "], afterDone = [" + afterDone + "]");
             }
         }
     }
@@ -554,7 +553,7 @@ public class GifUtils {
                 }
                 out.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                LogUtil.e("Error saving GIF called with: " + "from = [" + from + "], in = [" + in + "]");
                 showErrorDialog(a);
             } finally {
                 try {
@@ -566,7 +565,7 @@ public class GifUtils {
                         in.close();
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LogUtil.e("Error closing GIF called with: " + "from = [" + from + "], out = [" + out + "]");
                     showErrorDialog(a);
                 }
             }
@@ -620,27 +619,4 @@ public class GifUtils {
         }
     }
 
-    /**
-     * Gets a JsonObject by calling apiUrl and parsing the JSON response String
-     *
-     * @param client The OkHTTP client to use to make the request
-     * @param gson   The GSON instance to use to parse the response String
-     * @param apiUrl The URL to call to get the response from
-     * @return A JsonObject representation of the API response
-     */
-    private static JsonObject getJsonObject(final OkHttpClient client, final Gson gson, final String apiUrl) {
-        if (client == null || gson == null || TextUtils.isEmpty(apiUrl)) return null;
-        Request request = new Request.Builder()
-                .url(apiUrl)
-                .build();
-        try {
-            Response response = client.newCall(request).execute();
-            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-            String json = response.body().string();
-            return gson.fromJson(json, JsonObject.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
 }

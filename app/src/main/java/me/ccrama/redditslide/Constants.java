@@ -4,8 +4,8 @@ package me.ccrama.redditslide;
  * Constants used throughout the app
  */
 public class Constants {
-    // Maximum posts to request from Reddit
     public static final int PAGINATOR_POST_LIMIT = 25;
+    /** Maximum posts to request from Reddit **/
 
     /**
      * This is the estimated height of the Tabs view mode in dp.
@@ -34,5 +34,8 @@ public class Constants {
      * Drawer swipe edge (navdrawer). The higher the value, the more sensitive the navdrawer
      * swipe area becomes. This is a percentage of the screen width.
      */
-    public static final float DRAWER_SWIPE_EDGE = 0.1f;
+    public static final float DRAWER_SWIPE_EDGE = 0.07f;
+
+    /** The client ID to use when making requests to the Imgur Mashape API */
+    public static final String IMGUR_MASHAPE_CLIENT_ID = "bef87913eb202e9";
 }

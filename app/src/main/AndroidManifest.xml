@@ -282,6 +282,10 @@
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:theme="@style/swipeable" />
         <activity
+            android:name=".Activities.LiveThread"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
+            android:theme="@style/swipeable" />
+        <activity
             android:name=".Activities.SetupWidget"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:theme="@style/swipeable"
@@ -310,6 +314,8 @@
              <meta-data android:name="android.appwidget.provider"
                  android:resource="@xml/subreddit_widget" />
          </receiver> !-->
+        <service
+        android:name=".Notifications.ImageDownloadNotificationService" />
         <service
             android:name=".Adapters.MarkAsReadService"
             android:exported="false" />

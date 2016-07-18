@@ -14,6 +14,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.view.ContextThemeWrapper;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,6 +50,8 @@ import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.handler.ToolbarScrollHideHandler;
 
 public class SubmissionsView extends Fragment implements SubmissionDisplay {
+    private static int adaptorPosition;
+    private static int currentPosition;
     public SubredditPosts posts;
     public RecyclerView rv;
     public SubmissionAdapter adapter;
@@ -62,6 +65,7 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
     private int pastVisiblesItems;
     private int totalItemCount;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+    private volatile static Submission currentSubmission;
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -352,6 +356,22 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
 
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (adapter != null && adaptorPosition > 0 && currentPosition == adaptorPosition) {
+            if (adapter.dataSet.getPosts().get(adaptorPosition - 1) == currentSubmission) {
+                adapter.performClick(adaptorPosition);
+                adaptorPosition = -1;
+            }
+        }
+    }
+
+
+    public static void datachanged(int adaptorPosition2) {
+        adaptorPosition = adaptorPosition2;
+    }
+
     private void refresh() {
         posts.forced = true;
         forced = true;
@@ -529,5 +549,13 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
         } else {
             toolbarScroll.reset = true;
         }
+    }
+
+    public static void currentPosition(int adapterPosition) {
+        currentPosition = adapterPosition;
+    }
+
+    public static void currentSubmission(Submission current) {
+        currentSubmission = current;
     }
 }

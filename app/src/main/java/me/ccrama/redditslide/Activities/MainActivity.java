@@ -98,7 +98,6 @@ import net.dean.jraw.paginators.SubredditPaginator;
 import net.dean.jraw.paginators.TimePeriod;
 import net.dean.jraw.paginators.UserRecordPaginator;
 
-import org.apache.http.auth.AUTH;
 import org.ligi.snackengage.SnackEngage;
 import org.ligi.snackengage.conditions.AfterNumberOfOpportunities;
 import org.ligi.snackengage.conditions.NeverAgainWhenClickedOnce;
@@ -114,8 +113,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import me.ccrama.redditslide.Adapters.SettingsSubAdapter;
 import me.ccrama.redditslide.Adapters.SideArrayAdapter;
@@ -2929,7 +2926,7 @@ public class MainActivity extends BaseActivity {
             sideArrayAdapter.updateHistory(UserSubscriptions.getHistory());
         }
 
-        if (datasetChanged && UserSubscriptions.hasSubs() && !usedArray.isEmpty()) {
+     /* remove   if (datasetChanged && UserSubscriptions.hasSubs() && !usedArray.isEmpty()) {
             usedArray = new ArrayList<>(UserSubscriptions.getSubscriptions(this));
             adapter.notifyDataSetChanged();
             sideArrayAdapter.notifyDataSetChanged();
@@ -2939,10 +2936,9 @@ public class MainActivity extends BaseActivity {
                 scrollToTabAfterLayout(pager.getCurrentItem());
             }
             setToolbarClick();
-        }
+        }*/
         //Only refresh the view if a Setting was altered
-        if (Settings.changed || SettingsTheme.changed || (NetworkUtil.isConnected(this) && usedArray != null
-                && usedArray.size() != UserSubscriptions.getSubscriptions(this).size())) {
+        if (Settings.changed || SettingsTheme.changed) {
 
             int current = pager.getCurrentItem();
             if (commentPager && current == currentComment) {
@@ -2960,7 +2956,7 @@ public class MainActivity extends BaseActivity {
             }
             reloadSubs();
             //If the user changed a Setting regarding the app's theme, restartTheme()
-            if (SettingsTheme.changed || (usedArray != null && usedArray.size() != UserSubscriptions.getSubscriptions(this).size())) {
+            if (SettingsTheme.changed /* todo maybe later || (usedArray != null && usedArray.size() != UserSubscriptions.getSubscriptions(this).size())*/) {
                 restartTheme();
             }
 

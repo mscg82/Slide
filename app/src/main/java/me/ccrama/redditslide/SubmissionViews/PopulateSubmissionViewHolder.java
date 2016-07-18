@@ -75,6 +75,7 @@ import me.ccrama.redditslide.Adapters.SubmissionViewHolder;
 import me.ccrama.redditslide.Authentication;
 import me.ccrama.redditslide.ContentType;
 import me.ccrama.redditslide.DataShare;
+import me.ccrama.redditslide.Fragments.SubmissionsView;
 import me.ccrama.redditslide.HasSeen;
 import me.ccrama.redditslide.Hidden;
 import me.ccrama.redditslide.LastComments;
@@ -101,6 +102,9 @@ import me.ccrama.redditslide.util.SubmissionParser;
  * Created by ccrama on 9/19/2015.
  */
 public class PopulateSubmissionViewHolder {
+
+    public PopulateSubmissionViewHolder() {
+    }
 
     public static int getStyleAttribColorValue(final Context context, final int attribResId, final int defaultValue) {
         final TypedValue tv = new TypedValue();
@@ -130,14 +134,14 @@ public class PopulateSubmissionViewHolder {
                                 if (SettingValues.video) {
                                     Intent myIntent = new Intent(contextActivity, MediaView.class);
                                     myIntent.putExtra(MediaView.EXTRA_URL, submission.getUrl());
-                                    addAdaptorPosition(myIntent, submission);
+                                    addAdaptorPosition(myIntent, submission, holder.getAdapterPosition());
                                     contextActivity.startActivity(myIntent);
                                 } else {
                                     Reddit.defaultShare(submission.getUrl(), contextActivity);
                                 }
                                 break;
                             case IMGUR:
-                                openImage(contextActivity, submission, holder.leadImage);
+                                openImage(contextActivity, submission, holder.leadImage, holder.getAdapterPosition());
                                 break;
                             case EMBEDDED:
                                 if (SettingValues.video) {
@@ -173,7 +177,7 @@ public class PopulateSubmissionViewHolder {
                                         i = new Intent(contextActivity, Album.class);
                                         i.putExtra(Album.EXTRA_URL, submission.getUrl());
                                     }
-                                    addAdaptorPosition(i, submission);
+                                    addAdaptorPosition(i, submission, holder.getAdapterPosition());
                                     contextActivity.startActivity(i);
                                     contextActivity.overridePendingTransition(R.anim.slideright, R.anim.fade_out);
                                 } else {
@@ -183,10 +187,10 @@ public class PopulateSubmissionViewHolder {
                                 break;
                             case DEVIANTART:
                             case IMAGE:
-                                openImage(contextActivity, submission, holder.leadImage);
+                                openImage(contextActivity, submission, holder.leadImage, holder.getAdapterPosition());
                                 break;
                             case GIF:
-                                openGif(contextActivity, submission);
+                                openGif(contextActivity, submission, holder.getAdapterPosition());
                                 break;
                             case NONE:
                                 if (holder != null) {
@@ -228,7 +232,7 @@ public class PopulateSubmissionViewHolder {
         new OpenRedditLink(c, url);
     }
 
-    public static void openImage(Activity contextActivity, Submission submission, HeaderImageLinkView baseView) {
+    public static void openImage(Activity contextActivity, Submission submission, HeaderImageLinkView baseView, int adapterPosition) {
         if (SettingValues.image) {
             Intent myIntent = new Intent(contextActivity, MediaView.class);
             String url;
@@ -246,7 +250,7 @@ public class PopulateSubmissionViewHolder {
                     myIntent.putExtra(MediaView.EXTRA_DISPLAY_URL, baseView.loadedUrl);
             }
             myIntent.putExtra(MediaView.EXTRA_URL, url);
-            addAdaptorPosition(myIntent, submission);
+            addAdaptorPosition(myIntent, submission, adapterPosition);
             myIntent.putExtra(MediaView.EXTRA_SHARE_URL, submission.getUrl());
 
             contextActivity.startActivity(myIntent);
@@ -256,11 +260,17 @@ public class PopulateSubmissionViewHolder {
 
     }
 
-    private static void addAdaptorPosition(Intent myIntent, Submission submission) {
+    private static void addAdaptorPosition(Intent myIntent, Submission submission, int adapterPosition) {
+        if (submission.getComments() == null && adapterPosition != -1) {
+            myIntent.putExtra(MediaView.ADAPTER_POSITION, adapterPosition);
             myIntent.putExtra(MediaView.SUBMISSION_URL, submission.getPermalink());
+        }
+        SubmissionsView.currentPosition(adapterPosition);
+        SubmissionsView.currentSubmission(submission);
+
     }
 
-    public static void openGif(Activity contextActivity, Submission submission) {
+    public static void openGif(Activity contextActivity, Submission submission, int adapterPosition) {
         if (SettingValues.gif) {
             DataShare.sharedSubmission = submission;
 
@@ -272,7 +282,7 @@ public class PopulateSubmissionViewHolder {
                 String previewUrl = submission.getDataNode().get("preview").get("images").get(0).get("source").get("url").asText();
                 myIntent.putExtra(MediaView.EXTRA_DISPLAY_URL, previewUrl);
             }
-            addAdaptorPosition(myIntent, submission);
+            addAdaptorPosition(myIntent, submission, adapterPosition);
             contextActivity.startActivity(myIntent);
         } else {
             Reddit.defaultShare(submission.getUrl(), contextActivity);
@@ -1912,7 +1922,7 @@ public class PopulateSubmissionViewHolder {
                                             final EditText e = (EditText) dialoglayout.findViewById(R.id.entry);
                                             e.setText(StringEscapeUtils.unescapeHtml4(submission.getSelftext()));
 
-                                            DoEditorActions.doActions(e, dialoglayout, ((AppCompatActivity) mContext).getSupportFragmentManager(), (Activity) mContext);
+                                            DoEditorActions.doActions(e, dialoglayout, ((AppCompatActivity) mContext).getSupportFragmentManager(), (Activity) mContext, null);
 
                                             builder.setView(dialoglayout);
                                             final Dialog d = builder.create();

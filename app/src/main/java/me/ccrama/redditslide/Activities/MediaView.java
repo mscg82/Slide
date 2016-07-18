@@ -35,9 +35,8 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.cocosw.bottomsheet.BottomSheet;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.koushikdutta.async.future.FutureCallback;
-import com.koushikdutta.ion.Ion;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
@@ -58,10 +57,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.UUID;
 
-import me.ccrama.redditslide.Adapters.SubmissionAdapter;
 import me.ccrama.redditslide.ColorPreferences;
 import me.ccrama.redditslide.ContentType;
 import me.ccrama.redditslide.Fragments.FolderChooserDialogCreate;
+import me.ccrama.redditslide.Fragments.SubmissionsView;
+import me.ccrama.redditslide.Notifications.ImageDownloadNotificationService;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SecretConstants;
@@ -70,25 +70,42 @@ import me.ccrama.redditslide.Views.ImageSource;
 import me.ccrama.redditslide.Views.MediaVideoView;
 import me.ccrama.redditslide.Views.SubsamplingScaleImageView;
 import me.ccrama.redditslide.util.GifUtils;
+import me.ccrama.redditslide.util.HttpUtil;
 import me.ccrama.redditslide.util.LogUtil;
 import me.ccrama.redditslide.util.NetworkUtil;
+import okhttp3.OkHttpClient;
 
 
 /**
  * Created by ccrama on 3/5/2015.
  */
 public class MediaView extends FullScreenActivity implements FolderChooserDialogCreate.FolderCallback {
-
-    public static String fileLoc;
-    public float previous;
-    public static final String EXTRA_URL = "url";
-    public static final String SUBMISSION_URL = "submission";
+    public static final String EXTRA_URL         = "url";
+    public static final String ADAPTER_POSITION  = "adapter_position";
+    public static final String SUBMISSION_URL    = "submission";
     public static final String EXTRA_DISPLAY_URL = "displayUrl";
-    public static final String EXTRA_LQ = "lq";
-    public static final String EXTRA_SHARE_URL = "urlShare";
-    public static boolean didLoadGif;
+    public static final String EXTRA_LQ          = "lq";
+    public static final String EXTRA_SHARE_URL   = "urlShare";
+
+    public static String   fileLoc;
+    public static Runnable doOnClick;
+    public static boolean  didLoadGif;
+
+    public float   previous;
     public boolean hidden;
     public boolean imageShown;
+    public String  actuallyLoaded;
+    public boolean isGif;
+
+    private NotificationManager        mNotifyManager;
+    private NotificationCompat.Builder mBuilder;
+    private int                        stopPosition;
+    private GifUtils.AsyncLoadGif      gif;
+    private String                     contentUrl;
+    private MediaVideoView             videoView;
+    private OkHttpClient               client;
+    private Gson                       gson;
+    private String                     mashapeKey;
 
     @Override
     public void onResume() {
@@ -99,11 +116,7 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         }
     }
 
-    public String actuallyLoaded;
-    public boolean isGif;
-
     public void showBottomSheetImage() {
-
         int[] attrs = new int[]{R.attr.tint};
         TypedArray ta = obtainStyledAttributes(attrs);
 
@@ -131,7 +144,7 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         if (!isGif)
             b.sheet(3, image, "Share image");
         b.sheet(4, save, "Save " + (isGif ? "MP4" : "image"));
-        if (isGif && !contentUrl.contains(".mp4") && !contentUrl.contains("streamable.com")&& !contentUrl.contains("gfycat.com") && !contentUrl.contains("vid.me")) {
+        if (isGif && !contentUrl.contains(".mp4") && !contentUrl.contains("streamable.com") && !contentUrl.contains("gfycat.com") && !contentUrl.contains("vid.me")) {
             String type = contentUrl.substring(contentUrl.lastIndexOf(".") + 1, contentUrl.length()).toUpperCase();
             try {
                 if (type.equals("GIFV") && new URL(contentUrl).getHost().equals("i.imgur.com")) {
@@ -173,39 +186,28 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         b.show();
     }
 
-    public void doImageSave(){
+    public void doImageSave() {
         if (!isGif) {
-            new AsyncTask<Void, Void, Void>() {
-                @Override
-                protected Void doInBackground(Void... params) {
-                    String url = actuallyLoaded;
-                    final String finalUrl1 = url;
-                    final String finalUrl = actuallyLoaded;
-                    try {
-                        ((Reddit) getApplication()).getImageLoader()
-                                .loadImage(finalUrl, new SimpleImageLoadingListener() {
-                                    @Override
-                                    public void onLoadingComplete(String imageUri, View view, final Bitmap loadedImage) {
-                                        saveImageGallery(loadedImage, finalUrl1);
-                                    }
-                                });
-                    } catch (Exception e) {
-                        Log.v(LogUtil.getTag(), "COULDN'T DOWNLOAD!");
-                    }
-                    return null;
-                }
-            }.execute();
+            if (Reddit.appRestart.getString("imagelocation", "").isEmpty()) {
+                showFirstDialog();
+            } else if (!new File(Reddit.appRestart.getString("imagelocation", "")).exists()) {
+                showErrorDialog();
+            } else {
+                Intent i = new Intent(this, ImageDownloadNotificationService.class);
 
+                if(findViewById(R.id.hq).getVisibility() == View.VISIBLE) {
+                    i.putExtra("actuallyLoaded", contentUrl);
+                } else {
+                    i.putExtra("actuallyLoaded", actuallyLoaded);
+                }
+                startService(i);
+            }
         } else {
             doOnClick.run();
         }
     }
 
-    NotificationManager mNotifyManager;
-    NotificationCompat.Builder mBuilder;
-
     public void saveFile(final String baseUrl) {
-
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
@@ -293,10 +295,6 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         }
     }
 
-    int stopPosition;
-
-    GifUtils.AsyncLoadGif gif;
-
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -383,7 +381,6 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
     }
 
     public static void animateOut(final View l) {
-
         ValueAnimator mAnimator = slideAnimator(Reddit.dpToPxVertical(36), 0, l);
         mAnimator.addListener(new Animator.AnimatorListener() {
             @Override
@@ -416,8 +413,6 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         mAnimator.start();
     }
 
-    String contentUrl;
-
     public static boolean shouldTruncate(String url) {
         try {
             final URI uri = new URI(url);
@@ -431,10 +426,15 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         }
     }
 
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         overrideRedditSwipeAnywhere();
         super.onCreate(savedInstanceState);
         getTheme().applyStyle(new ColorPreferences(this).getDarkThemeSubreddit(""), true);
+
+        client = new OkHttpClient();
+        gson = new Gson();
+        mashapeKey = SecretConstants.getImgurApiKey(this);
 
         if (savedInstanceState != null && savedInstanceState.containsKey("position"))
             stopPosition = savedInstanceState.getInt("position");
@@ -463,11 +463,12 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         }
         actuallyLoaded = contentUrl;
         if (getIntent().hasExtra(SUBMISSION_URL)) {
+            final int commentUrl = getIntent().getExtras().getInt(ADAPTER_POSITION);
             findViewById(R.id.comments).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     finish();
-                    SubmissionAdapter.setOpen(MediaView.this, getIntent().getStringExtra(SUBMISSION_URL));
+                    SubmissionsView.datachanged(commentUrl);
                 }
             });
         } else {
@@ -522,7 +523,7 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         findViewById(R.id.save).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-              doImageSave();
+                doImageSave();
             }
         });
 
@@ -532,27 +533,7 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
     public void doLoad(final String contentUrl) {
         switch (ContentType.getContentType(contentUrl)) {
             case DEVIANTART:
-                if (!imageShown) {
-                    Ion.with(this).load("http://backend.deviantart.com/oembed?url=" + contentUrl).asJsonObject().setCallback(new FutureCallback<JsonObject>() {
-                        @Override
-                        public void onCompleted(Exception e, JsonObject result) {
-                            if (result != null && !result.isJsonNull() && (result.has("fullsize_url") || result.has("url"))) {
-
-                                String url;
-                                if (result.has("fullsize_url")) {
-                                    url = result.get("fullsize_url").getAsString();
-                                } else {
-                                    url = result.get("url").getAsString();
-                                }
-                                doLoadImage(url);
-                            } else {
-                                Intent i = new Intent(MediaView.this, Website.class);
-                                i.putExtra(Website.EXTRA_URL, contentUrl);
-                                MediaView.this.startActivity(i);
-                            }
-                        }
-                    });
-                }
+                doLoadDeviantArt(contentUrl);
                 break;
             case IMAGE:
                 doLoadImage(contentUrl);
@@ -568,10 +549,6 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         }
     }
 
-    MediaVideoView videoView;
-
-    public static Runnable doOnClick;
-
     public void doLoadGif(final String dat) {
         isGif = true;
         findViewById(R.id.hq).setVisibility(View.GONE);
@@ -579,7 +556,7 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         findViewById(R.id.black).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(findViewById(R.id.gifheader).getVisibility() == View.GONE){
+                if (findViewById(R.id.gifheader).getVisibility() == View.GONE) {
                     animateIn(findViewById(R.id.gifheader));
                     fadeOut(findViewById(R.id.black));
                 }
@@ -602,67 +579,114 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
     }
 
     public void doLoadImgur(String url) {
-
-        final String finalUrl = url;
-        final String finalUrl1 = url;
         if (url.endsWith("/")) {
             url = url.substring(0, url.length() - 1);
         }
+        final String finalUrl = url;
         String hash = url.substring(url.lastIndexOf("/"), url.length());
 
         if (NetworkUtil.isConnected(this)) {
+            if (hash.startsWith("/")) hash = hash.substring(1, hash.length());
+            final String apiUrl = "https://imgur-apiv3.p.mashape.com/3/image/" + hash + ".json";
+            LogUtil.v(apiUrl);
 
-            if (hash.startsWith("/"))
-                hash = hash.substring(1, hash.length());
-            LogUtil.v("Loading" + "https://imgur-apiv3.p.mashape.com/3/image/" + hash + ".json");
-            Ion.with(this).load("https://imgur-apiv3.p.mashape.com/3/image/" + hash + ".json")
-                    .addHeader("X-Mashape-Key", SecretConstants.getImgurApiKey(MediaView.this)).addHeader("Authorization", "Client-ID " + "bef87913eb202e9")
-                    .asJsonObject().setCallback(new FutureCallback<JsonObject>() {
-                                                    @Override
-                                                    public void onCompleted(Exception e, JsonObject obj) {
+            new AsyncTask<Void, Void, JsonObject>() {
+                @Override
+                protected JsonObject doInBackground(Void... params) {
+                    return HttpUtil.getImgurMashapeJsonObject(client, gson, apiUrl, mashapeKey);
+                }
 
-                                                        if (obj != null && !obj.isJsonNull() && obj.has("error")) {
-                                                            LogUtil.v("Error loading content");
-                                                            (MediaView.this).finish();
-                                                        } else {
-                                                            try {
-                                                                if (obj != null && !obj.isJsonNull() && obj.has("image")) {
-                                                                    String type = obj.get("image").getAsJsonObject().get("image").getAsJsonObject().get("type").getAsString();
-                                                                    String urls = obj.get("image").getAsJsonObject().get("links").getAsJsonObject().get("original").getAsString();
+                @Override
+                protected void onPostExecute(JsonObject result) {
+                    if (result != null && !result.isJsonNull() && result.has("error")) {
+                        LogUtil.v("Error loading content");
+                        (MediaView.this).finish();
+                    } else {
+                        try {
+                            if (result != null && !result.isJsonNull() && result.has("image")) {
+                                String type = result.get("image")
+                                        .getAsJsonObject()
+                                        .get("image")
+                                        .getAsJsonObject()
+                                        .get("type")
+                                        .getAsString();
+                                String urls = result.get("image")
+                                        .getAsJsonObject()
+                                        .get("links")
+                                        .getAsJsonObject()
+                                        .get("original")
+                                        .getAsString();
 
-                                                                    if (type.contains("gif")) {
-                                                                        doLoadGif(urls);
-                                                                    } else if (!imageShown) { //only load if there is no image
-                                                                        doLoadImage(urls);
-                                                                    }
-                                                                } else if (obj.has("data")) {
-                                                                    String type = obj.get("data").getAsJsonObject().get("type").getAsString();
-                                                                    String urls = obj.get("data").getAsJsonObject().get("link").getAsString();
-                                                                    String mp4 = "";
-                                                                    if (obj.get("data").getAsJsonObject().has("mp4")) {
-                                                                        mp4 = obj.get("data").getAsJsonObject().get("mp4").getAsString();
-                                                                    }
+                                if (type.contains("gif")) {
+                                    doLoadGif(urls);
+                                } else if (!imageShown) { //only load if there is no image
+                                    doLoadImage(urls);
+                                }
+                            } else if (result != null && result.has("data")) {
+                                String type = result.get("data")
+                                        .getAsJsonObject()
+                                        .get("type")
+                                        .getAsString();
+                                String urls = result.get("data")
+                                        .getAsJsonObject()
+                                        .get("link")
+                                        .getAsString();
+                                String mp4 = "";
+                                if (result.get("data").getAsJsonObject().has("mp4")) {
+                                    mp4 = result.get("data")
+                                            .getAsJsonObject()
+                                            .get("mp4")
+                                            .getAsString();
+                                }
 
-                                                                    if (type.contains("gif")) {
-                                                                        doLoadGif(((mp4 == null || mp4.isEmpty()) ? urls : mp4));
-                                                                    } else if (!imageShown) { //only load if there is no image
-                                                                        doLoadImage(urls);
-                                                                    }
-                                                                } else {
-                                                                    if (!imageShown)
-                                                                        doLoadImage(finalUrl1);
-                                                                }
-                                                            } catch (Exception e2) {
-                                                                e2.printStackTrace();
-                                                                Intent i = new Intent(MediaView.this, Website.class);
-                                                                i.putExtra(Website.EXTRA_URL, finalUrl);
-                                                                MediaView.this.startActivity(i);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-            );
+                                if (type.contains("gif")) {
+                                    doLoadGif(((mp4 == null || mp4.isEmpty()) ? urls : mp4));
+                                } else if (!imageShown) { //only load if there is no image
+                                    doLoadImage(urls);
+                                }
+                            } else {
+                                if (!imageShown) doLoadImage(finalUrl);
+                            }
+                        } catch (Exception e2) {
+                            e2.printStackTrace();
+                            Intent i = new Intent(MediaView.this, Website.class);
+                            i.putExtra(Website.EXTRA_URL, finalUrl);
+                            MediaView.this.startActivity(i);
+                        }
+                    }
+
+                }
+            }.execute();
         }
+    }
+
+    public void doLoadDeviantArt(String url) {
+        final String apiUrl = "http://backend.deviantart.com/oembed?url=" + url;
+        LogUtil.v(apiUrl);
+        new AsyncTask<Void, Void, JsonObject>() {
+            @Override
+            protected JsonObject doInBackground(Void... params) {
+                return HttpUtil.getJsonObject(client, gson, apiUrl);
+            }
+
+            @Override
+            protected void onPostExecute(JsonObject result) {
+                LogUtil.v("doLoad onPostExecute() called with: " + "result = [" + result + "]");
+                if (result != null && !result.isJsonNull() && (result.has("fullsize_url") || result.has("url"))) {
+                    String url;
+                    if (result.has("fullsize_url")) {
+                        url = result.get("fullsize_url").getAsString();
+                    } else {
+                        url = result.get("url").getAsString();
+                    }
+                    doLoadImage(url);
+                } else {
+                    Intent i = new Intent(MediaView.this, Website.class);
+                    i.putExtra(Website.EXTRA_URL, contentUrl);
+                    MediaView.this.startActivity(i);
+                }
+            }
+        }.execute();
     }
 
     public void doLoadImage(String contentUrl) {
@@ -938,29 +962,6 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
         });
     }
 
-    public void showNotifPhoto(final File localAbsoluteFilePath, final Bitmap loadedImage) {
-        MediaScannerConnection.scanFile(MediaView.this, new String[]{localAbsoluteFilePath.getAbsolutePath()}, null, new MediaScannerConnection.OnScanCompletedListener() {
-            public void onScanCompleted(String path, Uri uri) {
-
-                final Intent shareIntent = new Intent(Intent.ACTION_VIEW);
-                shareIntent.setDataAndType(Uri.fromFile(localAbsoluteFilePath), "image/*");
-                PendingIntent contentIntent = PendingIntent.getActivity(MediaView.this, 0, shareIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-
-                Notification notif = new NotificationCompat.Builder(MediaView.this)
-                        .setContentTitle(getString(R.string.info_photo_saved))
-                        .setSmallIcon(R.drawable.savecontent)
-                        .setLargeIcon(loadedImage)
-                        .setContentIntent(contentIntent)
-                        .setStyle(new NotificationCompat.BigPictureStyle()
-                                .bigPicture(loadedImage)).build();
-
-                NotificationManager mNotificationManager =
-                        (NotificationManager) getApplicationContext().getSystemService(NOTIFICATION_SERVICE);
-                mNotificationManager.notify(1, notif);
-                loadedImage.recycle();
-            }
-        });
-    }
 
     public void showErrorDialog() {
         runOnUiThread(new Runnable() {
@@ -995,35 +996,6 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
                 });
     }
 
-    private void saveImageGallery(final Bitmap bitmap, String URL) {
-        if (Reddit.appRestart.getString("imagelocation", "").isEmpty()) {
-            showFirstDialog();
-        } else if (!new File(Reddit.appRestart.getString("imagelocation", "")).exists()) {
-            showErrorDialog();
-        } else {
-            File f = new File(Reddit.appRestart.getString("imagelocation", "") + File.separator + UUID.randomUUID().toString() + ".png");
-
-            FileOutputStream out = null;
-            try {
-                f.createNewFile();
-                out = new FileOutputStream(f);
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-            } catch (Exception e) {
-                e.printStackTrace();
-                showErrorDialog();
-            } finally {
-                try {
-                    if (out != null) {
-                        out.close();
-                        showNotifPhoto(f, bitmap);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    showErrorDialog();
-                }
-            }
-        }
-    }
 
     private void shareImage(final Bitmap bitmap) {
         if (Reddit.appRestart.getString("imagelocation", "").isEmpty()) {

@@ -6,12 +6,11 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.koushikdutta.async.future.FutureCallback;
-import com.koushikdutta.ion.Ion;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +21,9 @@ import java.util.List;
 
 import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SecretConstants;
+import me.ccrama.redditslide.util.HttpUtil;
 import me.ccrama.redditslide.util.LogUtil;
+import okhttp3.OkHttpClient;
 
 /**
  * Created by carlo_000 on 2/1/2016.
@@ -47,8 +48,6 @@ public class AlbumUtils {
 
     }
 
-    boolean slider;
-
     private static String cutEnds(String s) {
         if (s.endsWith("/")) {
             return s.substring(0, s.length() - 1);
@@ -61,7 +60,10 @@ public class AlbumUtils {
 
         public String hash;
         public Activity baseActivity;
-        public boolean overrideAlbum;
+
+        private OkHttpClient client;
+        private Gson gson;
+        private String mashapeKey;
 
         public void onError() {
 
@@ -85,9 +87,10 @@ public class AlbumUtils {
             }
 
             hash = getHash(rawDat);
-
+            client = new OkHttpClient();
+            gson = new Gson();
+            mashapeKey = SecretConstants.getImgurApiKey(baseActivity);
         }
-
 
         public void doWithData(List<Image> data) {
             if(data == null || data.isEmpty()){
@@ -119,7 +122,7 @@ public class AlbumUtils {
                 toDo.setWidth(data.getWidth());
                 return toDo;
             } catch (Exception e) {
-                e.printStackTrace();
+                LogUtil.e(e, "convertToSingle error, data [" + data + "]");
                 onError();
                 return null;
             }
@@ -135,35 +138,39 @@ public class AlbumUtils {
             try {
                 if (!baseData.toString().contains("\"data\":[]")) {
                     album = new ObjectMapper().readValue(baseData.toString(), AlbumImage.class);
-                    doWithData(album.getData().getImages());
+                    baseActivity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            doWithData(album.getData().getImages());
+                        }
+                    });
                 } else {
-                    Ion.with(baseActivity).load("https://imgur-apiv3.p.mashape.com/3/image/" + hash + ".json")
-                            .addHeader("X-Mashape-Key", SecretConstants.getImgurApiKey(baseActivity)).addHeader("Authorization", "Client-ID " + "bef87913eb202e9")
-                            .asJsonObject().setCallback(
-                            new FutureCallback<JsonObject>() {
+                    String apiUrl = "https://imgur-apiv3.p.mashape.com/3/image/" + hash + ".json";
+                    LogUtil.v(apiUrl);
+                    JsonObject result = HttpUtil.getImgurMashapeJsonObject(client, gson, apiUrl, mashapeKey);
+                    try {
+                        if (result == null) {
+                            onError();
+                            return;
+                        }
+                        final SingleImage single = new ObjectMapper().readValue(result.toString(), SingleAlbumImage.class).getData();
+                        if (single.getLink() != null) {
+                            baseActivity.runOnUiThread(new Runnable() {
                                 @Override
-                                public void onCompleted(Exception e, JsonObject obj) {
-                                    try {
-                                        if(obj == null) {
-                                            onError();
-                                            return;
-                                        }
-                                        SingleImage single = new ObjectMapper().readValue(obj.toString(), SingleAlbumImage.class).getData();
-                                        if (single.getLink() != null)
-                                            doWithDataSingle(single);
-                                        else
-                                            onError();
-
-
-                                    } catch (Exception e1) {
-                                        e1.printStackTrace();
-                                    }
+                                public void run() {
+                                    doWithDataSingle(single);
                                 }
-                            }
-                    );
+                            });
+                        } else {
+                            onError();
+                        }
+                    } catch (Exception e) {
+                        LogUtil.e(e, "Error " + apiUrl);
+                    }
+
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                LogUtil.e(e, "parseJson error, baseData [" + baseData + "]");
             }
         }
 
@@ -179,74 +186,53 @@ public class AlbumUtils {
                 for (String s : hash.split(",")) {
                     final int pos = count;
                     count++;
-                    Ion.with(baseActivity).load("https://imgur-apiv3.p.mashape.com/3/image/" + s + ".json")
-                            .addHeader("X-Mashape-Key", SecretConstants.getImgurApiKey(baseActivity)).addHeader("Authorization", "Client-ID " + "bef87913eb202e9")
-                            .asJsonObject().setCallback(new FutureCallback<JsonObject>() {
-                        @Override
-                        public void onCompleted(Exception e, JsonObject obj) {
-                            target[pos] = obj;
-
-                            done += 1;
-                            if (done == target.length) {
-                                final ArrayList<Image> jsons = new ArrayList<>();
-                                for (JsonElement el : target) {
-                                    if (el != null) {
-                                        try {
-                                            SingleImage single = new ObjectMapper().readValue(el.toString(), SingleAlbumImage.class).getData();
-                                            LogUtil.v(el.toString());
-                                            jsons.add(convertToSingle(single));
-                                        } catch (IOException e1) {
-                                            e1.printStackTrace();
-                                        }
-                                    }
-                                }
-                                if (jsons.isEmpty()) {
-                                    onError();
-                                } else {
-                                    doWithData(jsons);
+                    String apiUrl = "https://imgur-apiv3.p.mashape.com/3/image/" + s + ".json";
+                    LogUtil.v(apiUrl);
+                    JsonObject result = HttpUtil.getImgurMashapeJsonObject(client, gson, apiUrl, mashapeKey);
+                    target[pos] = result;
+                    done += 1;
+                    if (done == target.length) {
+                        final ArrayList<Image> jsons = new ArrayList<>();
+                        for (JsonElement el : target) {
+                            if (el != null) {
+                                try {
+                                    SingleImage single = new ObjectMapper().readValue(el.toString(), SingleAlbumImage.class).getData();
+                                    LogUtil.v(el.toString());
+                                    jsons.add(convertToSingle(single));
+                                } catch (IOException e) {
+                                    LogUtil.e(e, "Error " + apiUrl);
                                 }
                             }
                         }
-                    });
-
+                        if (jsons.isEmpty()) {
+                            onError();
+                        } else {
+                            baseActivity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    doWithData(jsons);
+                                }
+                            });
+                        }
+                    }
                 }
-
             } else {
                 if (baseActivity != null) {
-                    final String url = getUrl(hash);
-                    if (albumRequests.contains(url) && new JsonParser().parse(albumRequests.getString(url, "")).getAsJsonObject().has("data")) {
-                        baseActivity.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                parseJson(new JsonParser().parse(albumRequests.getString(url, "")).getAsJsonObject());
-                            }
-                        });
-
+                    final String apiUrl = getUrl(hash);
+                    if (albumRequests.contains(apiUrl) && new JsonParser().parse(albumRequests.getString(apiUrl, "")).getAsJsonObject().has("data")) {
+                        parseJson(new JsonParser().parse(albumRequests.getString(apiUrl, "")).getAsJsonObject());
                     } else {
-                        Ion.with(baseActivity)
-                                .load(url)
-                                .asJsonObject()
-                                .setCallback(new FutureCallback<JsonObject>() {
-                                    @Override
-                                    public void onCompleted(Exception e, final JsonObject result) {
-                                        if (result != null && result.has("data")) {
-                                            albumRequests.edit().putString(url, result.toString()).apply();
-                                            baseActivity.runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    parseJson(result);
-                                                }
-                                            });
-                                        } else {
-                                            onError();
-                                        }
-                                    }
-
-                                });
+                        LogUtil.v(apiUrl);
+                        // This call requires no mashape headers, don't pass in the headers Map
+                        final JsonObject result = HttpUtil.getJsonObject(client, gson, apiUrl);
+                        if (result != null && result.has("data")) {
+                            albumRequests.edit().putString(apiUrl, result.toString()).apply();
+                            parseJson(result);
+                        } else {
+                            onError();
+                        }
                     }
                     return null;
-
-
                 }
             }
             return null;

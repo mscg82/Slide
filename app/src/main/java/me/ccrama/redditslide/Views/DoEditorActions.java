@@ -51,8 +51,10 @@ import java.util.List;
 
 import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.ColorPreferences;
+import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.Drafts;
 import me.ccrama.redditslide.R;
+import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SecretConstants;
 import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.SpoilerRobotoTextView;
@@ -64,7 +66,7 @@ import me.ccrama.redditslide.util.SubmissionParser;
  */
 public class DoEditorActions {
 
-    public static void doActions(final EditText editText, final View baseView, final FragmentManager fm, final Activity a) {
+    public static void doActions(final EditText editText, final View baseView, final FragmentManager fm, final Activity a, final String oldComment) {
         baseView.findViewById(R.id.bold).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -252,7 +254,27 @@ public class DoEditorActions {
             @Override
             public void onClick(View v) {
 
-                insertBefore("> ", editText);
+                if(oldComment != null){
+                    final TextView showText = new TextView(a);
+                    showText.setText(oldComment);
+                    showText.setTextIsSelectable(true);
+                    int sixteen = Reddit.dpToPxVertical(16);
+                    showText.setPadding(sixteen, 0, sixteen, 0);
+                    AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(a);
+                    builder.setView(showText)
+                            .setTitle("Select text to quote")
+                            .setCancelable(true)
+                            .setPositiveButton("SELECT", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String selected = showText.getText().toString().substring(showText.getSelectionStart(), showText.getSelectionEnd());
+                                    insertBefore("> " + selected + "\n", editText);
+                                }
+                            }).setNegativeButton("CANCEL", null)
+                            .show();
+                } else {
+                    insertBefore("> ", editText);
+                }
             }
         });
         baseView.findViewById(R.id.bulletlist).setOnClickListener(new View.OnClickListener() {
@@ -437,7 +459,7 @@ public class DoEditorActions {
                 conn.setDoInput(true);
                 conn.setRequestMethod("POST");
                 conn.addRequestProperty("X-Mashape-Key", SecretConstants.getImgurApiKey(c));
-                conn.addRequestProperty("Authorization", "Client-ID " + "bef87913eb202e9");
+                conn.addRequestProperty("Authorization", "Client-ID " + Constants.IMGUR_MASHAPE_CLIENT_ID);
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type",
                         "application/x-www-form-urlencoded");
