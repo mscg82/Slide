@@ -56,6 +56,7 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.cocosw.bottomsheet.BottomSheet;
 import com.devspark.robototextview.util.RobotoTypefaceManager;
+import com.lusfold.androidkeyvaluestore.KVStore;
 import com.mikepenz.itemanimators.AlphaInAnimator;
 import com.mikepenz.itemanimators.SlideRightAlphaAnimator;
 
@@ -90,6 +91,7 @@ import me.ccrama.redditslide.Authentication;
 import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.Drafts;
 import me.ccrama.redditslide.Fragments.CommentPage;
+import me.ccrama.redditslide.HasSeen;
 import me.ccrama.redditslide.OpenRedditLink;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
@@ -142,6 +144,9 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     ArrayList<String> replie;
     private String backedText = "";
     private String currentlyEditingId = "";
+    public SubmissionViewHolder submissionViewHolder;
+
+    long lastSeen;
 
     public <T extends Contribution> void showModBottomSheet(final Context mContext, final CommentNode baseNode, final Comment comment, final CommentViewHolder holder, final Map<String, Integer> reports, final Map<String, String> reports2) {
 
@@ -560,48 +565,6 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     }
 
-    public void reset(Context mContext, SubmissionComments dataSet, RecyclerView listView, Submission submission, int oldSize) {
-
-        this.mContext = mContext;
-        this.listView = listView;
-        this.dataSet = dataSet;
-
-        this.submission = submission;
-        hidden = new ArrayList<>();
-        users = dataSet.comments;
-        if (users != null) {
-            for (int i = 0; i < users.size(); i++) {
-                keys.put(users.get(i).getName(), i);
-            }
-        }
-        hiddenPersons = new ArrayList<>();
-        toCollapse = new ArrayList<>();
-
-        replie = new ArrayList<>();
-
-
-        isSame = false;
-        notifyDataSetChanged();
-        if (currentSelectedItem != null && !currentSelectedItem.isEmpty()) {
-            int i = 1;
-
-            for (CommentObject n : users) {
-
-                if (n.getName().contains(currentSelectedItem) && !(n instanceof MoreChildItem)) {
-                    CommentPage.TopSnappedSmoothScroller scroller = new CommentPage.TopSnappedSmoothScroller(mContext, (PreCachingLayoutManagerComments) listView.getLayoutManager());
-                    scroller.setTargetPosition(i);
-                    (listView.getLayoutManager()).startSmoothScroll(scroller);
-                    break;
-                }
-                i++;
-            }
-        }
-        mPage.resetScroll(true);
-        if (mContext instanceof BaseActivity) {
-            ((BaseActivity) mContext).setShareUrl("https://reddit.com" + submission.getPermalink());
-        }
-    }
-
     public void reset(Context mContext, SubmissionComments dataSet, RecyclerView listView, Submission submission, boolean reset) {
 
         this.mContext = mContext;
@@ -636,7 +599,6 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
         isSame = false;
 
-
         if (currentSelectedItem != null && !currentSelectedItem.isEmpty() && users != null && !users.isEmpty()) {
             int i = 2;
             for (CommentObject n : users) {
@@ -651,6 +613,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (mContext instanceof BaseActivity) {
             ((BaseActivity) mContext).setShareUrl("https://reddit.com" + submission.getPermalink());
         }
+        doTimes();
     }
 
     @Override
@@ -843,6 +806,18 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         holder.content.setText(titleString);
     }
 
+    public void doTimes() {
+        if (submission != null && SettingValues.commentLastVisit && !dataSet.single) {
+            lastSeen = HasSeen.getSeenTime(submission);
+            String fullname = submission.getFullName();
+            if (fullname.contains("t3_")) {
+                fullname = fullname.substring(3, fullname.length());
+            }
+            HasSeen.seenTimes.put(fullname, System.currentTimeMillis());
+            KVStore.getInstance().insert(fullname, String.valueOf(System.currentTimeMillis()));
+        }
+    }
+
 
     @Override
     public void onBindViewHolder(final RecyclerView.ViewHolder firstHolder, int old) {
@@ -1031,6 +1006,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             }
 
         } else if (firstHolder instanceof SubmissionViewHolder && submission != null) {
+            submissionViewHolder = (SubmissionViewHolder) firstHolder;
             new PopulateSubmissionViewHolder().populateSubmissionViewHolder((SubmissionViewHolder) firstHolder, submission, (Activity) mContext, true, true, null, null, false, false, null, this);
             if (Authentication.isLoggedIn && Authentication.didOnline) {
                 if (submission.isArchived() || submission.isLocked())
@@ -1042,7 +1018,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                             final View replyArea = firstHolder.itemView.findViewById(R.id.innerSend);
                             if (replyArea.getVisibility() == View.GONE) {
                                 expand(replyArea, true, true);
-                                DoEditorActions.doActions(((EditText) firstHolder.itemView.findViewById(R.id.replyLine)), firstHolder.itemView, fm, (Activity) mContext, submission.isSelfPost()?submission.getSelftext():null);
+                                DoEditorActions.doActions(((EditText) firstHolder.itemView.findViewById(R.id.replyLine)), firstHolder.itemView, fm, (Activity) mContext, submission.isSelfPost() ? submission.getSelftext() : null);
 
                                 currentlyEditing = ((EditText) firstHolder.itemView.findViewById(R.id.replyLine));
                                 currentlyEditing.setOnFocusChangeListener(new View.OnFocusChangeListener() {
@@ -2000,10 +1976,18 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             resetMenu(holder.menuArea, true);
         }
 
-        TypedValue typedValue = new TypedValue();
-        Resources.Theme theme = mContext.getTheme();
-        theme.resolveAttribute(R.attr.card_background, typedValue, true);
-        int color = typedValue.data;
+        int color;
+
+        Comment c = baseNode.getComment();
+        if (lastSeen < c.getCreated().getTime() && !dataSet.single && SettingValues.commentLastVisit && !Authentication.name.equals(c.getAuthor())) {
+            color = Palette.getColor(baseNode.getComment().getSubredditName());
+            color = Color.argb(20, Color.red(color), Color.green(color), Color.blue(color));
+        } else {
+            TypedValue typedValue = new TypedValue();
+            Resources.Theme theme = mContext.getTheme();
+            theme.resolveAttribute(R.attr.card_background, typedValue, true);
+            color = typedValue.data;
+        }
         int dwidth = (int) (3 * Resources.getSystem().getDisplayMetrics().density);
         int width = 0;
 
@@ -2733,17 +2717,25 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
                 if (commentBack != null && !commentBack.isEmpty()) {
                     Drafts.addDraft(commentBack);
-                    new AlertDialogWrapper.Builder(mContext)
-                            .setTitle(R.string.err_comment_post)
-                            .setMessage(((why == null) ? "" : mContext.getString(R.string.err_comment_post_reason) + why) + mContext.getString(R.string.err_comment_post_message))
-                            .setPositiveButton(R.string.btn_ok, null)
-                            .show();
+                    try {
+                        new AlertDialogWrapper.Builder(mContext)
+                                .setTitle(R.string.err_comment_post)
+                                .setMessage(((why == null) ? "" : mContext.getString(R.string.err_comment_post_reason) + why) + mContext.getString(R.string.err_comment_post_message))
+                                .setPositiveButton(R.string.btn_ok, null)
+                                .show();
+                    } catch(Exception ignored){
+
+                    }
                 } else {
+                    try{
                     new AlertDialogWrapper.Builder(mContext)
                             .setTitle(R.string.err_comment_post)
                             .setMessage(((why == null) ? "" : mContext.getString(R.string.err_comment_post_reason) + why) + mContext.getString(R.string.err_comment_post_nosave_message))
                             .setPositiveButton(R.string.btn_ok, null)
                             .show();
+                    } catch(Exception ignored){
+
+                    }
                 }
             } else {
                 if (isSubmission) {

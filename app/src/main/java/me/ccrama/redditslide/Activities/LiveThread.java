@@ -1,40 +1,16 @@
 package me.ccrama.redditslide.Activities;
 
-import android.app.Activity;
-import android.app.Dialog;
-import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Parcelable;
-import android.support.annotation.NonNull;
-import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.view.ContextThemeWrapper;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.text.Html;
-import android.text.SpannableString;
-import android.text.style.ForegroundColorSpan;
-import android.text.style.StyleSpan;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -42,89 +18,48 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.LinearInterpolator;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
-import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.neovisionaries.ws.client.WebSocketException;
 import com.neovisionaries.ws.client.WebSocketFactory;
 import com.neovisionaries.ws.client.WebSocketFrame;
 import com.neovisionaries.ws.client.WebSocketListener;
 import com.neovisionaries.ws.client.WebSocketState;
 
-import net.dean.jraw.ApiException;
-import net.dean.jraw.http.MultiRedditUpdateRequest;
-import net.dean.jraw.http.NetworkException;
-import net.dean.jraw.managers.AccountManager;
 import net.dean.jraw.managers.LiveThreadManager;
-import net.dean.jraw.managers.ModerationManager;
-import net.dean.jraw.managers.MultiRedditManager;
-import net.dean.jraw.models.FlairTemplate;
 import net.dean.jraw.models.LiveUpdate;
-import net.dean.jraw.models.MultiReddit;
-import net.dean.jraw.models.MultiSubreddit;
-import net.dean.jraw.models.Submission;
-import net.dean.jraw.models.Subreddit;
-import net.dean.jraw.models.UserRecord;
 import net.dean.jraw.paginators.LiveThreadPaginator;
-import net.dean.jraw.paginators.Sorting;
-import net.dean.jraw.paginators.TimePeriod;
-import net.dean.jraw.paginators.UserRecordPaginator;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import me.ccrama.redditslide.Adapters.SettingsSubAdapter;
 import me.ccrama.redditslide.Authentication;
-import me.ccrama.redditslide.ColorPreferences;
 import me.ccrama.redditslide.ContentType;
-import me.ccrama.redditslide.Fragments.BlankFragment;
-import me.ccrama.redditslide.Fragments.CommentPage;
-import me.ccrama.redditslide.Fragments.SubmissionsView;
-import me.ccrama.redditslide.ImgurAlbum.AlbumImage;
-import me.ccrama.redditslide.ImgurAlbum.Image;
-import me.ccrama.redditslide.ImgurAlbum.SingleAlbumImage;
-import me.ccrama.redditslide.ImgurAlbum.SingleImage;
-import me.ccrama.redditslide.OfflineSubreddit;
-import me.ccrama.redditslide.PostMatch;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
-import me.ccrama.redditslide.SecretConstants;
-import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.SpoilerRobotoTextView;
 import me.ccrama.redditslide.TimeUtils;
-import me.ccrama.redditslide.UserSubscriptions;
-import me.ccrama.redditslide.Views.CatchStaggeredGridLayoutManager;
 import me.ccrama.redditslide.Views.CommentOverflow;
-import me.ccrama.redditslide.Views.PreCachingLayoutManager;
 import me.ccrama.redditslide.Views.SidebarLayout;
-import me.ccrama.redditslide.Views.ToggleSwipeViewPager;
 import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.util.HttpUtil;
 import me.ccrama.redditslide.util.LogUtil;
-import me.ccrama.redditslide.util.OnSingleClickListener;
 import me.ccrama.redditslide.util.SubmissionParser;
 import me.ccrama.redditslide.util.TwitterObject;
 import okhttp3.OkHttpClient;
@@ -148,6 +83,7 @@ public class LiveThread extends BaseActivityAnim {
                 return false;
         }
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -192,20 +128,41 @@ public class LiveThread extends BaseActivityAnim {
 
             @Override
             protected Void doInBackground(Void... params) {
-                thread = new LiveThreadManager(Authentication.reddit).get(getIntent().getStringExtra(EXTRA_LIVEURL));
+                try {
+                    thread = new LiveThreadManager(Authentication.reddit).get(getIntent().getStringExtra(EXTRA_LIVEURL));
+                } catch(Exception e){
+
+                }
                 return null;
             }
 
             @Override
             public void onPostExecute(Void aVoid) {
-                d.dismiss();
-                setupAppBar(R.id.toolbar, thread.getTitle(), true, false);
-                (findViewById(R.id.toolbar)).setBackgroundResource(R.color.md_red_300);
-                (findViewById(R.id.header_sub)).setBackgroundResource(R.color.md_red_300);
-                themeSystemBars(Palette.getDarkerColor(getResources().getColor(R.color.md_red_300)));
-                setRecentBar("Live thread: " + thread.getTitle(), getResources().getColor(R.color.md_red_300));
+                if(thread == null){
+                    new AlertDialogWrapper.Builder(LiveThread.this)
+                            .setTitle("Live thread not found")
+                            .setMessage("Please try again soon")
+                            .setPositiveButton(R.string.btn_ok, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    finish();
+                                }
+                            }).setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            finish();
+                        }
+                    }).setCancelable(false).show();
+                } else {
+                    d.dismiss();
+                    setupAppBar(R.id.toolbar, thread.getTitle(), true, false);
+                    (findViewById(R.id.toolbar)).setBackgroundResource(R.color.md_red_300);
+                    (findViewById(R.id.header_sub)).setBackgroundResource(R.color.md_red_300);
+                    themeSystemBars(Palette.getDarkerColor(getResources().getColor(R.color.md_red_300)));
+                    setRecentBar("Live thread: " + thread.getTitle(), getResources().getColor(R.color.md_red_300));
 
-                doPaginator();
+                    doPaginator();
+                }
             }
         }.execute();
     }
@@ -506,7 +463,7 @@ public class LiveThread extends BaseActivityAnim {
             public void parseJson() {
                 try {
                     JsonObject result = HttpUtil.getJsonObject(client, gson, "https://publish.twitter.com/oembed?url=" + url, null);
-                   LogUtil.v("Got " + Html.fromHtml(result.toString()));
+                    LogUtil.v("Got " + Html.fromHtml(result.toString()));
                     twitter = new ObjectMapper().readValue(result.toString(), TwitterObject.class);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -521,7 +478,9 @@ public class LiveThread extends BaseActivityAnim {
 
             @Override
             public void onPostExecute(Void aVoid) {
-                view.loadData(twitter.getHtml().toString().replace("//platform.twitter", "https://platform.twitter"), "text/html", "UTF-8");
+                if (twitter != null && twitter.getHtml() != null) {
+                    view.loadData(twitter.getHtml().replace("//platform.twitter", "https://platform.twitter"), "text/html", "UTF-8");
+                }
             }
 
 

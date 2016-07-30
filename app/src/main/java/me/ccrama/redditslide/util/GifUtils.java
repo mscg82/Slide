@@ -224,11 +224,11 @@ public class GifUtils {
                 return VideoType.STREAMABLE;
             return VideoType.OTHER;
         }
+        OkHttpClient client = new OkHttpClient();
 
         @Override
         protected Void doInBackground(String... sub) {
             MediaView.didLoadGif = false;
-            OkHttpClient client = new OkHttpClient();
             Gson gson = new Gson();
             final String url = formatUrl(sub[0]);
             VideoType videoType = getVideoType(url);
@@ -248,23 +248,27 @@ public class GifUtils {
                                 c.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        new AlertDialogWrapper.Builder(c)
-                                                .setTitle(R.string.gif_err_title)
-                                                .setMessage(R.string.gif_err_msg)
-                                                .setCancelable(false)
-                                                .setPositiveButton(R.string.btn_ok, new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialog, int which) {
-                                                        c.finish();
-                                                    }
-                                                }).create().show();
+                                        try {
+                                            new AlertDialogWrapper.Builder(c)
+                                                    .setTitle(R.string.gif_err_title)
+                                                    .setMessage(R.string.gif_err_msg)
+                                                    .setCancelable(false)
+                                                    .setPositiveButton(R.string.btn_ok, new DialogInterface.OnClickListener() {
+                                                        @Override
+                                                        public void onClick(DialogInterface dialog, int which) {
+                                                            c.finish();
+                                                        }
+                                                    }).create().show();
+                                        } catch(Exception e){
+
+                                        }
                                     }
                                 });
                             }
 
 
                         } else {
-                            if (((!NetworkUtil.isConnectedWifi(c) && SettingValues.lowResMobile) || SettingValues.lowResAlways) && result.getAsJsonObject("gfyItem").has("mobileUrl"))
+                            if (result.getAsJsonObject("gfyItem").has("mobileUrl"))
                                 obj = result.getAsJsonObject("gfyItem").get("mobileUrl").getAsString();
                             else
                                 obj = result.getAsJsonObject("gfyItem").get("mp4Url").getAsString();
@@ -312,10 +316,10 @@ public class GifUtils {
                                 });
                             }
                         } else {
-                            if (result.getAsJsonObject().get("files").getAsJsonObject().has("mp4"))
-                                obj = "https:" + result.getAsJsonObject().get("files").getAsJsonObject().get("mp4").getAsJsonObject().get("url").getAsString();
-                            else
+                            if (result.getAsJsonObject().get("files").getAsJsonObject().has("mp4-mobile"))
                                 obj = "https:" + result.getAsJsonObject().get("files").getAsJsonObject().get("mp4-mobile").getAsJsonObject().get("url").getAsString();
+                            else
+                                obj = "https:" + result.getAsJsonObject().get("files").getAsJsonObject().get("mp4").getAsJsonObject().get("url").getAsString();
 
                         }
                         final URL finalUrl = new URL(obj);

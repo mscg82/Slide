@@ -19,7 +19,6 @@ import net.dean.jraw.paginators.SubredditPaginator;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import me.ccrama.redditslide.Activities.BaseActivity;
 import me.ccrama.redditslide.Activities.MainActivity;
@@ -264,15 +263,21 @@ public class SubredditPosts implements PostLoader {
                 // end of submissions
                 nomore = true;
                 displayer.updateSuccess(posts, posts.size() + 1);
+            } else if(MainActivity.isRestart){
+                posts = new ArrayList<>();
+                cached = OfflineSubreddit.getSubreddit(subreddit, 0L, true, c);
+                for (Submission s : cached.submissions) {
+                    if (!PostMatch.doesMatch(s, subreddit, force18)) {
+                        posts.add(s);
+                    }
+                }
+
+                displayer.updateSuccess(posts, start);
             } else {
-
                 if (!all.isEmpty() && !nomore && SettingValues.cache) {
-
-
                     if (c instanceof MainActivity) {
                         doMainActivityOffline(displayer);
                     }
-
                 } else if (!nomore) {
                     // error
                     displayer.updateError();
@@ -283,7 +288,7 @@ public class SubredditPosts implements PostLoader {
         @Override
         protected List<Submission> doInBackground(String... subredditPaginators) {
 
-            if (!NetworkUtil.isConnected(context) && !Authentication.didOnline) {
+            if ((!NetworkUtil.isConnected(context) && !Authentication.didOnline) || MainActivity.isRestart) {
                 Log.v(LogUtil.getTag(), "Using offline data");
                 offline = true;
                 usedOffline = true;
@@ -316,7 +321,7 @@ public class SubredditPosts implements PostLoader {
             List<Submission> filteredSubmissions = getNextFiltered();
 
 
-            if (!SettingValues.noImages && ((!NetworkUtil.isConnectedWifi(c) && SettingValues.lowResMobile) || SettingValues.lowResAlways))
+            if (!(SettingValues.noImages && ((!NetworkUtil.isConnectedWifi(c) && SettingValues.lowResMobile) || SettingValues.lowResAlways)))
                 loadPhotos(filteredSubmissions);
             HasSeen.setHasSeenSubmission(filteredSubmissions);
             LastComments.setCommentsSince(filteredSubmissions);

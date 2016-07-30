@@ -23,7 +23,6 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.view.ContextThemeWrapper;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
@@ -278,88 +277,82 @@ public class SubredditView extends BaseActivityAnim {
         } else {
             findViewById(R.id.sidebar_text).setVisibility(View.GONE);
         }
-        {
-            View collection = findViewById(R.id.collection);
-            if (Authentication.isLoggedIn) {
-                collection.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        new AsyncTask<Void, Void, Void>() {
-                            HashMap<String, MultiReddit> multis = new HashMap<String, MultiReddit>();
+        View collection = findViewById(R.id.collection);
+        if (Authentication.isLoggedIn) {
+            collection.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    new AsyncTask<Void, Void, Void>() {
+                        HashMap<String, MultiReddit> multis = new HashMap<String, MultiReddit>();
 
-                            @Override
-                            protected Void doInBackground(Void... params) {
-                                if (UserSubscriptions.multireddits == null) {
-                                    UserSubscriptions.syncMultiReddits(SubredditView.this);
-                                }
-                                for (MultiReddit r : UserSubscriptions.multireddits) {
-                                    multis.put(r.getDisplayName(), r);
-                                }
-                                return null;
+                        @Override
+                        protected Void doInBackground(Void... params) {
+                            if (UserSubscriptions.multireddits == null) {
+                                UserSubscriptions.syncMultiReddits(SubredditView.this);
                             }
+                            for (MultiReddit r : UserSubscriptions.multireddits) {
+                                multis.put(r.getDisplayName(), r);
+                            }
+                            return null;
+                        }
 
-                            @Override
-                            protected void onPostExecute(Void aVoid) {
-                                new MaterialDialog.Builder(SubredditView.this).title("Add /r/" + subreddit.getDisplayName() + " to")
-                                        .items(multis.keySet())
-                                        .itemsCallback(new MaterialDialog.ListCallback() {
-                                            @Override
-                                            public void onSelection(MaterialDialog dialog, View itemView, final int which, CharSequence text) {
-                                                new AsyncTask<Void, Void, Void>() {
-                                                    @Override
-                                                    protected Void doInBackground(Void... params) {
-                                                        try {
-                                                            final String multiName = multis.keySet().toArray(new String[multis.size()])[which];
-                                                            List<String> subs = new ArrayList<String>();
-                                                            for (MultiSubreddit sub : multis.get(multiName).getSubreddits()) {
-                                                                subs.add(sub.getDisplayName());
-                                                            }
-                                                            subs.add(subreddit.getDisplayName());
-                                                            new MultiRedditManager(Authentication.reddit).createOrUpdate(new MultiRedditUpdateRequest.Builder(Authentication.name, multiName).subreddits(subs).build());
-
-                                                            UserSubscriptions.syncMultiReddits(SubredditView.this);
-
-                                                            runOnUiThread(new Runnable() {
-                                                                @Override
-                                                                public void run() {
-                                                                    drawerLayout.closeDrawers();
-                                                                    Snackbar.make(mToolbar, "Subreddit added to /m/" + multiName, Snackbar.LENGTH_LONG).show();
-                                                                }
-                                                            });
-                                                        } catch (final NetworkException | ApiException e) {
-                                                            runOnUiThread(new Runnable() {
-                                                                @Override
-                                                                public void run() {
-                                                                    runOnUiThread(new Runnable() {
-                                                                        @Override
-                                                                        public void run() {
-                                                                            Snackbar.make(mToolbar, "An error occured, please try again later", Snackbar.LENGTH_LONG).setAction(R.string.btn_ok, new View.OnClickListener() {
-                                                                                @Override
-                                                                                public void onClick(View v) {
-
-                                                                                }
-                                                                            }).show();
-                                                                        }
-                                                                    });
-                                                                }
-                                                            });
-                                                            e.printStackTrace();
+                        @Override
+                        protected void onPostExecute(Void aVoid) {
+                            new MaterialDialog.Builder(SubredditView.this).title("Add /r/" + subreddit.getDisplayName() + " to")
+                                    .items(multis.keySet())
+                                    .itemsCallback(new MaterialDialog.ListCallback() {
+                                        @Override
+                                        public void onSelection(MaterialDialog dialog, View itemView, final int which, CharSequence text) {
+                                            new AsyncTask<Void, Void, Void>() {
+                                                @Override
+                                                protected Void doInBackground(Void... params) {
+                                                    try {
+                                                        final String multiName = multis.keySet().toArray(new String[multis.size()])[which];
+                                                        List<String> subs = new ArrayList<String>();
+                                                        for (MultiSubreddit sub : multis.get(multiName).getSubreddits()) {
+                                                            subs.add(sub.getDisplayName());
                                                         }
-                                                        return null;
-                                                    }
-                                                }.execute();
+                                                        subs.add(subreddit.getDisplayName());
+                                                        new MultiRedditManager(Authentication.reddit).createOrUpdate(new MultiRedditUpdateRequest.Builder(Authentication.name, multiName).subreddits(subs).build());
 
-                                            }
-                                        }).show();
-                            }
-                        }.execute();
-                    }
-                });
-            } else {
-                collection.setVisibility(View.GONE);
-            }
-        }
-        {
+                                                        UserSubscriptions.syncMultiReddits(SubredditView.this);
+
+                                                        runOnUiThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                drawerLayout.closeDrawers();
+                                                                Snackbar.make(mToolbar, "Subreddit added to /m/" + multiName, Snackbar.LENGTH_LONG).show();
+                                                            }
+                                                        });
+                                                    } catch (final NetworkException | ApiException e) {
+                                                        runOnUiThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                runOnUiThread(new Runnable() {
+                                                                    @Override
+                                                                    public void run() {
+                                                                        Snackbar.make(mToolbar, "An error occured, please try again later", Snackbar.LENGTH_LONG).setAction(R.string.btn_ok, new View.OnClickListener() {
+                                                                            @Override
+                                                                            public void onClick(View v) {
+
+                                                                            }
+                                                                        }).show();
+                                                                    }
+                                                                });
+                                                            }
+                                                        });
+                                                        e.printStackTrace();
+                                                    }
+                                                    return null;
+                                                }
+                                            }.execute();
+
+                                        }
+                                    }).show();
+                        }
+                    }.execute();
+                }
+            });
             final CheckBox c = ((CheckBox) findViewById(R.id.subscribed));
             c.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
@@ -367,7 +360,8 @@ public class SubredditView extends BaseActivityAnim {
                     //reset check adapter
                 }
             });
-            c.setChecked((Authentication.isLoggedIn && UserSubscriptions.isSubscriber(subreddit.getDisplayName().toLowerCase(), this)) || subreddit.isUserSubscriber());
+            c.setChecked(UserSubscriptions.isSubscriber(subreddit.getDisplayName(), this)
+                    || subreddit.isUserSubscriber());
             c.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, final boolean isChecked) {
@@ -416,6 +410,8 @@ public class SubredditView extends BaseActivityAnim {
 
                 }
             });
+        } else {
+            collection.setVisibility(View.GONE);
         }
         if (!subreddit.getPublicDescription().isEmpty()) {
             findViewById(R.id.sub_title).setVisibility(View.VISIBLE);
@@ -1229,7 +1225,7 @@ public class SubredditView extends BaseActivityAnim {
                     UserSubscriptions.addSubToHistory(subreddit.getDisplayName());
 
                 // Over 18 interstitial for signed out users or those who haven't enabled NSFW content
-                if (subreddit.isNsfw() && !Reddit.over18) {
+                if (subreddit.isNsfw() && (!Reddit.over18 || !Authentication.isLoggedIn)) {
                     new AlertDialogWrapper.Builder(SubredditView.this)
                             .setTitle(getString(R.string.over18_title, subreddit.getDisplayName()))
                             .setMessage(getString(R.string.over18_desc) + "\n\n"

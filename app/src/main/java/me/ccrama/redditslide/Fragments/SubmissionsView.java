@@ -14,7 +14,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.view.ContextThemeWrapper;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,7 +64,7 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
     private int pastVisiblesItems;
     private int totalItemCount;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    private volatile static Submission currentSubmission;
+    private static Submission currentSubmission;
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -268,12 +267,13 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
     }
 
     public void doAdapter() {
-        mSwipeRefreshLayout.post(new Runnable() {
-            @Override
-            public void run() {
-                mSwipeRefreshLayout.setRefreshing(true);
-            }
-        });
+        if (!MainActivity.isRestart)
+            mSwipeRefreshLayout.post(new Runnable() {
+                @Override
+                public void run() {
+                    mSwipeRefreshLayout.setRefreshing(true);
+                }
+            });
 
         posts = new SubredditPosts(id, getContext());
         adapter = new SubmissionAdapter(getActivity(), posts, rv, id, this);
@@ -415,6 +415,11 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
                 }
             });
 
+            if(MainActivity.isRestart) {
+                MainActivity.isRestart = false;
+                posts.offline = false;
+                rv.getLayoutManager().scrollToPosition(MainActivity.restartPage + 1);
+            }
         }
     }
 

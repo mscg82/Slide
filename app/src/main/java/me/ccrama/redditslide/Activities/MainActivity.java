@@ -126,6 +126,7 @@ import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.Fragments.CommentPage;
 import me.ccrama.redditslide.Fragments.SubmissionsView;
 import me.ccrama.redditslide.Notifications.NotificationJobScheduler;
+import me.ccrama.redditslide.OfflineSubreddit;
 import me.ccrama.redditslide.PostMatch;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
@@ -452,7 +453,7 @@ public class MainActivity extends BaseActivity {
                                     ArrayList<Submission> posts = new ArrayList<>(p.next());
                                     for (Submission s : posts) {
                                         String version = BuildConfig.VERSION_NAME;
-                                        if (version.length() > 5) {
+                                        if (version.length() > 4) {
                                             version = version.substring(0, version.lastIndexOf("."));
                                         }
                                         if (s.isStickied() && s.getSubmissionFlair().getText() != null && s.getSubmissionFlair().getText().equalsIgnoreCase("Announcement") && !Reddit.appRestart.contains("announcement" + s.getFullName()) && s.getTitle().contains(version)) {
@@ -571,7 +572,7 @@ public class MainActivity extends BaseActivity {
             LogUtil.v("Starting main 2 " + Authentication.name);
             Authentication.isLoggedIn = Reddit.appRestart.getBoolean("loggedin", false);
             Authentication.name = Reddit.appRestart.getString("name", "LOGGEDOUT");
-            Reddit.appRestart.edit().putBoolean("isRestarting", false).apply();
+            Reddit.appRestart.edit().putBoolean("isRestarting", false).commit();
             Reddit.isRestarting = false;
             UserSubscriptions.doMainActivitySubs(this);
         }
@@ -1838,10 +1839,10 @@ public class MainActivity extends BaseActivity {
                                                         d = true;
                                                         LogUtil.v("Switching to " + s);
                                                         if (accounts.containsKey(s) && !accounts.get(s).isEmpty()) {
-                                                            Authentication.authentication.edit().putString("lasttoken", accounts.get(s)).remove("backedCreds").apply();
+                                                            Authentication.authentication.edit().putString("lasttoken", accounts.get(s)).remove("backedCreds").commit();
                                                         } else {
                                                             ArrayList<String> tokens = new ArrayList<>(Authentication.authentication.getStringSet("tokens", new HashSet<String>()));
-                                                            Authentication.authentication.edit().putString("lasttoken", tokens.get(keys.indexOf(s))).remove("backedCreds").apply();
+                                                            Authentication.authentication.edit().putString("lasttoken", tokens.get(keys.indexOf(s))).remove("backedCreds").commit();
                                                         }
                                                         Authentication.name = s;
                                                         UserSubscriptions.switchAccounts();
@@ -1852,7 +1853,7 @@ public class MainActivity extends BaseActivity {
                                                 if (!d) {
                                                     Authentication.name = "LOGGEDOUT";
                                                     Authentication.isLoggedIn = false;
-                                                    Authentication.authentication.edit().remove("lasttoken").remove("backedCreds").apply();
+                                                    Authentication.authentication.edit().remove("lasttoken").remove("backedCreds").commit();
                                                     UserSubscriptions.switchAccounts();
                                                     Reddit.forceRestart(MainActivity.this, true);
                                                 }
@@ -2023,11 +2024,11 @@ public class MainActivity extends BaseActivity {
                                                         d = true;
                                                         LogUtil.v("Switching to " + s);
                                                         if (!accounts.get(s).isEmpty()) {
-                                                            Authentication.authentication.edit().putString("lasttoken", accounts.get(s)).remove("backedCreds").apply();
+                                                            Authentication.authentication.edit().putString("lasttoken", accounts.get(s)).remove("backedCreds").commit();
 
                                                         } else {
                                                             ArrayList<String> tokens = new ArrayList<>(Authentication.authentication.getStringSet("tokens", new HashSet<String>()));
-                                                            Authentication.authentication.edit().putString("lasttoken", tokens.get(keys.indexOf(s))).remove("backedCreds").apply();
+                                                            Authentication.authentication.edit().putString("lasttoken", tokens.get(keys.indexOf(s))).remove("backedCreds").commit();
                                                         }
                                                         Authentication.name = s;
                                                         UserSubscriptions.switchAccounts();
@@ -2037,7 +2038,7 @@ public class MainActivity extends BaseActivity {
                                                 if (!d) {
                                                     Authentication.name = "LOGGEDOUT";
                                                     Authentication.isLoggedIn = false;
-                                                    Authentication.authentication.edit().remove("lasttoken").remove("backedCreds").apply();
+                                                    Authentication.authentication.edit().remove("lasttoken").remove("backedCreds").commit();
                                                     UserSubscriptions.switchAccounts();
                                                     Reddit.forceRestart(MainActivity.this, true);
                                                 }
@@ -2061,7 +2062,7 @@ public class MainActivity extends BaseActivity {
                                 Authentication.authentication.edit().putString("lasttoken", accounts.get(accName)).remove("backedCreds").commit();
                             } else {
                                 ArrayList<String> tokens = new ArrayList<>(Authentication.authentication.getStringSet("tokens", new HashSet<String>()));
-                                Authentication.authentication.edit().putString("lasttoken", tokens.get(keys.indexOf(accName))).remove("backedCreds").apply();
+                                Authentication.authentication.edit().putString("lasttoken", tokens.get(keys.indexOf(accName))).remove("backedCreds").commit();
                             }
                             Authentication.isLoggedIn = true;
                             Authentication.name = accName;
@@ -2417,7 +2418,12 @@ public class MainActivity extends BaseActivity {
         }
     }
 
+    public static boolean isRestart;
+    public static int restartPage;
+
     public void restartTheme() {
+        isRestart = true;
+        restartPage = getCurrentPage();
         Intent intent = this.getIntent();
         int page = pager.getCurrentItem();
         if (currentComment == page) page -= 1;
@@ -3310,6 +3316,9 @@ public class MainActivity extends BaseActivity {
     public int getCurrentPage() {
         int position = 0;
         int currentOrientation = getResources().getConfiguration().orientation;
+        if(adapter.getCurrentFragment() == null){
+            return 0;
+        }
         if (((SubmissionsView) adapter.getCurrentFragment()).rv.getLayoutManager() instanceof LinearLayoutManager && currentOrientation == Configuration.ORIENTATION_LANDSCAPE) {
             position = ((LinearLayoutManager) ((SubmissionsView) adapter.getCurrentFragment()).rv.getLayoutManager()).findFirstCompletelyVisibleItemPosition() - 1;
         } else if (((SubmissionsView) adapter.getCurrentFragment()).rv.getLayoutManager() instanceof CatchStaggeredGridLayoutManager) {
@@ -3677,7 +3686,7 @@ public class MainActivity extends BaseActivity {
                         if (accounts.contains(name)) { //convert to new system
                             accounts.remove(name);
                             accounts.add(name + ":" + Authentication.refresh);
-                            Authentication.authentication.edit().putStringSet("accounts", accounts).apply();
+                            Authentication.authentication.edit().putStringSet("accounts", accounts).commit(); //force commit
                         }
                         Authentication.isLoggedIn = true;
                         Reddit.notFirst = true;

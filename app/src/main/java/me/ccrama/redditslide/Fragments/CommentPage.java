@@ -80,7 +80,7 @@ import me.ccrama.redditslide.Views.DoEditorActions;
 import me.ccrama.redditslide.Views.PreCachingLayoutManagerComments;
 import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.handler.ToolbarScrollHideHandler;
-import me.ccrama.redditslide.util.CustomTabUtil;
+import me.ccrama.redditslide.util.LinkUtil;
 import me.ccrama.redditslide.util.LogUtil;
 import me.ccrama.redditslide.util.NetworkUtil;
 
@@ -108,6 +108,8 @@ public class CommentPage extends Fragment {
     public String subreddit;
     public boolean loaded = false;
     public boolean overrideFab;
+    private boolean upvoted = false;
+    private boolean downvoted = false;
 
 
     public void doResult(Intent data) {
@@ -432,6 +434,68 @@ public class CommentPage extends Fragment {
             }
         });
 
+        v.findViewById(R.id.up).setOnTouchListener(new OnFlingGestureListener() {
+            @Override
+            public void onRightToLeft() {
+            }
+
+            @Override
+            public void onLeftToRight() {
+            }
+
+            @Override
+            public void onBottomToTop() {
+                adapter.submissionViewHolder.upvote.performClick();
+                Context context = getContext();
+                int duration = Toast.LENGTH_SHORT;
+                CharSequence text;
+                if (!upvoted) {
+                   text = "Upvoted";
+                    downvoted = false;
+                } else {
+                    text = "Vote Removed";
+                }
+                upvoted = !upvoted;
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+            }
+
+            @Override
+            public void onTopToBottom() {
+            }
+        });
+
+        v.findViewById(R.id.down).setOnTouchListener(new OnFlingGestureListener() {
+            @Override
+            public void onRightToLeft() {
+            }
+
+            @Override
+            public void onLeftToRight() {
+            }
+
+            @Override
+            public void onBottomToTop() {
+                adapter.submissionViewHolder.downvote.performClick();
+                Context context = getContext();
+                int duration = Toast.LENGTH_SHORT;
+                CharSequence text;
+                if (!downvoted) {
+                    text = "Downvoted";
+                    upvoted = false;
+                } else {
+                    text = "Vote Removed";
+                }
+                downvoted = !downvoted;
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+            }
+
+            @Override
+            public void onTopToBottom() {
+            }
+        });
+
 
         toolbar.setBackgroundColor(Palette.getColor(subreddit));
 
@@ -524,7 +588,7 @@ public class CommentPage extends Fragment {
                                         PopulateSubmissionViewHolder.openRedditContent(adapter.submission.getUrl(), getActivity());
                                         break;
                                     case LINK:
-                                        CustomTabUtil.openUrl(adapter.submission.getUrl(), Palette.getColor(adapter.submission.getSubredditName()), getActivity());
+                                        LinkUtil.openUrl(adapter.submission.getUrl(), Palette.getColor(adapter.submission.getSubredditName()), getActivity());
                                         break;
                                     case NONE:
                                     case SELF:
