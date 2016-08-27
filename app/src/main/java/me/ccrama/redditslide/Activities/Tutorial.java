@@ -112,6 +112,7 @@ public class Tutorial extends AppCompatActivity {
         }
 
     }
+    int back;
 
     public class Personalize extends Fragment {
         @Override
@@ -122,6 +123,7 @@ public class Tutorial extends AppCompatActivity {
         @Override
         public View onCreateView(LayoutInflater inflater, final ViewGroup container,
                                  Bundle savedInstanceState) {
+            back = new ColorPreferences(getContext()).getFontStyle().getThemeType();
 
             View v = inflater.inflate(R.layout.fragment_basicinfo, container, false);
             final View header = v.findViewById(R.id.header);
@@ -218,7 +220,7 @@ public class Tutorial extends AppCompatActivity {
 
                     final LineColorPicker colorPicker = (LineColorPicker) dialoglayout.findViewById(R.id.picker3);
 
-                    int[] arrs = new int[ColorPreferences.Theme.values().length / 6];
+                    int[] arrs = new int[ColorPreferences.Theme.values().length / 7];
                     int i = 0;
                     for (ColorPreferences.Theme type : ColorPreferences.Theme.values()) {
                         if (type.getThemeType() == 0) {
@@ -238,7 +240,7 @@ public class Tutorial extends AppCompatActivity {
                             int color = colorPicker.getColor();
                             ColorPreferences.Theme t = null;
                             for (ColorPreferences.Theme type : ColorPreferences.Theme.values()) {
-                                if (ContextCompat.getColor(Tutorial.this, type.getColor()) == color && Reddit.themeBack == type.getThemeType()) {
+                                if (ContextCompat.getColor(Tutorial.this, type.getColor()) == color && back == type.getThemeType()) {
                                     t = type;
                                     break;
                                 }
@@ -282,7 +284,7 @@ public class Tutorial extends AppCompatActivity {
                             final String newName = name.replace("(", "");
                             for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
                                 if (theme.toString().contains(newName) && theme.getThemeType() == 2) {
-                                    Reddit.themeBack = theme.getThemeType();
+                                    back = theme.getThemeType();
                                     new ColorPreferences(Tutorial.this).setFontStyle(theme);
 
                                     Intent i = new Intent(Tutorial.this, Tutorial.class);
@@ -308,7 +310,7 @@ public class Tutorial extends AppCompatActivity {
                             for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
                                 if (theme.toString().contains(newName) && theme.getThemeType() == 1) {
                                     new ColorPreferences(Tutorial.this).setFontStyle(theme);
-                                    Reddit.themeBack = theme.getThemeType();
+                                    back = theme.getThemeType();
 
                                     Intent i = new Intent(Tutorial.this, Tutorial.class);
                                     i.putExtra("page", 1);
@@ -333,7 +335,7 @@ public class Tutorial extends AppCompatActivity {
                             for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
                                 if (theme.toString().contains(newName) && theme.getThemeType() == 0) {
                                     new ColorPreferences(Tutorial.this).setFontStyle(theme);
-                                    Reddit.themeBack = theme.getThemeType();
+                                    back = theme.getThemeType();
 
                                     Intent i = new Intent(Tutorial.this, Tutorial.class);
                                     i.putExtra("page", 1);
@@ -358,7 +360,7 @@ public class Tutorial extends AppCompatActivity {
                             for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
                                 if (theme.toString().contains(newName) && theme.getThemeType() == 4) {
                                     new ColorPreferences(Tutorial.this).setFontStyle(theme);
-                                    Reddit.themeBack = theme.getThemeType();
+                                    back = theme.getThemeType();
 
                                     Intent i = new Intent(Tutorial.this, Tutorial.class);
                                     i.putExtra("page", 1);
@@ -383,7 +385,32 @@ public class Tutorial extends AppCompatActivity {
                             for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
                                 if (theme.toString().contains(newName) && theme.getThemeType() == 5) {
                                     new ColorPreferences(Tutorial.this).setFontStyle(theme);
-                                    Reddit.themeBack = theme.getThemeType();
+                                    back = theme.getThemeType();
+
+                                    Intent i = new Intent(Tutorial.this, Tutorial.class);
+                                    i.putExtra("page", 1);
+                                    i.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                                    startActivity(i);
+                                    overridePendingTransition(0, 0);
+
+                                    finish();
+                                    overridePendingTransition(0, 0);
+
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                    dialoglayout.findViewById(R.id.sepia).setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            String[] names = new ColorPreferences(Tutorial.this).getFontStyle().getTitle().split("_");
+                            String name = names[names.length - 1];
+                            final String newName = name.replace("(", "");
+                            for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
+                                if (theme.toString().contains(newName) && theme.getThemeType() == 6) {
+                                    new ColorPreferences(Tutorial.this).setFontStyle(theme);
+                                    back = theme.getThemeType();
 
                                     Intent i = new Intent(Tutorial.this, Tutorial.class);
                                     i.putExtra("page", 1);
@@ -408,7 +435,7 @@ public class Tutorial extends AppCompatActivity {
                             for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
                                 if (theme.toString().contains(newName) && theme.getThemeType() == 3) {
                                     new ColorPreferences(Tutorial.this).setFontStyle(theme);
-                                    Reddit.themeBack = theme.getThemeType();
+                                    back = theme.getThemeType();
 
                                     Intent i = new Intent(Tutorial.this, Tutorial.class);
                                     i.putExtra("page", 1);

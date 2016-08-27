@@ -6,6 +6,8 @@ import net.dean.jraw.models.CommentSort;
 import net.dean.jraw.paginators.Sorting;
 import net.dean.jraw.paginators.TimePeriod;
 
+import java.util.Calendar;
+
 import me.ccrama.redditslide.Views.CreateCardView;
 import me.ccrama.redditslide.Visuals.Palette;
 
@@ -18,7 +20,9 @@ public class SettingValues {
     public static final String PREF_UPVOTE_PERCENTAGE = "upvotePercentage";
     public static final String PREF_FAB_TYPE = "FabType";
     public static final String PREF_DAY_TIME = "day";
-    public static final String PREF_NIGHT_TIME = "nightTime";
+    public static final String PREF_NIGHT_MODE = "nightMode";
+    public static final String PREF_NIGHT_THEME = "nightTheme";
+    public static final String PREF_TYPE_IN_TEXT = "typeInText";
     public static final String PREF_AUTOHIDE_COMMENTS = "autohideComments";
     public static final String PREF_NO_IMAGES = "noImages";
     public static final String PREF_AUTOTHEME = "autotime";
@@ -42,6 +46,7 @@ public class SettingValues {
     public static final String PREF_ALWAYS_EXTERNAL = "alwaysExternal";
     public static final String PREF_DRAFTS = "drafts";
     public static final String PREF_SUBREDDIT_FILTERS = "subredditFilters";
+    public static final String PREF_FLAIR_FILTERS = "subFlairFilters";
     public static final String PREF_COMMENT_LAST_VISIT = "commentLastVisit";
     public static final String PREF_VOTES_INFO_LINE = "votesInfoLine";
     public static final String PREF_TYPE_INFO_LINE = "typeInfoLine";
@@ -64,6 +69,10 @@ public class SettingValues {
     public static final String PREF_ZOOM_DEFAULT = "zoomDefault";
     public static final String PREF_SUBREDDIT_SEARCH_METHOD = "subredditSearchMethod";
     public static final String PREF_IMGUR_LQ = "imgurLq";
+    public static final String PREF_SOUND_NOTIFS = "soundNotifs";
+    public static final String PREF_COOKIES = "storeCookies";
+    public static final String PREF_NIGHT_START = "nightStart";
+    public static final String PREF_NIGHT_END = "nightEnd";
 
     public static final String PREF_FULL_COMMENT_OVERRIDE = "fullCommentOverride";
     public static final String PREF_ALBUM = "album";
@@ -82,6 +91,9 @@ public class SettingValues {
     public static final String PREF_COMMENT_NAV = "commentVolumeNav";
     public static final String PREF_COLOR_COMMENT_DEPTH = "colorCommentDepth";
     public static final String COMMENT_DEPTH = "commentDepth";
+    public static final String COMMENT_COUNT = "commentcount";
+    public static final String PREF_USER_FILTERS = "userFilters";
+    public static final String PREF_COLOR_ICON = "colorIcon";
 
     public static CreateCardView.CardEnum defaultCardView;
     public static Sorting defaultSorting;
@@ -136,6 +148,8 @@ public class SettingValues {
     public static boolean collapseCommentsDefault;
     public static boolean rightHandedCommentMenu;
     public static int subredditSearchMethod;
+    public static int nightStart;
+    public static int nightEnd;
 
     public static int previews;
 
@@ -146,6 +160,7 @@ public class SettingValues {
     public static String textFilters;
     public static String domainFilters;
     public static String subredditFilters;
+    public static String flairFilters;
     public static String alwaysExternal;
     public static boolean loadImageLq;
 
@@ -156,8 +171,7 @@ public class SettingValues {
     public static boolean tabletUI;
     public static boolean customtabs;
     public static boolean dualPortrait;
-    public static int nighttime;
-    public static int daytime;
+    public static boolean nightMode;
     public static boolean autoTime;
     public static boolean albumSwipe;
     public static boolean switchThumb;
@@ -171,6 +185,12 @@ public class SettingValues {
     public static boolean alwaysZoom;
     public static boolean imgurLq = true;
     public static int currentTheme; //current base theme (Light, Dark, Dark blue, etc.)
+    public static int nightTheme;
+    public static boolean typeInText;
+    public static String userFilters;
+    public static boolean notifSound;
+    public static boolean cookies;
+    public static boolean colorIcon;
 
     public static void setAllValues(SharedPreferences settings) {
         prefs = settings;
@@ -196,8 +216,8 @@ public class SettingValues {
         fab = prefs.getBoolean(PREF_FAB, true);
         fabType = prefs.getInt(PREF_FAB_TYPE, R.integer.FAB_DISMISS);
         subredditSearchMethod = prefs.getInt(PREF_SUBREDDIT_SEARCH_METHOD, R.integer.SUBREDDIT_SEARCH_METHOD_DRAWER);
-        nighttime = prefs.getInt(PREF_DAY_TIME, 20);
-        daytime = prefs.getInt(PREF_NIGHT_TIME, 6);
+        nightMode = prefs.getBoolean(PREF_NIGHT_MODE, false);
+        nightTheme = prefs.getInt(PREF_NIGHT_THEME, 0);
         autoTime = prefs.getBoolean(PREF_AUTOTHEME, false);
         colorBack = prefs.getBoolean(PREF_COLOR_BACK, false);
         cardText = prefs.getBoolean(PREF_CARD_TEXT, false);
@@ -230,15 +250,19 @@ public class SettingValues {
         image = prefs.getBoolean(PREF_IMAGE, true);
         cache = true;
         cacheDefault = false;
-        customtabs = prefs.getBoolean(PREF_CUSTOMTABS, true);
+        customtabs = prefs.getBoolean(PREF_CUSTOMTABS, false);
         storeHistory = prefs.getBoolean(PREF_STORE_HISTORY, true);
         upvotePercentage = prefs.getBoolean(PREF_UPVOTE_PERCENTAGE, false);
         storeNSFWHistory = prefs.getBoolean(PREF_STORE_NSFW_HISTORY, true);
         scrollSeen = prefs.getBoolean(PREF_SCROLL_SEEN, false);
         synccitName = prefs.getString(SYNCCIT_NAME, "");
         synccitAuth = prefs.getString(SYNCCIT_AUTH, "");
+        notifSound = prefs.getBoolean(PREF_SOUND_NOTIFS, false);
+        cookies = prefs.getBoolean(PREF_COOKIES, true);
 
         previews = prefs.getInt(PREVIEWS_LEFT, 10);
+        nightStart = prefs.getInt(PREF_NIGHT_START, 9);
+        nightEnd = prefs.getInt(PREF_NIGHT_END, 5);
 
         fabComments = prefs.getBoolean(PREF_COMMENT_FAB, false);
         titleFilters = prefs.getString(PREF_TITLE_FILTERS, "");
@@ -246,6 +270,8 @@ public class SettingValues {
         domainFilters = prefs.getString(PREF_DOMAIN_FILTERS, "");
         subredditFilters = prefs.getString(PREF_SUBREDDIT_FILTERS, "");
         alwaysExternal = prefs.getString(SettingValues.PREF_ALWAYS_EXTERNAL, "");
+        flairFilters = prefs.getString(PREF_FLAIR_FILTERS, "");
+        userFilters = prefs.getString(PREF_USER_FILTERS, "");
 
         dualPortrait = prefs.getBoolean(PREF_DUAL_PORTRAIT, false);
         colorSubName = prefs.getBoolean(PREF_COLOR_SUB_NAME, false);
@@ -262,12 +288,14 @@ public class SettingValues {
         gif = prefs.getBoolean(PREF_GIF, true);
         video = true;
         exit = prefs.getBoolean(PREF_EXIT, true);
-        fastscroll = prefs.getBoolean(PREF_FASTSCROLL, false);
+        fastscroll = prefs.getBoolean(PREF_FASTSCROLL, true);
+        typeInText = prefs.getBoolean(PREF_TYPE_IN_TEXT, false);
 
         hideButton = prefs.getBoolean(PREF_HIDEBUTTON, false);
         saveButton = prefs.getBoolean(PREF_SAVE_BUTTON, false);
         actionbarVisible = prefs.getBoolean(PREF_ACTIONBAR_VISIBLE, true);
         actionbarTap = prefs.getBoolean(PREF_ACTIONBAR_TAP, false);
+        colorIcon = prefs.getBoolean(PREF_COLOR_ICON, false);
     }
 
     public static void setPicsEnabled(String sub, boolean checked) {
@@ -309,6 +337,11 @@ public class SettingValues {
 
     public static Sorting getSubmissionSorting(String sub) {
         return Sorting.valueOf(prefs.getString("defaultSort" + sub.toLowerCase(), defaultCommentSorting.name()));
+    }
+
+    public static boolean isNight() {
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        return (hour >= nightStart + 12 || hour <= nightEnd) && tabletUI && nightMode;
     }
 
     public enum ColorIndicator {

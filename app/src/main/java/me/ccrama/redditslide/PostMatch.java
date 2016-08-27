@@ -76,6 +76,8 @@ public class PostMatch {
     public static String[] domains = null;
     public static String[] subreddits = null;
     public static String[] externalDomain = null;
+    public static String[] flairs = null;
+    public static String[] users = null;
 
 
     public static boolean doesMatch(Submission s, String baseSubreddit, boolean ignore18) {
@@ -83,11 +85,13 @@ public class PostMatch {
         String body = s.getSelftext();
         String domain = s.getUrl();
         String subreddit = s.getSubredditName();
+        String flair = s.getSubmissionFlair().getText() != null?s.getSubmissionFlair().getText():"";
 
         boolean titlec;
         boolean bodyc;
         boolean domainc;
         boolean subredditc;
+        boolean userc;
 
         if (titles == null) {
             titles = SettingValues.titleFilters.replaceAll("^[,\\s]+", "").split("[,\\s]+");
@@ -101,10 +105,18 @@ public class PostMatch {
         if (subreddits == null) {
             subreddits = SettingValues.subredditFilters.replaceAll("^[,\\s]+", "").split("[,\\s]+");
         }
+        if (flairs == null) {
+            flairs = SettingValues.flairFilters.replaceAll("^[,]+", "").split("[,]+");
+        }
+        if (users == null) {
+            users = SettingValues.userFilters.replaceAll("^[,\\s]+", "").split("[,\\s]+");
+        }
 
         titlec = !SettingValues.titleFilters.isEmpty() && contains(title.toLowerCase(), titles, false);
 
         bodyc = !SettingValues.textFilters.isEmpty() && contains(body.toLowerCase(), texts, false);
+
+        userc = !SettingValues.userFilters.isEmpty() && contains(s.getAuthor().toLowerCase(), users, false);
 
         try {
             domainc = !SettingValues.domainFilters.isEmpty() && isDomain(domain.toLowerCase(), domains);
@@ -119,6 +131,7 @@ public class PostMatch {
         if (baseSubreddit == null || baseSubreddit.isEmpty()) {
             baseSubreddit = "frontpage";
         }
+
         baseSubreddit = baseSubreddit.toLowerCase();
         boolean gifs = isGif(baseSubreddit);
         boolean images = isImage(baseSubreddit);
@@ -159,6 +172,7 @@ public class PostMatch {
             case IMAGE:
             case DEVIANTART:
             case IMGUR:
+            case XKCD:
                 if (images) {
                     contentMatch = true;
                 }
@@ -177,7 +191,20 @@ public class PostMatch {
                 break;
         }
 
-        return (titlec || bodyc || domainc || subredditc || contentMatch || Hidden.id.contains(s.getFullName()));
+        if(!flair.isEmpty())
+        for(String flairText : flairs){
+            if(flairText.toLowerCase().startsWith(baseSubreddit)){
+                String[] split = flairText.split(":");
+                if(split[0].equalsIgnoreCase(baseSubreddit)){
+                    if(flair.equalsIgnoreCase(split[1].trim())){
+                        contentMatch = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return (titlec || bodyc || userc || domainc || subredditc || contentMatch || Hidden.id.contains(s.getFullName()));
     }
 
     public static boolean doesMatch(Submission s) {

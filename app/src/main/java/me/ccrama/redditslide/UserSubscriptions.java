@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 
 import net.dean.jraw.ApiException;
+import net.dean.jraw.managers.AccountManager;
 import net.dean.jraw.managers.MultiRedditManager;
 import net.dean.jraw.models.MultiReddit;
 import net.dean.jraw.models.MultiSubreddit;
@@ -144,7 +145,7 @@ public class UserSubscriptions {
         } else {
             ArrayList<String> subredditsForHome = new ArrayList<>();
             for (String s2 : s.split(",")) {
-                subredditsForHome.add(s2.toLowerCase());
+                subredditsForHome.add(s2);
             }
             return subredditsForHome;
         }
@@ -261,7 +262,7 @@ public class UserSubscriptions {
         Authentication.authentication.edit().remove("backedCreds").remove("expires").apply();
         editor.putBoolean("loggedin", Authentication.isLoggedIn);
         editor.putString("name", Authentication.name);
-        editor.apply();
+        editor.commit();
     }
 
     /**
@@ -581,7 +582,7 @@ public class UserSubscriptions {
             }
         }
 
-        java.util.Collections.sort(subs);
+        java.util.Collections.sort(subs, String.CASE_INSENSITIVE_ORDER);
         finals.addAll(subs);
         return finals;
 
@@ -589,5 +590,27 @@ public class UserSubscriptions {
 
     public static boolean isSubscriber(String s, Context c) {
         return getSubscriptions(c).contains(s.toLowerCase());
+    }
+
+    public static class SubscribeTask extends AsyncTask<String, Void, Void> {
+        @Override
+        protected Void doInBackground(String... subreddits) {
+            final AccountManager m = new AccountManager(Authentication.reddit);
+            for (String subreddit : subreddits) {
+                m.subscribe(Authentication.reddit.getSubreddit(subreddit));
+            }
+            return null;
+        }
+    }
+
+    public static class UnsubscribeTask extends AsyncTask<String, Void, Void> {
+        @Override
+        protected Void doInBackground(String... subreddits) {
+            final AccountManager m = new AccountManager(Authentication.reddit);
+            for (String subreddit : subreddits) {
+                m.unsubscribe(Authentication.reddit.getSubreddit(subreddit));
+            }
+            return null;
+        }
     }
 }

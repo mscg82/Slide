@@ -99,15 +99,15 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
     public String actuallyLoaded;
     public boolean isGif;
 
-    private NotificationManager mNotifyManager;
+    private NotificationManager        mNotifyManager;
     private NotificationCompat.Builder mBuilder;
-    private int stopPosition;
-    private GifUtils.AsyncLoadGif gif;
-    private String contentUrl;
-    private MediaVideoView videoView;
-    private OkHttpClient client;
-    private Gson gson;
-    private String mashapeKey;
+    private int                        stopPosition;
+    private GifUtils.AsyncLoadGif      gif;
+    private String                     contentUrl;
+    private MediaVideoView             videoView;
+    private OkHttpClient               client;
+    private Gson                       gson;
+    private String                     mashapeKey;
 
     public static void animateIn(View l) {
         l.setVisibility(View.VISIBLE);
@@ -247,7 +247,7 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             }
-            b.sheet(6, file, "Save " + type);
+            b.sheet(6, file, getString(R.string.mediaview_save) + type);
         }
         b.listener(new DialogInterface.OnClickListener() {
             @Override
@@ -313,7 +313,7 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
                     mNotifyManager =
                             (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                     mBuilder = new NotificationCompat.Builder(MediaView.this);
-                    mBuilder.setContentTitle("Saving " + baseUrl)
+                    mBuilder.setContentTitle(getString(R.string.mediaview_saving) + baseUrl)
                             .setSmallIcon(R.drawable.save);
                     try {
 
@@ -543,6 +543,9 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
             case IMGUR:
                 doLoadImgur(contentUrl);
                 break;
+            case XKCD:
+                doLoadXKCD(contentUrl);
+                break;
             case VID_ME:
             case STREAMABLE:
             case GIF:
@@ -647,6 +650,63 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
                                 }
                             } else {
                                 if (!imageShown) doLoadImage(finalUrl);
+                            }
+                        } catch (Exception e2) {
+                            e2.printStackTrace();
+                            Intent i = new Intent(MediaView.this, Website.class);
+                            i.putExtra(Website.EXTRA_URL, finalUrl);
+                            MediaView.this.startActivity(i);
+                        }
+                    }
+
+                }
+            }.execute();
+        }
+    }
+
+    public void doLoadXKCD(String url) {
+        if (!url.endsWith("/")) {
+            url = url + "/";
+        }
+
+        if (NetworkUtil.isConnected(this)) {
+            final String apiUrl = url + "info.0.json";
+            LogUtil.v(apiUrl);
+
+            final String finalUrl = url;
+            new AsyncTask<Void, Void, JsonObject>() {
+                @Override
+                protected JsonObject doInBackground(Void... params) {
+                    return HttpUtil.getJsonObject(client, gson, apiUrl);
+                }
+
+                @Override
+                protected void onPostExecute(final JsonObject result) {
+                    if (result != null && !result.isJsonNull() && result.has("error")) {
+                        LogUtil.v("Error loading content");
+                        (MediaView.this).finish();
+                    } else {
+                        try {
+                            if (result != null && !result.isJsonNull() && result.has("img")) {
+                                doLoadImage(result.get("img").getAsString());
+                                findViewById(R.id.submission_image).setOnLongClickListener(new View.OnLongClickListener() {
+                                    @Override
+                                    public boolean onLongClick(View v) {
+                                        try {
+                                            new AlertDialogWrapper.Builder(MediaView.this).setTitle(
+                                                    result.get("safe_title").getAsString())
+                                                    .setMessage(result.get("alt").getAsString())
+                                                    .show();
+                                        } catch(Exception ignored){
+
+                                        }
+                                        return true;
+                                    }
+                                });
+                            }  else {
+                                Intent i = new Intent(MediaView.this, Website.class);
+                                i.putExtra(Website.EXTRA_URL, finalUrl);
+                                MediaView.this.startActivity(i);
                             }
                         } catch (Exception e2) {
                             e2.printStackTrace();
@@ -1067,7 +1127,7 @@ public class MediaView extends FullScreenActivity implements FolderChooserDialog
     public void onFolderSelection(FolderChooserDialogCreate dialog, File folder) {
         if (folder != null) {
             Reddit.appRestart.edit().putString("imagelocation", folder.getAbsolutePath()).apply();
-            Toast.makeText(this, "Images will be saved to " + folder.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.settings_set_image_location, folder.getAbsolutePath()), Toast.LENGTH_LONG).show();
         }
     }
 }

@@ -32,6 +32,16 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
+                <TextView
+                        android:layout_width="match_parent"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="-24dp"
+                        android:id="@+id/nightmsg"
+                        android:visibility="gone"
+                        android:padding="24dp"
+                        android:text="Night Mode is currently enabled, you won't see the theme change until night mode is off!"
+                        android:layout_height="wrap_content"/>
+
 
                 <LinearLayout
                     android:id="@+id/body2"
@@ -219,7 +229,36 @@
                             android:textSize="16sp" />
 
                     </LinearLayout>
+                    <LinearLayout
+                            android:id="@+id/red"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="#44302f"
+                            android:gravity="center_vertical"
 
+                            android:orientation="horizontal"
+                            android:paddingEnd="16dp">
+
+                        <ImageView
+                                android:layout_width="56dp"
+                                android:layout_height="match_parent"
+                                android:alpha=".86"
+                                android:padding="12dp"
+                                android:tint="#ffffff"
+                                app:srcCompat="@drawable/theme" />
+
+                        <TextView
+                                android:layout_width="wrap_content"
+
+                                android:layout_height="wrap_content"
+
+                                android:text="@string/theme_red_shift"
+
+                                android:textColor="#ffffff"
+
+                                android:textSize="16sp" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 

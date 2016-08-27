@@ -39,6 +39,7 @@
                     android:paddingEnd="16dp"
                     android:paddingTop="16dp"
                     android:layout_width="match_parent"
+                    android:textColor="?attr/colorAccent"
                     android:layout_height="wrap_content" />
 
                 <RelativeLayout
@@ -62,7 +63,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/settings_layout_view"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/view_current"
@@ -101,7 +102,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/settings_layout_picture_mode"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/picture_current"
@@ -128,7 +129,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -139,11 +140,54 @@
                             android:layout_height="wrap_content"
                             android:text="@string/mode_big_thumbnails"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.SwitchCompat
                         android:id="@+id/bigThumbnails"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:paddingEnd="16dp"
+                        android:backgroundTint="?attr/tint"
+                        android:button="@null"
+                        android:buttonTint="?attr/tint"
+                        android:hapticFeedbackEnabled="true"
+                        android:textColor="?attr/font"
+                        android:textColorHint="?attr/font" />
+                </RelativeLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="0.25dp"
+                    android:alpha=".25"
+                    android:background="?attr/tint" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:background="?android:selectableItemBackground"
+                    android:textColor="?attr/colorAccent"
+                    android:paddingStart="16dp">
+
+                    <LinearLayout
+                        android:layout_marginEnd="64dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/settings_comment_hide_selftext_image"
+                            android:textColor="?attr/font"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <android.support.v7.widget.SwitchCompat
+                        android:id="@+id/selftextcomment"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:paddingEnd="16dp"
@@ -182,7 +226,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/settings_layout_actionbar_mode"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/actionbar_current"
@@ -202,6 +246,7 @@
                     android:paddingEnd="16dp"
                     android:paddingTop="16dp"
                     android:layout_width="match_parent"
+                    android:textColor="?attr/colorAccent"
                     android:layout_height="wrap_content" />
 
                 <RelativeLayout
@@ -213,7 +258,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -224,7 +269,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/settings_card_show_selftext"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.SwitchCompat
@@ -255,7 +300,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -266,7 +311,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/settings_layout_small_content_tag"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.SwitchCompat
@@ -297,7 +342,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -308,7 +353,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/settings_layout_show_domain"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.SwitchCompat
@@ -339,7 +384,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -350,7 +395,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/settings_layout_show_content_type"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.SwitchCompat
@@ -381,7 +426,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -392,7 +437,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/settings_layout_show_votes_comments"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.SwitchCompat
@@ -423,7 +468,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -434,7 +479,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/card_right_thumb"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.SwitchCompat
@@ -465,7 +510,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -476,7 +521,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/settings_general_comment_last_visit"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.SwitchCompat
@@ -500,6 +545,7 @@
                     android:paddingEnd="16dp"
                     android:paddingTop="16dp"
                     android:layout_width="match_parent"
+                    android:textColor="?attr/colorAccent"
                     android:layout_height="wrap_content" />
 
                 <RelativeLayout
@@ -512,7 +558,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -523,7 +569,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/card_hide_post_button"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.AppCompatCheckBox
@@ -556,7 +602,7 @@
                     android:paddingStart="16dp">
 
                     <LinearLayout
-                        android:layout_marginEnd="42dp"
+                        android:layout_marginEnd="64dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -567,7 +613,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/card_save_button"
                             android:textColor="?attr/font"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
 
                     <android.support.v7.widget.AppCompatCheckBox

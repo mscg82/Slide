@@ -33,7 +33,6 @@ import me.ccrama.redditslide.util.LogUtil;
  */
 public class ImageDownloadNotificationService extends Service {
 
-    String actuallyLoaded;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -41,11 +40,11 @@ public class ImageDownloadNotificationService extends Service {
     }
 
     private void handleIntent(Intent intent) {
-        actuallyLoaded = intent.getStringExtra("actuallyLoaded");
+        String actuallyLoaded = intent.getStringExtra("actuallyLoaded");
         if (actuallyLoaded.contains("imgur.com") && (!actuallyLoaded.contains(".png") || !actuallyLoaded.contains(".jpg"))) {
             actuallyLoaded = actuallyLoaded + ".png";
         }
-        new PollTask().execute();
+        new PollTask(actuallyLoaded).execute();
     }
 
 
@@ -54,13 +53,18 @@ public class ImageDownloadNotificationService extends Service {
         public int id;
         private NotificationManager mNotifyManager;
         private NotificationCompat.Builder mBuilder;
+        public String actuallyLoaded;
+
+        public PollTask(String actuallyLoaded){
+            this.actuallyLoaded = actuallyLoaded;
+        }
 
         public void startNotification() {
-            id = new Random(System.currentTimeMillis()).nextInt();
+            id = (int) (System.currentTimeMillis()/1000);
             mNotifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             mBuilder = new NotificationCompat.Builder(getApplicationContext());
-            mBuilder.setContentTitle("Downloading image...")
-                    .setContentText("Download in progress")
+            mBuilder.setContentTitle(getString(R.string.mediaview_notif_title))
+                    .setContentText(getString(R.string.mediaview_notif_text))
                     .setSmallIcon(R.drawable.save);
         }
 

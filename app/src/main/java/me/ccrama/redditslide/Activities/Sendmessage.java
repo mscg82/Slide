@@ -116,6 +116,7 @@ public class Sendmessage extends BaseActivity {
                 bodytext = body.getText().toString();
                 totext = to.getText().toString();
                 subjecttext = subject.getText().toString();
+                ((FloatingActionButton)findViewById(R.id.send)).hide();
 
                 new AsyncDo().execute();
             }
@@ -208,7 +209,7 @@ public class Sendmessage extends BaseActivity {
                     if (e.getReason().equals("USER_DOESNT_EXIST") || e.getReason().equals("NO_USER")) {
                         messageSentStatus = getString(R.string.msg_send_user_dne);
                     } else if (e.getReason().toLowerCase().contains("captcha")) {
-                        messageSentStatus = "Captcha incorrect, please try again.";
+                        messageSentStatus = getString(R.string.misc_captcha_incorrect);
                     }
 
                     //todo show captcha
@@ -221,6 +222,7 @@ public class Sendmessage extends BaseActivity {
             //If the error wasn't that the user doesn't exist, show a generic failure message
             if (messageSentStatus == null) {
                 messageSentStatus = getString(R.string.msg_sent_failure);
+                ((FloatingActionButton)findViewById(R.id.send)).show();
             }
 
             final String MESSAGE_SENT = (messageSent)
@@ -232,6 +234,7 @@ public class Sendmessage extends BaseActivity {
             if (messageSent) {
                 finish();
             } else {
+                ((FloatingActionButton)findViewById(R.id.send)).show();
                 messageSent = true;
             }
         }

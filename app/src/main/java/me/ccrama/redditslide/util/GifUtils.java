@@ -1,14 +1,5 @@
 package me.ccrama.redditslide.util;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
-import com.afollestad.materialdialogs.AlertDialogWrapper;
-import com.nostra13.universalimageloader.core.assist.ContentLengthInputStream;
-import com.nostra13.universalimageloader.utils.IoUtils;
-
-import org.jetbrains.annotations.NotNull;
-
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -28,6 +19,14 @@ import android.widget.MediaController;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.afollestad.materialdialogs.AlertDialogWrapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.nostra13.universalimageloader.core.assist.ContentLengthInputStream;
+import com.nostra13.universalimageloader.utils.IoUtils;
+
+import org.jetbrains.annotations.NotNull;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -45,7 +44,6 @@ import me.ccrama.redditslide.Activities.Website;
 import me.ccrama.redditslide.Fragments.FolderChooserDialogCreate;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
-import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.Views.MediaVideoView;
 import okhttp3.OkHttpClient;
 
@@ -75,6 +73,7 @@ public class GifUtils {
         public boolean hideControls;
         public boolean autostart;
         public Runnable doOnClick;
+        public boolean cacheOnly;
 
         public TextView size;
 
@@ -100,6 +99,7 @@ public class GifUtils {
             this.autostart = autostart;
             this.size = size;
         }
+
         public AsyncLoadGif(@NotNull Activity c, @NotNull MediaVideoView video, @Nullable ProgressBar p, @Nullable View placeholder, @NotNull boolean closeIfNull, @NotNull boolean hideControls, boolean autostart) {
             this.c = c;
             this.video = video;
@@ -110,9 +110,13 @@ public class GifUtils {
             this.autostart = autostart;
         }
 
-        public void cancel(){
+        public AsyncLoadGif() {
+            cacheOnly = true;
+        }
+
+        public void cancel() {
             LogUtil.v("cancelling");
-            if(stream != null)
+            if (stream != null)
                 try {
                     stream.close();
                     is.close();
@@ -120,8 +124,9 @@ public class GifUtils {
                     LogUtil.e(e, "Error cancelling");
                 }
         }
+
         @Override
-        public void onCancelled(){
+        public void onCancelled() {
             super.onCancelled();
             cancel();
         }
@@ -132,60 +137,65 @@ public class GifUtils {
 
         }
 
-        public void showGif(final URL url) {
-            c.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    final File downloaded = GifCache.getGif(url.toString());
-                    LogUtil.v("Path is " + "file://" + downloaded);
-                    video.setVideoPath("file://" + downloaded);
-                    //videoView.set
+        public void showGif(final URL url, final int tries) {
+            if (tries < 2) {
+                c.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        final File downloaded = GifCache.getGif(url);
+                        LogUtil.v("Path is " + "file://" + downloaded);
+                        video.setVideoPath("file://" + downloaded);
+                        //videoView.set
 
-                    if (placeholder != null && !hideControls && !(c instanceof Shadowbox)) {
-                        MediaController mediaController = new
-                                MediaController(c);
-                        mediaController.setAnchorView(placeholder);
-                        video.setMediaController(mediaController);
-
-                    }
-                    showProgressBar(c, progressBar, false);
-                    if (gifSave != null) {
-                        gifSave.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                saveGif(downloaded, c);
-                            }
-                        });
-                    } else if (doOnClick != null) {
-                        MediaView.doOnClick = new Runnable() {
-                            @Override
-                            public void run() {
-                                saveGif(downloaded, c);
-
-                            }
-                        };
-                    }
-
-
-                    video.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                        @Override
-                        public void onPrepared(MediaPlayer mp) {
-
-                            if (placeholder != null)
-                                placeholder.setVisibility(View.GONE);
-                            mp.setLooping(true);
-
+                        if (placeholder != null && !hideControls && !(c instanceof Shadowbox)) {
+                            MediaController mediaController = new
+                                    MediaController(c);
+                            mediaController.setAnchorView(placeholder);
+                            video.setMediaController(mediaController);
 
                         }
+                        showProgressBar(c, progressBar, false);
+                        if (gifSave != null) {
+                            gifSave.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    saveGif(downloaded, c);
+                                }
+                            });
+                        } else if (doOnClick != null) {
+                            MediaView.doOnClick = new Runnable() {
+                                @Override
+                                public void run() {
+                                    saveGif(downloaded, c);
 
-                    });
-                    if (autostart)
+                                }
+                            };
+                        }
 
-                        video.start();
+
+                        video.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                            @Override
+                            public void onPrepared(MediaPlayer mp) {
+
+                                if (placeholder != null)
+                                    placeholder.setVisibility(View.GONE);
+                                mp.setLooping(true);
 
 
-                }
-            });
+                            }
+
+                        });
+                        if (autostart) {
+                            video.start();
+                            if (!video.isPlaying()) {
+                                showGif(url, tries + 1);
+                            }
+                        }
+
+
+                    }
+                });
+            }
 
         }
 
@@ -224,6 +234,7 @@ public class GifUtils {
                 return VideoType.STREAMABLE;
             return VideoType.OTHER;
         }
+
         OkHttpClient client = new OkHttpClient();
 
         @Override
@@ -259,7 +270,7 @@ public class GifUtils {
                                                             c.finish();
                                                         }
                                                     }).create().show();
-                                        } catch(Exception e){
+                                        } catch (Exception e) {
 
                                         }
                                     }
@@ -285,7 +296,16 @@ public class GifUtils {
                     try {
                         writeGif(new URL(url), progressBar, c, AsyncLoadGif.this);
                     } catch (Exception e) {
-                        LogUtil.e(e, "Error loading URL " + url);
+                        LogUtil.e(e, "Error loading URL " + url); //Most likely is an image, not a gif!
+                        if(c instanceof MediaView){
+                            c.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    (c).startActivity(new Intent(c, MediaView.class).putExtra(MediaView.EXTRA_URL,url.replace(".mp4", "h.png") ));//Load the high quality thumbnail, which is a JPG
+                                    (c).finish();
+                                }
+                            });
+                        }
                     }
                     break;
                 case STREAMABLE:
@@ -326,6 +346,29 @@ public class GifUtils {
                         writeGif(finalUrl, progressBar, c, AsyncLoadGif.this);
                     } catch (Exception e) {
                         LogUtil.e(e, "Error loading streamable video url = [" + url + "] streamableUrl = [" + streamableUrl + "]");
+
+                        if (closeIfNull) {
+                            c.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        new AlertDialogWrapper.Builder(c).setTitle(R.string.error_video_not_found)
+                                                .setMessage(R.string.error_video_message)
+                                                .setCancelable(false)
+                                                .setPositiveButton(R.string.btn_ok, new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialog, int which) {
+                                                        c.finish();
+                                                    }
+                                                })
+                                                .create()
+                                                .show();
+                                    } catch(Exception e){
+
+                                    }
+                                }
+                            });
+                        }
                     }
                     break;
                 case VID_ME:
@@ -391,9 +434,9 @@ public class GifUtils {
                                             public void run() {
                                                 AlertDialogWrapper.Builder b = new AlertDialogWrapper.Builder(c)
                                                         .setTitle(R.string.gif_err_title)
-                                                        .setMessage("Converting the gif through Gfycat did not work.")
+                                                        .setMessage(R.string.mediaview_converting_fail)
                                                         .setCancelable(false)
-                                                        .setPositiveButton("Open in web", new DialogInterface.OnClickListener() {
+                                                        .setPositiveButton(R.string.mediaview_converting_fail_btn, new DialogInterface.OnClickListener() {
                                                             @Override
                                                             public void onClick(DialogInterface dialog, int which) {
                                                                 Intent i = new Intent(c, Website.class);
@@ -431,14 +474,16 @@ public class GifUtils {
         ContentLengthInputStream stream;
         URLConnection ucon;
         InputStream is;
+
         public static String readableFileSize(long size) {
-            if(size <= 0) return "0";
-            final String[] units = new String[] { "B", "kB", "MB", "GB", "TB" };
-            int digitGroups = (int) (Math.log10(size)/Math.log10(1024));
-            return new DecimalFormat("#,##0.#").format(size/Math.pow(1024, digitGroups)) + " " + units[digitGroups];
+            if (size <= 0) return "0";
+            final String[] units = new String[]{"B", "kB", "MB", "GB", "TB"};
+            int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+            return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
         }
 
-        public void writeGif(final URL url, final ProgressBar progressBar, final Activity c, final AsyncLoadGif afterDone) {
+        public void writeGif(final URL url, final ProgressBar progressBar, final Activity c, final AsyncLoadGif afterDone)
+                throws Exception {
             try {
                 if (!GifCache.fileExists(url)) {
                     ucon = url.openConnection();
@@ -446,7 +491,7 @@ public class GifUtils {
                     ucon.setConnectTimeout(10000);
                     is = ucon.getInputStream();
                     //todo  MediaView.fileLoc = f.getAbsolutePath();
-                    if(size != null){
+                    if (size != null && c != null) {
                         c.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -460,19 +505,19 @@ public class GifUtils {
                         public boolean onBytesCopied(int current, int total) {
                             final int percent = Math.round(100.0f * current / total);
 
-                            if(isCancelled()){
+                            if (isCancelled()) {
                                 return false;
                             }
 
-                            if (progressBar != null) {
+                            if (progressBar != null && c != null) {
                                 c.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         progressBar.setProgress(percent);
                                         if (percent == 100) {
                                             progressBar.setVisibility(View.GONE);
-                                            afterDone.showGif(url);
-                                            if(size != null)
+                                            afterDone.showGif(url, 0);
+                                            if (size != null)
                                                 size.setVisibility(View.GONE);
                                         }
                                     }
@@ -490,13 +535,14 @@ public class GifUtils {
                             @Override
                             public void run() {
                                 progressBar.setVisibility(View.GONE);
-                                afterDone.showGif(url);
+                                afterDone.showGif(url, 0);
                             }
                         });
                     }
                 }
             } catch (Exception e) {
                 LogUtil.e("Error writing GIF: url = [" + url + "], progressBar = [" + progressBar + "], c = [" + c + "], afterDone = [" + afterDone + "]");
+                throw(e);
             }
         }
     }

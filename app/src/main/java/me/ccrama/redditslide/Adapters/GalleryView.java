@@ -179,7 +179,7 @@ public class GalleryView extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                         ClipData clip = ClipData.newPlainText("Link", submission.getUrl());
                                         clipboard.setPrimaryClip(clip);
 
-                                        Toast.makeText(main, "Link copied", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(main, R.string.submission_link_copied, Toast.LENGTH_SHORT).show();
                                         break;
                                 }
                             }
@@ -207,7 +207,7 @@ public class GalleryView extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                 }
                                 break;
                             case IMGUR:
-                                PopulateSubmissionViewHolder.openImage(main, submission, null, holder.getAdapterPosition());
+                                PopulateSubmissionViewHolder.openImage(type, main, submission, null, holder.getAdapterPosition());
                                 break;
                             case EMBEDDED:
                                 if (SettingValues.video) {
@@ -246,8 +246,9 @@ public class GalleryView extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                 }
                                 break;
                             case DEVIANTART:
+                            case XKCD:
                             case IMAGE:
-                                PopulateSubmissionViewHolder.openImage(main, submission, null, holder.getAdapterPosition());
+                                PopulateSubmissionViewHolder.openImage(type, main, submission, null, holder.getAdapterPosition());
                                 break;
                             case GIF:
                                 PopulateSubmissionViewHolder.openGif(main, submission,  holder.getAdapterPosition());

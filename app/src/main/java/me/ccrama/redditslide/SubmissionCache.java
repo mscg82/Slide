@@ -105,7 +105,11 @@ public class SubmissionCache {
         if (submission.getAuthor() != null) {
             if (Authentication.name != null && submission.getAuthor().toLowerCase().equals(Authentication.name.toLowerCase())) {
                 author.setSpan(new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_deep_orange_300, false), 0, author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            } else if (submission.getDistinguishedStatus() == DistinguishedStatus.MODERATOR || submission.getDistinguishedStatus() == DistinguishedStatus.ADMIN) {
+            } else if (submission.getDistinguishedStatus() == DistinguishedStatus.ADMIN) {
+                author.setSpan(new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_red_500, false), 0, author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else if (submission.getDistinguishedStatus() == DistinguishedStatus.SPECIAL) {
+                author.setSpan(new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_red_900, false), 0, author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else if (submission.getDistinguishedStatus() == DistinguishedStatus.MODERATOR) {
                 author.setSpan(new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_green_300, false), 0, author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else if (authorcolor != 0) {
                 author.setSpan(new ForegroundColorSpan(authorcolor), 0, author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -259,7 +263,7 @@ public class SubmissionCache {
             titleString.append(pinned);
         }
         if (!submission.getDataNode().get("approved_by").asText().equals("null")) {
-            SpannableStringBuilder pinned = new SpannableStringBuilder("\u00A0Approved by " + submission.getDataNode().get("approved_by").asText().trim() + "\u00A0");
+            SpannableStringBuilder pinned = new SpannableStringBuilder(mContext.getString(R.string.mod_approved_by) + submission.getDataNode().get("approved_by").asText().trim() + "\u00A0");
             pinned.setSpan(new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_green_300, true), 0, pinned.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             titleString.append(" ");
             titleString.append(pinned);

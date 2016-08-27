@@ -56,7 +56,7 @@ public class ManageHistory extends BaseActivityAnim {
             findViewById(R.id.sync_now).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    new CommentCacheAsync(ManageHistory.this, Reddit.cachedData.getString("toCache", "").split(","), true).execute();
+                    new CommentCacheAsync(ManageHistory.this, Reddit.cachedData.getString("toCache", "").split(",")).execute();
                 }
             });
         } else {
@@ -91,6 +91,28 @@ public class ManageHistory extends BaseActivityAnim {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 SettingValues.prefs.edit().putString(SettingValues.COMMENT_DEPTH, commentDepths.get(which)).apply();
+                            }
+                        });
+                builder.show();
+
+            }
+        });
+
+        final List<String> commentCounts = ImmutableList.of("20", "40", "60", "80", "100");
+        final String[] commentCountArray = new String[commentCounts.size()];
+
+
+        findViewById(R.id.comments_count).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final String commentCount = SettingValues.prefs.getString(SettingValues.COMMENT_COUNT, "2");
+                AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(ManageHistory.this);
+                builder.setTitle(R.string.comments_count);
+                builder.setSingleChoiceItems(
+                        commentCounts.toArray(commentCountArray), commentCounts.indexOf(commentCount), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SettingValues.prefs.edit().putString(SettingValues.COMMENT_COUNT, commentCounts.get(which)).apply();
                             }
                         });
                 builder.show();
@@ -189,7 +211,7 @@ public class ManageHistory extends BaseActivityAnim {
         cal.set(Calendar.HOUR_OF_DAY, Reddit.cachedData.getInt("hour", 0));
         cal.set(Calendar.MINUTE, Reddit.cachedData.getInt("minute", 0));
         if (text != null) {
-            text.setText("Backup will occur at " + new SimpleDateFormat("hh:mm a").format(cal.getTime()));
+            text.setText(getString(R.string.settings_backup_occurs) + new SimpleDateFormat("hh:mm a").format(cal.getTime()));
         }
     }
 
@@ -198,7 +220,7 @@ public class ManageHistory extends BaseActivityAnim {
         Collections.addAll(subsToBack, Reddit.cachedData.getString("toCache", "").split(","));
         TextView text = (TextView) findViewById(R.id.autocache_text);
         if (!Reddit.cachedData.getString("toCache", "").contains(",") || subsToBack.isEmpty()) {
-            text.setText("No subreddits will back up.");
+            text.setText(R.string.settings_backup_none);
         } else {
             String toSay = "";
             for (String s : subsToBack) {
@@ -206,7 +228,7 @@ public class ManageHistory extends BaseActivityAnim {
                     toSay = toSay + s + ", ";
             }
             toSay = toSay.substring(0, toSay.length() - 2);
-            toSay += " will back up";
+            toSay += getString(R.string.settings_backup_will_backup);
             text.setText(toSay);
         }
     }
@@ -227,7 +249,7 @@ public class ManageHistory extends BaseActivityAnim {
                 if (multiNameToSubsMap.containsKey(sub)) {
                     sub = multiNameToSubsMap.get(sub);
                 }
-                final String name = (sub.contains("/m/") ? sub : "/r/" + sub) + " → " + (Long.valueOf(split[1]) == 0 ? "submission only" : TimeUtils.getTimeAgo(Long.valueOf(split[1]), ManageHistory.this) + " (comments)");
+                final String name = (sub.contains("/m/") ? sub : "/r/" + sub) + " → " + (Long.valueOf(split[1]) == 0 ? getString(R.string.settings_backup_submission_only) : TimeUtils.getTimeAgo(Long.valueOf(split[1]), ManageHistory.this) + getString(R.string.settings_backup_comments));
                 domains.add(name);
 
                 final View t = getLayoutInflater().inflate(R.layout.account_textview, ((LinearLayout) findViewById(R.id.domainlist)), false);

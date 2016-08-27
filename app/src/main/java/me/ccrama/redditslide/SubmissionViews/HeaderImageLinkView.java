@@ -104,12 +104,13 @@ public class HeaderImageLinkView extends RelativeLayout {
         String url = "";
         boolean forceThumb = false;
 
-        boolean loadLq = ((!NetworkUtil.isConnectedWifi(getContext()) && SettingValues.lowResMobile) || SettingValues.lowResAlways);
+        boolean loadLq = (((!NetworkUtil.isConnectedWifi(getContext()) && SettingValues.lowResMobile) || SettingValues.lowResAlways));
 
-        if (loadLq && type == ContentType.Type.SELF && SettingValues.hideSelftextLeadImage) {
+        if (type == ContentType.Type.SELF && SettingValues.hideSelftextLeadImage || SettingValues.noImages && submission.isSelfPost()) {
             setVisibility(View.GONE);
             if (wrapArea != null)
                 wrapArea.setVisibility(View.GONE);
+            thumbImage2.setVisibility(View.GONE);
         } else {
             if (submission.getThumbnails() != null) {
 
@@ -169,7 +170,7 @@ public class HeaderImageLinkView extends RelativeLayout {
                 if (!full && !submission.isSelfPost()) {
                     thumbImage2.setVisibility(View.VISIBLE);
                 } else {
-                    if (full)
+                    if (full && !submission.isSelfPost())
                         wrapArea.setVisibility(View.VISIBLE);
                 }
                 thumbImage2.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.web));
@@ -503,7 +504,7 @@ public class HeaderImageLinkView extends RelativeLayout {
                                     ClipData clip = ClipData.newPlainText("Link", url);
                                     clipboard.setPrimaryClip(clip);
 
-                                    Toast.makeText(activity, "Link copied", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(activity, R.string.submission_link_copied, Toast.LENGTH_SHORT).show();
                                     break;
                             }
                         }

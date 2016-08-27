@@ -5,14 +5,11 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
-import android.support.annotation.NonNull;
 import android.support.v7.app.NotificationCompat;
 import android.text.Html;
 import android.util.Log;
 import android.view.View;
 
-import com.afollestad.materialdialogs.DialogAction;
-import com.afollestad.materialdialogs.MaterialDialog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
@@ -30,36 +27,46 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import me.ccrama.redditslide.util.GifUtils;
 import me.ccrama.redditslide.util.NetworkUtil;
 
 /**
  * Created by carlo_000 on 4/18/2016.
  */
-public class CommentCacheAsync extends AsyncTask<String, Void, Void> {
+public class CommentCacheAsync extends AsyncTask{
+
+    public static final String SAVED_SUBMISSIONS = "saved submissions";
     List<Submission> alreadyReceived;
 
     NotificationManager mNotifyManager;
 
-    public CommentCacheAsync(List<Submission> submissions, Context c, String subreddit) {
+    public CommentCacheAsync(List<Submission> submissions, Context c, String subreddit, boolean[] otherChoices) {
         alreadyReceived = submissions;
         this.context = c;
         this.subs = new String[]{subreddit};
-        this.modal = true;
+        this.otherChoices = otherChoices;
+    }
+
+    public CommentCacheAsync(List<Submission> submissions, Activity mContext, String baseSub,
+            String alternateSubName) {
+        this(submissions, mContext, baseSub, new boolean[]{true ,true});
+
+    }
+
+    public CommentCacheAsync(Context c, String[] subreddits) {
+        this.context = c;
+        this.subs = subreddits;
     }
 
     String[] subs;
 
     Context context;
     NotificationCompat.Builder mBuilder;
-    MaterialDialog dialog;
-    boolean modal;
 
-    public CommentCacheAsync(Context c, String[] subreddits, boolean modal) {
-        this.context = c;
-        this.subs = subreddits;
-        this.modal = modal;
-    }
+    boolean[] otherChoices;
 
     public void loadPhotos(Submission submission, Context c) {
         String url;
@@ -166,8 +173,7 @@ public class CommentCacheAsync extends AsyncTask<String, Void, Void> {
     }
 
     @Override
-    protected Void doInBackground(String... params) {
-
+    public Void doInBackground(Object[] params) {
         Map<String, String> multiNameToSubsMap = UserSubscriptions.getMultiNameToSubs(true);
         if (Authentication.reddit == null)
             Reddit.authentication = new Authentication(context);
@@ -184,31 +190,12 @@ public class CommentCacheAsync extends AsyncTask<String, Void, Void> {
             }
 
             if (!sub.isEmpty()) {
-                if (modal && context instanceof Activity) {
-                    ((Activity) context).runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            dialog = new MaterialDialog.Builder(context).title("Caching " + (name.contains("/m/") ? name : "/r/" + name))
-                                    .progress(false, 50)
-                                    .cancelable(false)
-                                    .positiveText(R.string.btn_cancel)
-                                    .onPositive(new MaterialDialog.SingleButtonCallback() {
-                                        @Override
-                                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                            CommentCacheAsync.this.cancel(true);
-                                            dialog.dismiss();
-                                        }
-                                    })
-                                    .show();
-                        }
-                    });
-                } else {
-                    mNotifyManager =
-                            (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                    mBuilder = new NotificationCompat.Builder(context);
-                    mBuilder.setContentTitle("Caching " + (sub.equalsIgnoreCase("frontpage") ? name : (name.contains("/m/") ? name : "/r/" + name)))
-                            .setSmallIcon(R.drawable.save);
-                }
+                    if (!sub.equals(SAVED_SUBMISSIONS)) {
+                        mNotifyManager =
+                                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                        mBuilder = new NotificationCompat.Builder(context);
+                        mBuilder.setContentTitle(context.getString(R.string.offline_caching_title) + (sub.equalsIgnoreCase("frontpage") ? name : (name.contains("/m/") ? name : "/r/" + name))).setSmallIcon(R.drawable.savecontent);
+                    }
                 List<Submission> submissions = new ArrayList<>();
                 ArrayList<String> newFullnames = new ArrayList<>();
                 int count = 0;
@@ -229,53 +216,52 @@ public class CommentCacheAsync extends AsyncTask<String, Void, Void> {
                     }
                 }
 
-                if (!modal) {
-                    mBuilder.setProgress(submissions.size(), 0, false);
-                    mNotifyManager.notify(1, mBuilder.build());
-                } else {
-                    if (dialog != null)
-                        dialog.setMaxProgress(submissions.size());
-                }
                 int commentDepth = Integer.valueOf(SettingValues.prefs.getString(SettingValues.COMMENT_DEPTH, "5"));
+                int commentCount = Integer.valueOf(SettingValues.prefs.getString(SettingValues.COMMENT_COUNT, "50"));
+
                 Log.v("CommentCacheAsync", "comment depth " + commentDepth);
+                Log.v("CommentCacheAsync", "comment count " + commentCount);
+                int random = (int)(Math.random()*100);
+
                 for (final Submission s : submissions) {
                     try {
-                        JsonNode n = getSubmission(new SubmissionRequest.Builder(s.getId()).limit(50).depth(commentDepth).sort(sortType).build());
+                        JsonNode n = getSubmission(new SubmissionRequest.Builder(s.getId()).limit(commentCount).depth(commentDepth).sort(sortType).build());
                         Submission s2 = SubmissionSerializer.withComments(n, CommentSort.CONFIDENCE);
                         OfflineSubreddit.writeSubmission(n, s2, context);
                         newFullnames.add(s2.getFullName());
                         if (!SettingValues.noImages)
                             loadPhotos(s, context);
-                /* todo maybe
                 switch (ContentType.getContentType(s)) {
                     case GIF:
-                        if (chosen[0])
-                            GifUtils.saveGifToCache(MainActivity.this, s.getUrl());
+                        if (otherChoices[0])
+                            if(context instanceof Activity)
+                                ((Activity)context).runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ExecutorService service = Executors.newSingleThreadExecutor();
+                                        new GifUtils.AsyncLoadGif().executeOnExecutor(service, s.getUrl());
+                                    }
+                                });
                         break;
                     case ALBUM:
-                        if (chosen[1])
-
-                            AlbumUtils.saveAlbumToCache(MainActivity.this, s.getUrl());
+                        if (otherChoices[1])
+                            //todo this AlbumUtils.saveAlbumToCache(context, s.getUrl());
                         break;
-                }*/
+                }
                     } catch (Exception ignored) {
                     }
-                    count = count + Math.round(50f / submissions.size());
-                    if (modal) {
-                        dialog.setProgress(count);
-                    } else {
+                    count = count + 1;
+                    if (mBuilder != null) {
                         mBuilder.setProgress(submissions.size(), count, false);
-                        mNotifyManager.notify(1, mBuilder.build());
+                        mNotifyManager.notify(random, mBuilder.build());
                     }
 
                 }
-                if (modal && dialog != null) {
-                    dialog.dismiss();
-                } else if (mBuilder != null) {
-                    mBuilder.setContentText("Caching complete")
+                if (mBuilder != null) {
+                    mBuilder.setContentText(context.getString(R.string.offline_caching_complete))
                             // Removes the progress bar
                             .setProgress(0, 0, false);
-                    mNotifyManager.notify(1, mBuilder.build());
+                    mNotifyManager.notify(random, mBuilder.build());
                 }
 
                 OfflineSubreddit.newSubreddit(sub).writeToMemory(newFullnames);
@@ -312,6 +298,5 @@ public class CommentCacheAsync extends AsyncTask<String, Void, Void> {
             return null;
         }
     }
-
 }
 

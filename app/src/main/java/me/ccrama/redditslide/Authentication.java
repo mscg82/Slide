@@ -6,11 +6,14 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 
+import net.dean.jraw.ApiException;
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.LoggingMode;
+import net.dean.jraw.http.NetworkException;
 import net.dean.jraw.http.UserAgent;
 import net.dean.jraw.http.oauth.Credentials;
 import net.dean.jraw.http.oauth.OAuthData;
@@ -153,30 +156,38 @@ public class Authentication {
                             Log.v(LogUtil.getTag(), "REAUTH LOGGED IN");
 
                         } catch (Exception e) {
-                            ((Activity) context).runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
+                            try {
+                                ((Activity) context).runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try {
 
-                                        new AlertDialogWrapper.Builder(context).setTitle(R.string.err_general)
-                                                .setMessage(R.string.err_no_connection)
-                                                .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialog, int which) {
-                                                        new UpdateToken(context).execute();
-                                                    }
-                                                }).setNegativeButton(R.string.btn_no, new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                Reddit.forceRestart(context);
+                                            new AlertDialogWrapper.Builder(context).setTitle(R.string.err_general)
+                                                    .setMessage(R.string.err_no_connection)
+                                                    .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
+                                                        @Override
+                                                        public void onClick(DialogInterface dialog,
+                                                                int which) {
+                                                            new UpdateToken(context).execute();
+                                                        }
+                                                    })
+                                                    .setNegativeButton(R.string.btn_no, new DialogInterface.OnClickListener() {
+                                                        @Override
+                                                        public void onClick(DialogInterface dialog,
+                                                                int which) {
+                                                            Reddit.forceRestart(context);
 
-                                            }
-                                        }).show();
-                                    } catch (Exception ignored) {
+                                                        }
+                                                    })
+                                                    .show();
+                                        } catch (Exception ignored) {
 
+                                        }
                                     }
-                                }
-                            });
+                                });
+                            } catch (Exception e2){
+                                Toast.makeText(context, "Reddit could not be reached. Try again soon", Toast.LENGTH_SHORT).show();
+                            }
 
                             //TODO fail
                         }
@@ -229,6 +240,8 @@ public class Authentication {
 
                     } catch (Exception e) {
                         e.printStackTrace();
+                        if (e instanceof NetworkException) Toast.makeText(mContext, "Error " + ((NetworkException) e).getResponse().getStatusMessage() + ": " + (e).getMessage(), Toast.LENGTH_LONG).show();
+
                     }
                     didOnline = true;
 
@@ -249,32 +262,8 @@ public class Authentication {
                         return null;
 
                     } catch (Exception e) {
-                        ((Activity) mContext).runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-
-                                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
-                                            .setMessage(R.string.err_no_connection)
-                                            .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which) {
-                                                    new UpdateToken(mContext).execute();
-                                                }
-                                            }).setNegativeButton(R.string.btn_no, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            Reddit.forceRestart(mContext);
-
-                                        }
-                                    }).show();
-                                } catch (Exception ignored) {
-
-                                }
-                            }
-                        });
-
-                        //TODO fail
+                        e.printStackTrace();
+                        if (e instanceof NetworkException) Toast.makeText(mContext, "Error " + ((NetworkException) e).getResponse().getStatusMessage() + ": " + (e).getMessage(), Toast.LENGTH_LONG).show();
                     }
 
 

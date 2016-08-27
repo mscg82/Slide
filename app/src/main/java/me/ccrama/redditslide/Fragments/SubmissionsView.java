@@ -5,12 +5,14 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MarginLayoutParamsCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.view.ContextThemeWrapper;
 import android.support.v7.widget.RecyclerView;
@@ -49,22 +51,22 @@ import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.handler.ToolbarScrollHideHandler;
 
 public class SubmissionsView extends Fragment implements SubmissionDisplay {
-    private static int adaptorPosition;
-    private static int currentPosition;
-    public SubredditPosts posts;
-    public RecyclerView rv;
-    public SubmissionAdapter adapter;
-    public String id;
-    public boolean main;
-    public boolean forced;
-    int diff;
+    private static int               adapterPosition;
+    private static int               currentPosition;
+    public         SubredditPosts    posts;
+    public         RecyclerView      rv;
+    public         SubmissionAdapter adapter;
+    public         String            id;
+    public         boolean           main;
+    public         boolean           forced;
+    int     diff;
     boolean forceLoad;
-    private FloatingActionButton fab;
-    private int visibleItemCount;
-    private int pastVisiblesItems;
-    private int totalItemCount;
-    private SwipeRefreshLayout mSwipeRefreshLayout;
-    private static Submission currentSubmission;
+    private        FloatingActionButton fab;
+    private        int                  visibleItemCount;
+    private        int                  pastVisiblesItems;
+    private        int                  totalItemCount;
+    private        SwipeRefreshLayout   mSwipeRefreshLayout;
+    private static Submission           currentSubmission;
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -79,11 +81,14 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle
-            savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState) {
 
-        final Context contextThemeWrapper = new ContextThemeWrapper(getActivity(), new ColorPreferences(inflater.getContext()).getThemeSubreddit(id));
-        final View v = ((LayoutInflater) contextThemeWrapper.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.fragment_verticalcontent, container, false);
+        final Context contextThemeWrapper = new ContextThemeWrapper(getActivity(),
+                new ColorPreferences(inflater.getContext()).getThemeSubreddit(id));
+        final View v = ((LayoutInflater) contextThemeWrapper.getSystemService(
+                Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.fragment_verticalcontent,
+                container, false);
 
         if (getActivity() instanceof MainActivity) {
             v.findViewById(R.id.back).setBackgroundResource(0);
@@ -93,16 +98,22 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
         rv.setHasFixedSize(true);
 
         final RecyclerView.LayoutManager mLayoutManager;
-        mLayoutManager = createLayoutManager(getNumColumns(getResources().getConfiguration().orientation));
+        mLayoutManager =
+                createLayoutManager(getNumColumns(getResources().getConfiguration().orientation));
 
         if (!(getActivity() instanceof SubredditView)) {
-            v.findViewById(R.id.back).setBackground(null);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                v.findViewById(R.id.back).setBackground(null);
+            } else {
+                v.findViewById(R.id.back).setBackgroundDrawable(null);
+            }
         }
         rv.setLayoutManager(mLayoutManager);
         rv.setItemAnimator(new SlideUpAlphaAnimator());
         rv.getLayoutManager().scrollToPosition(0);
 
-        mSwipeRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.activity_main_swipe_refresh_layout);
+        mSwipeRefreshLayout =
+                (SwipeRefreshLayout) v.findViewById(R.id.activity_main_swipe_refresh_layout);
         mSwipeRefreshLayout.setColorSchemeColors(Palette.getColors(id, getContext()));
 
         /**
@@ -112,8 +123,14 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
          * To recap: this removes the margins from the start/end so list view is full-width.
          */
         if (SettingValues.defaultCardView == CreateCardView.CardEnum.LIST) {
-            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-            params.setMarginStart(0);
+            RelativeLayout.LayoutParams params =
+                    new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                params.setMarginStart(0);
+            } else {
+                MarginLayoutParamsCompat.setMarginStart(params, 0);
+            }
             rv.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
             mSwipeRefreshLayout.setLayoutParams(params);
         }
@@ -126,8 +143,7 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
         final int HEADER_OFFSET = (SettingValues.single || getActivity() instanceof SubredditView)
                 ? Constants.SINGLE_HEADER_VIEW_OFFSET : Constants.TAB_HEADER_VIEW_OFFSET;
 
-        mSwipeRefreshLayout.setProgressViewOffset(false,
-                HEADER_OFFSET - Constants.PTR_OFFSET_TOP,
+        mSwipeRefreshLayout.setProgressViewOffset(false, HEADER_OFFSET - Constants.PTR_OFFSET_TOP,
                 HEADER_OFFSET + Constants.PTR_OFFSET_BOTTOM);
 
         if (SettingValues.fab) {
@@ -149,17 +165,25 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
                     @Override
                     public void onClick(View v) {
                         if (!Reddit.fabClear) {
-                            new AlertDialogWrapper.Builder(getActivity()).setTitle(R.string.settings_fabclear)
+                            new AlertDialogWrapper.Builder(getActivity()).setTitle(
+                                    R.string.settings_fabclear)
                                     .setMessage(R.string.settings_fabclear_msg)
-                                    .setPositiveButton(R.string.btn_ok, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            Reddit.colors.edit().putBoolean(SettingValues.PREF_FAB_CLEAR, true).apply();
-                                            Reddit.fabClear = true;
-                                            clearSeenPosts(false);
+                                    .setPositiveButton(R.string.btn_ok,
+                                            new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog,
+                                                        int which) {
+                                                    Reddit.colors.edit()
+                                                            .putBoolean(
+                                                                    SettingValues.PREF_FAB_CLEAR,
+                                                                    true)
+                                                            .apply();
+                                                    Reddit.fabClear = true;
+                                                    clearSeenPosts(false);
 
-                                        }
-                                    }).show();
+                                                }
+                                            })
+                                    .show();
                         } else {
                             clearSeenPosts(false);
                         }
@@ -169,36 +193,42 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
                     @Override
                     public boolean onLongClick(View v) {
                         if (!Reddit.fabClear) {
-                            new AlertDialogWrapper.Builder(getActivity()).setTitle(R.string.settings_fabclear)
+                            new AlertDialogWrapper.Builder(getActivity()).setTitle(
+                                    R.string.settings_fabclear)
                                     .setMessage(R.string.settings_fabclear_msg)
-                                    .setPositiveButton(R.string.btn_ok, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            Reddit.colors.edit().putBoolean(SettingValues.PREF_FAB_CLEAR, true).apply();
-                                            Reddit.fabClear = true;
-                                            clearSeenPosts(true);
+                                    .setPositiveButton(R.string.btn_ok,
+                                            new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog,
+                                                        int which) {
+                                                    Reddit.colors.edit()
+                                                            .putBoolean(
+                                                                    SettingValues.PREF_FAB_CLEAR,
+                                                                    true)
+                                                            .apply();
+                                                    Reddit.fabClear = true;
+                                                    clearSeenPosts(true);
 
-                                        }
-                                    }).show();
+                                                }
+                                            })
+                                    .show();
                         } else {
                             clearSeenPosts(true);
-
                         }
-                        /*
-                        ToDo Make a sncakbar with an undo option of the clear all
-                        View.OnClickListener undoAction = new View.OnClickListener() {
+                        Snackbar s = Snackbar.make(rv,
+                                getResources().getString(R.string.posts_hidden_forever),
+                                Snackbar.LENGTH_LONG);
+                       /*Todo a way to unhide
+                        s.setAction(R.string.btn_undo, new View.OnClickListener() {
+
                             @Override
                             public void onClick(View v) {
-                                adapter.dataSet.posts = original;
-                                for(Submission post : adapter.dataSet.posts){
-                                    if(HasSeen.getSeen(post.getFullName()))
-                                        Hidden.undoHidden(post);
-                                }
+
                             }
-                        };*/
-                        Snackbar s = Snackbar.make(rv, getResources().getString(R.string.posts_hidden_forever), Snackbar.LENGTH_LONG);
+                        });*/
                         View view = s.getView();
-                        TextView tv = (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                        TextView tv = (TextView) view.findViewById(
+                                android.support.design.R.id.snackbar_text);
                         tv.setTextColor(Color.WHITE);
                         s.show();
 
@@ -209,8 +239,7 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
         } else {
             v.findViewById(R.id.post_floating_action_button).setVisibility(View.GONE);
         }
-        if (fab != null)
-            fab.show();
+        if (fab != null) fab.show();
 
         header = getActivity().findViewById(R.id.header);
 
@@ -239,7 +268,11 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
         resetScroll();
 
         Reddit.isLoading = false;
-        if (MainActivity.shouldLoad == null || id == null || (MainActivity.shouldLoad != null && MainActivity.shouldLoad.equals(id)) || !(getActivity() instanceof MainActivity)) {
+        if (MainActivity.shouldLoad == null
+                || id == null
+                || (MainActivity.shouldLoad != null
+                && MainActivity.shouldLoad.equals(id))
+                || !(getActivity() instanceof MainActivity)) {
             doAdapter();
         }
         return v;
@@ -251,14 +284,16 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
 
     @NonNull
     private RecyclerView.LayoutManager createLayoutManager(final int numColumns) {
-        return new CatchStaggeredGridLayoutManager(numColumns, CatchStaggeredGridLayoutManager.VERTICAL);
+        return new CatchStaggeredGridLayoutManager(numColumns,
+                CatchStaggeredGridLayoutManager.VERTICAL);
     }
 
     public static int getNumColumns(final int orientation) {
         final int numColumns;
         if (orientation == Configuration.ORIENTATION_LANDSCAPE && SettingValues.tabletUI) {
             numColumns = Reddit.dpWidth;
-        } else if (orientation == Configuration.ORIENTATION_PORTRAIT && SettingValues.dualPortrait) {
+        } else if (orientation == Configuration.ORIENTATION_PORTRAIT
+                && SettingValues.dualPortrait) {
             numColumns = 2;
         } else {
             numColumns = 1;
@@ -267,26 +302,26 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
     }
 
     public void doAdapter() {
-        if (!MainActivity.isRestart)
+        if (!MainActivity.isRestart) {
             mSwipeRefreshLayout.post(new Runnable() {
                 @Override
                 public void run() {
                     mSwipeRefreshLayout.setRefreshing(true);
                 }
             });
+        }
 
         posts = new SubredditPosts(id, getContext());
         adapter = new SubmissionAdapter(getActivity(), posts, rv, id, this);
+        adapter.setHasStableIds(true);
         rv.setAdapter(adapter);
         posts.loadMore(mSwipeRefreshLayout.getContext(), this, true);
-        mSwipeRefreshLayout.setOnRefreshListener(
-                new SwipeRefreshLayout.OnRefreshListener() {
-                    @Override
-                    public void onRefresh() {
-                        refresh();
-                    }
-                }
-        );
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                refresh();
+            }
+        });
     }
 
     public void doAdapter(boolean force18) {
@@ -299,23 +334,23 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
 
         posts = new SubredditPosts(id, getContext(), force18);
         adapter = new SubmissionAdapter(getActivity(), posts, rv, id, this);
+        adapter.setHasStableIds(true);
         rv.setAdapter(adapter);
         posts.loadMore(mSwipeRefreshLayout.getContext(), this, true);
-        mSwipeRefreshLayout.setOnRefreshListener(
-                new SwipeRefreshLayout.OnRefreshListener() {
-                    @Override
-                    public void onRefresh() {
-                        refresh();
-                    }
-                }
-        );
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                refresh();
+            }
+        });
     }
 
     public List<Submission> clearSeenPosts(boolean forever) {
         if (adapter.dataSet.posts != null) {
 
             List<Submission> originalDataSetPosts = adapter.dataSet.posts;
-            OfflineSubreddit o = OfflineSubreddit.getSubreddit(id.toLowerCase(), false, getActivity());
+            OfflineSubreddit o =
+                    OfflineSubreddit.getSubreddit(id.toLowerCase(), false, getActivity());
 
             for (int i = adapter.dataSet.posts.size(); i > -1; i--) {
                 try {
@@ -359,17 +394,18 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
     @Override
     public void onResume() {
         super.onResume();
-        if (adapter != null && adaptorPosition > 0 && currentPosition == adaptorPosition) {
-            if (adapter.dataSet.getPosts().get(adaptorPosition - 1) == currentSubmission) {
-                adapter.performClick(adaptorPosition);
-                adaptorPosition = -1;
+        if (adapter != null && adapterPosition > 0 && currentPosition == adapterPosition) {
+            if (adapter.dataSet.getPosts().size() >= adapterPosition -1 && adapter.dataSet.getPosts().get(
+                    adapterPosition - 1) == currentSubmission) {
+                adapter.performClick(adapterPosition);
+                adapterPosition = -1;
             }
         }
     }
 
 
     public static void datachanged(int adaptorPosition2) {
-        adaptorPosition = adaptorPosition2;
+        adapterPosition = adaptorPosition2;
     }
 
     private void refresh() {
@@ -407,6 +443,7 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
 
                     if (startIndex != -1 && !forced) {
                         adapter.notifyItemRangeInserted(startIndex + 1, posts.posts.size());
+                        adapter.notifyDataSetChanged();
                     } else {
                         forced = false;
                         adapter.notifyDataSetChanged();
@@ -415,11 +452,12 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
                 }
             });
 
-            if(MainActivity.isRestart) {
+            if (MainActivity.isRestart) {
                 MainActivity.isRestart = false;
                 posts.offline = false;
                 rv.getLayoutManager().scrollToPosition(MainActivity.restartPage + 1);
             }
+            if (startIndex < 10) resetScroll();
         }
     }
 
@@ -477,31 +515,38 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
 
     public void resetScroll() {
         if (toolbarScroll == null) {
-            toolbarScroll = new ToolbarScrollHideHandler(((BaseActivity) getActivity()).mToolbar, header) {
-                @Override
-                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                    super.onScrolled(recyclerView, dx, dy);
+            toolbarScroll =
+                    new ToolbarScrollHideHandler(((BaseActivity) getActivity()).mToolbar, header) {
+                        @Override
+                        public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                            super.onScrolled(recyclerView, dx, dy);
 
-                    if (!posts.loading && !posts.nomore && !posts.offline) {
-                        visibleItemCount = rv.getLayoutManager().getChildCount();
-                        totalItemCount = rv.getLayoutManager().getItemCount();
+                            if (!posts.loading && !posts.nomore && !posts.offline) {
+                                visibleItemCount = rv.getLayoutManager().getChildCount();
+                                totalItemCount = rv.getLayoutManager().getItemCount();
 
-                        int[] firstVisibleItems;
-                        firstVisibleItems = ((CatchStaggeredGridLayoutManager) rv.getLayoutManager()).findFirstVisibleItemPositions(null);
-                        if (firstVisibleItems != null && firstVisibleItems.length > 0) {
-                            for (int firstVisibleItem : firstVisibleItems) {
-                                pastVisiblesItems = firstVisibleItem;
-                                if (SettingValues.scrollSeen && pastVisiblesItems > 0 && SettingValues.storeHistory) {
-                                    HasSeen.addSeen(posts.posts.get(pastVisiblesItems - 1).getFullName());
+                                int[] firstVisibleItems;
+                                firstVisibleItems =
+                                        ((CatchStaggeredGridLayoutManager) rv.getLayoutManager()).findFirstVisibleItemPositions(
+                                                null);
+                                if (firstVisibleItems != null && firstVisibleItems.length > 0) {
+                                    for (int firstVisibleItem : firstVisibleItems) {
+                                        pastVisiblesItems = firstVisibleItem;
+                                        if (SettingValues.scrollSeen
+                                                && pastVisiblesItems > 0
+                                                && SettingValues.storeHistory) {
+                                            HasSeen.addSeen(posts.posts.get(pastVisiblesItems - 1)
+                                                    .getFullName());
+                                        }
+                                    }
+                                }
+
+                                if ((visibleItemCount + pastVisiblesItems) + 5 >= totalItemCount) {
+                                    posts.loading = true;
+                                    posts.loadMore(mSwipeRefreshLayout.getContext(),
+                                            SubmissionsView.this, false, posts.subreddit);
                                 }
                             }
-                        }
-
-                        if ((visibleItemCount + pastVisiblesItems) + 5 >= totalItemCount) {
-                            posts.loading = true;
-                            posts.loadMore(mSwipeRefreshLayout.getContext(), SubmissionsView.this, false, posts.subreddit);
-                        }
-                    }
 
                 /*
                 if(dy <= 0 && !down){
@@ -512,24 +557,28 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
                     down = false;
                 }*///todo For future implementation instead of scrollFlags
 
-                    if (recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING) {
-                        diff += dy;
-                    } else {
-                        diff = 0;
-                    }
-                    if (fab != null) {
-                        if (dy <= 0 && fab.getId() != 0 && SettingValues.fab) {
-                            if (recyclerView.getScrollState() != RecyclerView.SCROLL_STATE_DRAGGING || diff < -fab.getHeight() * 2)
-                                fab.show();
-                        } else {
-                            fab.hide();
+                            if (recyclerView.getScrollState()
+                                    == RecyclerView.SCROLL_STATE_DRAGGING) {
+                                diff += dy;
+                            } else {
+                                diff = 0;
+                            }
+                            if (fab != null) {
+                                if (dy <= 0 && fab.getId() != 0 && SettingValues.fab) {
+                                    if (recyclerView.getScrollState()
+                                            != RecyclerView.SCROLL_STATE_DRAGGING
+                                            || diff < -fab.getHeight() * 2) {
+                                        fab.show();
+                                    }
+                                } else {
+                                    fab.hide();
+                                }
+                            }
+
                         }
-                    }
 
-                }
-
-                @Override
-                public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                        @Override
+                        public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
 //                switch (newState) {
 //                    case RecyclerView.SCROLL_STATE_IDLE:
 //                        ((Reddit)getActivity().getApplicationContext()).getImageLoader().resume();
@@ -541,15 +590,20 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
 //                        ((Reddit)getActivity().getApplicationContext()).getImageLoader().pause();
 //                        break;
 //                }
-                    super.onScrollStateChanged(recyclerView, newState);
-                    //If the toolbar search is open, and the user scrolls in the Main view--close the search UI
-                    if (getActivity() instanceof MainActivity && (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR
-                            || SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH)
-                            && ((MainActivity) getContext()).findViewById(R.id.toolbar_search).getVisibility() == View.VISIBLE) {
-                        ((MainActivity) getContext()).findViewById(R.id.close_search_toolbar).performClick();
-                    }
-                }
-            };
+                            super.onScrollStateChanged(recyclerView, newState);
+                            //If the toolbar search is open, and the user scrolls in the Main view--close the search UI
+                            if (getActivity() instanceof MainActivity
+                                    && (SettingValues.subredditSearchMethod
+                                    == R.integer.SUBREDDIT_SEARCH_METHOD_TOOLBAR
+                                    || SettingValues.subredditSearchMethod
+                                    == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH)
+                                    && ((MainActivity) getContext()).findViewById(
+                                    R.id.toolbar_search).getVisibility() == View.VISIBLE) {
+                                ((MainActivity) getContext()).findViewById(
+                                        R.id.close_search_toolbar).performClick();
+                            }
+                        }
+                    };
             rv.addOnScrollListener(toolbarScroll);
         } else {
             toolbarScroll.reset = true;

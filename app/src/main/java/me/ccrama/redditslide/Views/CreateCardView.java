@@ -46,6 +46,14 @@ public class CreateCardView {
                     ((CardView) v.findViewById(R.id.card)).setRadius(0f);
                 }
                 break;
+            case DESKTOP:
+                v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.submission_list_desktop, viewGroup, false);
+
+                //if the radius is set to 0 on KitKat--it crashes.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    ((CardView) v.findViewById(R.id.card)).setRadius(0f);
+                }
+                break;
         }
 
         View thumbImage = v.findViewById(R.id.thumbimage2);
@@ -55,15 +63,22 @@ public class CreateCardView {
          * Adjusts the paddingTop of the innerrelative, and adjusts the margins on the thumbnail.
          */
         if (!SettingValues.bigThumbnails) {
-            final int SQUARE_THUMBNAIL_SIZE = 70;
-            thumbImage.getLayoutParams().height = Reddit.dpToPxVertical(SQUARE_THUMBNAIL_SIZE);
-            thumbImage.getLayoutParams().width = Reddit.dpToPxHorizontal(SQUARE_THUMBNAIL_SIZE);
+            if(SettingValues.defaultCardView == CardEnum.DESKTOP){
+                final int SQUARE_THUMBNAIL_SIZE = 48;
 
-            final int EIGHT_DP_Y = Reddit.dpToPxVertical(8);
-            final int EIGHT_DP_X = Reddit.dpToPxHorizontal(8);
-            ((RelativeLayout.LayoutParams) thumbImage.getLayoutParams())
-                    .setMargins(EIGHT_DP_X * 2, EIGHT_DP_Y, EIGHT_DP_X, EIGHT_DP_Y);
-            v.findViewById(R.id.innerrelative).setPadding(0, EIGHT_DP_Y, 0, 0);
+                thumbImage.getLayoutParams().height = Reddit.dpToPxVertical(SQUARE_THUMBNAIL_SIZE);
+                thumbImage.getLayoutParams().width = Reddit.dpToPxHorizontal(SQUARE_THUMBNAIL_SIZE);
+            } else {
+                final int SQUARE_THUMBNAIL_SIZE = 70;
+                thumbImage.getLayoutParams().height = Reddit.dpToPxVertical(SQUARE_THUMBNAIL_SIZE);
+                thumbImage.getLayoutParams().width = Reddit.dpToPxHorizontal(SQUARE_THUMBNAIL_SIZE);
+
+                final int EIGHT_DP_Y = Reddit.dpToPxVertical(8);
+                final int EIGHT_DP_X = Reddit.dpToPxHorizontal(8);
+                ((RelativeLayout.LayoutParams) thumbImage.getLayoutParams())
+                        .setMargins(EIGHT_DP_X * 2, EIGHT_DP_Y, EIGHT_DP_X, EIGHT_DP_Y);
+                v.findViewById(R.id.innerrelative).setPadding(0, EIGHT_DP_Y, 0, 0);
+            }
         }
 
         doHideObjects(v);
@@ -85,7 +100,6 @@ public class CreateCardView {
         doColor(getViewsByTag((ViewGroup) v, "tint"));
         doColorSecond(getViewsByTag((ViewGroup) v, "tintsecond"));
         doColorSecond(getViewsByTag((ViewGroup) v, "tintactionbar"));
-
     }
 
     public static void doColor(ArrayList<View> v) {
@@ -168,7 +182,6 @@ public class CreateCardView {
     }
 
     public static void colorCard(String sec, View v, String subToMatch, boolean secondary) {
-
         resetColorCard(v);
         if ((SettingValues.colorBack && !SettingValues.colorSubName && Palette.getColor(sec) != Palette.getDefaultColor()) || (subToMatch.equals("nomatching") && (SettingValues.colorBack && !SettingValues.colorSubName && Palette.getColor(sec) != Palette.getDefaultColor()))) {
             if (!secondary && !SettingValues.colorEverywhere || secondary) {
@@ -404,7 +417,7 @@ public class CreateCardView {
             picParams.setMargins(picParams.rightMargin, picParams.topMargin, picParams.leftMargin, picParams.bottomMargin);
 
             layoutParams.addRule(RelativeLayout.LEFT_OF, R.id.thumbimage2);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) {
                 layoutParams.removeRule(RelativeLayout.RIGHT_OF);
             } else {
                 layoutParams.addRule(RelativeLayout.RIGHT_OF, 0);
@@ -426,6 +439,10 @@ public class CreateCardView {
 
     public static boolean isMiddle() {
         return SettingValues.prefs.getBoolean("middleCard", false);
+    }
+
+    public static boolean isDesktop() {
+        return CardEnum.valueOf(SettingValues.prefs.getString("defaultCardViewNew", SettingValues.defaultCardView.toString())) == CardEnum.DESKTOP;
     }
 
     public static CardEnum getCardView() {
@@ -462,7 +479,8 @@ public class CreateCardView {
 
     public enum CardEnum {
         LARGE("Big Card"),
-        LIST("List");
+        LIST("List"),
+        DESKTOP("Desktop");
         final String displayName;
 
         CardEnum(String s) {

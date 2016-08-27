@@ -40,7 +40,7 @@ public class EditCardsLayout extends BaseActivityAnim {
 
         //View type//
         //Cards or List//
-        ((TextView) findViewById(R.id.view_current)).setText(CreateCardView.isCard() ? (CreateCardView.isMiddle() ? getString(R.string.mode_centered) : getString(R.string.mode_card)) : getString(R.string.mode_list));
+        ((TextView) findViewById(R.id.view_current)).setText(CreateCardView.isCard() ? (CreateCardView.isMiddle() ? getString(R.string.mode_centered) : getString(R.string.mode_card)) : CreateCardView.isDesktop() ? getString(R.string.mode_desktop_compact) : getString(R.string.mode_list));
 
         findViewById(R.id.view).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,8 +63,13 @@ public class EditCardsLayout extends BaseActivityAnim {
                                 layout.removeAllViews();
                                 layout.addView(CreateCardView.setCardViewType(CreateCardView.CardEnum.LIST, layout));
                                 break;
+                            case R.id.desktop:
+                                layout.removeAllViews();
+                                layout.addView(CreateCardView.setCardViewType(CreateCardView.CardEnum.DESKTOP, layout));
+                                break;
+
                         }
-                        ((TextView) findViewById(R.id.view_current)).setText(CreateCardView.isCard() ? (CreateCardView.isMiddle() ? getString(R.string.mode_centered) : getString(R.string.mode_card)) : getString(R.string.mode_list));
+                        ((TextView) findViewById(R.id.view_current)).setText(CreateCardView.isCard() ? (CreateCardView.isMiddle() ? getString(R.string.mode_centered) : getString(R.string.mode_card)) : CreateCardView.isDesktop() ? getString(R.string.mode_desktop_compact) : getString(R.string.mode_list));
                         return true;
                     }
                 });
@@ -98,6 +103,17 @@ public class EditCardsLayout extends BaseActivityAnim {
                     SettingValues.showDomain = isChecked;
                     SettingValues.prefs.edit().putBoolean(SettingValues.PREF_SHOW_DOMAIN, isChecked).apply();
 
+                }
+            });
+        }
+        {
+            SwitchCompat single2 = (SwitchCompat) findViewById(R.id.selftextcomment);
+            single2.setChecked(SettingValues.hideSelftextLeadImage);
+            single2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    SettingValues.hideSelftextLeadImage = isChecked;
+                    SettingValues.prefs.edit().putBoolean(SettingValues.PREF_SELFTEXT_IMAGE_COMMENT, isChecked).apply();
                 }
             });
         }
