@@ -189,12 +189,12 @@
     <string name="sorting_old">Old</string>
     <string name="sorting_controversial">Controversial</string>
     <string name="sorting_rising">Rising</string>
-    <string name="sorting_hour">&#8250; hour</string>
-    <string name="sorting_day">&#8250; 24 hours</string>
-    <string name="sorting_week">&#8250; week</string>
-    <string name="sorting_month">&#8250; month</string>
-    <string name="sorting_year">&#8250; year</string>
-    <string name="sorting_all">&#8250; all time</string>
+    <string name="sorting_hour">hour</string>
+    <string name="sorting_day">24 hours</string>
+    <string name="sorting_week">week</string>
+    <string name="sorting_month">month</string>
+    <string name="sorting_year">year</string>
+    <string name="sorting_all">all time</string>
     <string name="sorting_search_hour">Past hour</string>
     <string name="sorting_search_day">Past 24 hours</string>
     <string name="sorting_search_week">Past week</string>
@@ -885,8 +885,10 @@
     <string name="discover_trending">Trending</string>
 
     <!-- Subreddit post notifiactions -->
-    <string name="sub_post_notifs_title">Be notified of new posts in /r/</string>
+    <string name="sub_post_notifs_title">Be notified of new posts in\n/r/%1$s?</string>
+    <string name="sub_post_notifs_title_settings">Be notified of new posts?</string>
     <string name="sub_post_notifs_menu">Be notified of new posts</string>
+    <string name="sub_post_notify">Notify</string>
     <string name="sub_post_notifs_text">Slide will check for new posts every 10 minutes. You can cancel this in the post notifications</string>
     <string name="sub_post_notifs_threshold">Score threshold</string>
     <string name="sub_post_notifs_err">You can only add notifications to single subreddits</string>

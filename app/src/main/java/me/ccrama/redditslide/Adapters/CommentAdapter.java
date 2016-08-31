@@ -358,10 +358,14 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
             //Set typeface for body
             int type = new FontPreferences(mContext).getFontTypeComment().getTypeface();
+            Typeface typeface;
             if (type >= 0) {
-                Typeface typeface = RobotoTypefaceManager.obtainTypeface(mContext, type);
-                holder.firstTextView.setTypeface(typeface);
+                typeface = RobotoTypefaceManager.obtainTypeface(mContext, type);
+            } else {
+                typeface = Typeface.DEFAULT;
             }
+            holder.firstTextView.setTypeface(typeface);
+
 
             //Show padding on top
             if (baseNode.isTopLevel()) {
@@ -1062,7 +1066,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     @Override
                     public void onSingleClick(View v) {
                         CommentAdapterHelper.doCommentEdit(CommentAdapter.this, mContext, fm,
-                                baseNode);
+                                baseNode, baseNode.isTopLevel()?submission.getSelftext():baseNode.getParent().getComment().getBody());
                     }
                 });
             } else {
@@ -1279,13 +1283,13 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 if (reply.getVisibility() == View.VISIBLE) {
                     reply.setVisibility(View.GONE);
                 }
-                if (!submission.isArchived()
+                if (submission.isArchived()
                         && Authentication.isLoggedIn
                         && Authentication.didOnline
                         && upvote.getVisibility() == View.VISIBLE) {
                     upvote.setVisibility(View.GONE);
                 }
-                if (!submission.isArchived()
+                if (submission.isArchived()
                         && Authentication.isLoggedIn
                         && Authentication.didOnline
                         && downvote.getVisibility() == View.VISIBLE) {

@@ -41,7 +41,9 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.cocosw.bottomsheet.BottomSheet;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.assist.FailReason;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.imageaware.ImageViewAware;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingProgressListener;
@@ -55,6 +57,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -630,23 +633,38 @@ public class AlbumPager extends FullScreenActivity
         text.setTextHtml(b.toString(), "no sub");
     }
 
+    public static String readableFileSize(long size) {
+        if (size <= 0) return "0";
+        final String[] units = new String[]{"B", "kB", "MB", "GB", "TB"};
+        int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+        return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups))
+                + " "
+                + units[digitGroups];
+    }
+
     private static void loadImage(final View rootView, Fragment f, String url) {
         final SubsamplingScaleImageView image =
                 (SubsamplingScaleImageView) rootView.findViewById(R.id.image);
         image.setMinimumDpi(70);
         image.setMinimumTileDpi(240);
         ImageView fakeImage = new ImageView(f.getActivity());
+        final TextView size = (TextView) rootView.findViewById(R.id.size);
         fakeImage.setLayoutParams(
                 new LinearLayout.LayoutParams(image.getWidth(), image.getHeight()));
         fakeImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
         ((Reddit) f.getActivity().getApplication()).getImageLoader()
-                .displayImage(url, new ImageViewAware(fakeImage), ImageLoaderUtils.options,
+                .displayImage(url, new ImageViewAware(fakeImage), new DisplayImageOptions.Builder().resetViewBeforeLoading(true)
+                                .cacheOnDisk(true)
+                                .imageScaleType(ImageScaleType.NONE)
+                                .cacheInMemory(false)
+                                .build(),
                         new ImageLoadingListener() {
                             private View mView;
 
                             @Override
                             public void onLoadingStarted(String imageUri, View view) {
                                 mView = view;
+                                size.setVisibility(View.VISIBLE);
                             }
 
                             @Override
@@ -659,6 +677,7 @@ public class AlbumPager extends FullScreenActivity
                             @Override
                             public void onLoadingComplete(String imageUri, View view,
                                     Bitmap loadedImage) {
+                                size.setVisibility(View.GONE);
                                 image.setImage(ImageSource.bitmap(loadedImage));
                                 (rootView.findViewById(R.id.progress)).setVisibility(View.GONE);
                             }
@@ -672,6 +691,8 @@ public class AlbumPager extends FullScreenActivity
                             @Override
                             public void onProgressUpdate(String imageUri, View view, int current,
                                     int total) {
+                                size.setText(readableFileSize(total));
+
                                 ((ProgressBar) rootView.findViewById(R.id.progress)).setProgress(
                                         Math.round(100.0f * current / total));
                             }
