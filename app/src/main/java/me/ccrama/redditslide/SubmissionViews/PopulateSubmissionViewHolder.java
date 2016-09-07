@@ -26,10 +26,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.text.InputType;
 import android.util.TypedValue;
-import android.view.ActionMode;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -54,6 +51,7 @@ import net.dean.jraw.models.Contribution;
 import net.dean.jraw.models.DistinguishedStatus;
 import net.dean.jraw.models.FlairTemplate;
 import net.dean.jraw.models.Submission;
+import net.dean.jraw.models.Thing;
 import net.dean.jraw.models.VoteDirection;
 
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -72,6 +70,7 @@ import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.Activities.MediaView;
 import me.ccrama.redditslide.Activities.ModQueue;
 import me.ccrama.redditslide.Activities.MultiredditOverview;
+import me.ccrama.redditslide.Activities.PostReadLater;
 import me.ccrama.redditslide.Activities.Profile;
 import me.ccrama.redditslide.Activities.Reauthenticate;
 import me.ccrama.redditslide.Activities.Search;
@@ -90,6 +89,7 @@ import me.ccrama.redditslide.OfflineSubreddit;
 import me.ccrama.redditslide.OpenRedditLink;
 import me.ccrama.redditslide.PostMatch;
 import me.ccrama.redditslide.R;
+import me.ccrama.redditslide.ReadLater;
 import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.SubmissionCache;
@@ -183,7 +183,7 @@ public class PopulateSubmissionViewHolder {
                             case LINK:
                                 LinkUtil.openUrl(submission.getUrl(),
                                         Palette.getColor(submission.getSubredditName()),
-                                        contextActivity);
+                                        contextActivity, holder.getAdapterPosition(), submission);
                                 break;
                             case SELF:
                                 if (holder != null) {
@@ -308,7 +308,7 @@ public class PopulateSubmissionViewHolder {
 
     }
 
-    private static void addAdaptorPosition(Intent myIntent, Submission submission,
+    public static void addAdaptorPosition(Intent myIntent, Submission submission,
             int adapterPosition) {
         if (submission.getComments() == null && adapterPosition != -1) {
             myIntent.putExtra(MediaView.ADAPTER_POSITION, adapterPosition);
@@ -388,7 +388,7 @@ public class PopulateSubmissionViewHolder {
         Drawable copy =
                 ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.ic_content_copy,
                         null);
-        Drawable saveOffline =
+        final Drawable readLater =
                 ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.save, null);
         Drawable open =
                 ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.openexternal, null);
@@ -406,10 +406,10 @@ public class PopulateSubmissionViewHolder {
         hide.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         report.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         copy.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
-        saveOffline.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         open.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         share.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         reddit.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+        readLater.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         filter.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
 
         ta.recycle();
@@ -418,6 +418,8 @@ public class PopulateSubmissionViewHolder {
                 new BottomSheet.Builder(mContext).title(Html.fromHtml(submission.getTitle()));
 
 
+        final boolean isReadLater = mContext instanceof PostReadLater;
+        final boolean isAddedToReadLaterList = ReadLater.isToBeReadLater(submission);
         if (Authentication.didOnline) {
             b.sheet(1, profile, "/u/" + submission.getAuthor())
                     .sheet(2, sub, "/r/" + submission.getSubredditName());
@@ -429,12 +431,20 @@ public class PopulateSubmissionViewHolder {
                 b.sheet(3, saved, save);
 
             }
-            b.sheet(26, saveOffline, mContext.getString(R.string.submission_save_offline));
+        }
+
+        if (isAddedToReadLaterList) {
+            b.sheet(28, readLater, "Mark As Read");
+        } else {
+            b.sheet(28, readLater, "Read later");
+        }
+
+        if (Authentication.didOnline) {
             if (Authentication.isLoggedIn) {
                 b.sheet(12, report, mContext.getString(R.string.btn_report));
             }
-
         }
+
         if (submission.getSelftext() != null && !submission.getSelftext().isEmpty() && full) {
             b.sheet(25, copy, mContext.getString(R.string.submission_copy_text));
         }
@@ -479,12 +489,12 @@ public class PopulateSubmissionViewHolder {
                                 ? submission.getSubmissionFlair().getText() : "";
                         if (flair.isEmpty()) {
                             choices = new String[]{
-                                    mContext.getString(R.string.filter_posts_sub)
-                                            + submission.getSubredditName(),
-                                    mContext.getString(R.string.filter_posts_user)
-                                            + submission.getAuthor(),
-                                    mContext.getString(R.string.filter_posts_urls)
-                                            + submission.getDomain(),
+                                    mContext.getString(R.string.filter_posts_sub,
+                                            submission.getSubredditName()),
+                                    mContext.getString(R.string.filter_posts_user,
+                                            submission.getAuthor()),
+                                    mContext.getString(R.string.filter_posts_urls,
+                                            submission.getDomain()),
                                     mContext.getString(R.string.filter_open_externally,
                                             submission.getDomain())
                             };
@@ -504,12 +514,12 @@ public class PopulateSubmissionViewHolder {
                             oldChosen = chosen.clone();
                         } else {
                             choices = new String[]{
-                                    mContext.getString(R.string.filter_posts_sub)
-                                            + submission.getSubredditName(),
-                                    mContext.getString(R.string.filter_posts_user)
-                                            + submission.getAuthor(),
-                                    mContext.getString(R.string.filter_posts_urls)
-                                            + submission.getDomain(),
+                                    mContext.getString(R.string.filter_posts_sub,
+                                            submission.getSubredditName()),
+                                    mContext.getString(R.string.filter_posts_user,
+                                            submission.getAuthor()),
+                                    mContext.getString(R.string.filter_posts_urls,
+                                            submission.getDomain()),
                                     mContext.getString(R.string.filter_open_externally,
                                             submission.getDomain()),
                                     mContext.getString(R.string.filter_posts_flair, flair, baseSub)
@@ -715,6 +725,65 @@ public class PopulateSubmissionViewHolder {
                     case 7:
                         LinkUtil.openExternally(submission.getUrl(), mContext, true);
                         break;
+                    case 28:
+                        if (!isAddedToReadLaterList) {
+                            ReadLater.setReadLater(submission, true);
+                            Snackbar s = Snackbar.make(holder.itemView, "Added to read later!",
+                                    Snackbar.LENGTH_SHORT);
+                            View view = s.getView();
+                            TextView tv = (TextView) view.findViewById(
+                                    android.support.design.R.id.snackbar_text);
+                            tv.setTextColor(Color.WHITE);
+                            s.setAction(R.string.btn_undo, new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    ReadLater.setReadLater(submission, false);
+                                    Snackbar s2 = Snackbar.make(holder.itemView,
+                                            "Removed from read later", Snackbar.LENGTH_SHORT);
+                                    View view2 = s2.getView();
+                                    TextView tv2 = (TextView) view2.findViewById(
+                                            android.support.design.R.id.snackbar_text);
+                                    tv2.setTextColor(Color.WHITE);
+                                    s2.show();
+                                }
+                            });
+                            new CommentCacheAsync(Arrays.asList(submission), mContext,
+                                    CommentCacheAsync.SAVED_SUBMISSIONS,
+                                    new boolean[]{true, true}).execute();
+                            s.show();
+                        } else {
+                            ReadLater.setReadLater(submission, false);
+                            if (isReadLater || !Authentication.didOnline) {
+                                final int pos = posts.indexOf(submission);
+                                posts.remove(submission);
+
+                                recyclerview.getAdapter().notifyItemRemoved(holder.getAdapterPosition());
+
+                                Snackbar s2 =
+                                        Snackbar.make(holder.itemView, "Removed from read later",
+                                                Snackbar.LENGTH_SHORT);
+                                View view2 = s2.getView();
+                                TextView tv2 = (TextView) view2.findViewById(android.support.design.R.id.snackbar_text);
+                                tv2.setTextColor(Color.WHITE);
+                                s2.setAction(R.string.btn_undo, new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        posts.add(pos, (T) submission);
+                                        recyclerview.getAdapter().notifyDataSetChanged();
+                                    }
+                                });
+                            } else {
+                                Snackbar s2 =
+                                        Snackbar.make(holder.itemView, "Removed from read later",
+                                                Snackbar.LENGTH_SHORT);
+                                View view2 = s2.getView();
+                                TextView tv2 = (TextView) view2.findViewById(android.support.design.R.id.snackbar_text);
+                                s2.show();
+                            }
+                            OfflineSubreddit.newSubreddit(CommentCacheAsync.SAVED_SUBMISSIONS).deleteFromMemory(submission.getFullName());
+
+                        }
+                        break;
                     case 4:
                         Reddit.defaultShareText(Html.fromHtml(submission.getTitle()).toString(),
                                 submission.getUrl(), mContext);
@@ -784,32 +853,8 @@ public class PopulateSubmissionViewHolder {
                     case 25:
                         final TextView showText = new TextView(mContext);
                         showText.setText(Html.fromHtml(
-                                submission.getTitle() + "\n\n" + submission.getSelftext()),
-                                TextView.BufferType.SPANNABLE);
+                                submission.getTitle() + "\n\n" + submission.getSelftext()));
                         showText.setTextIsSelectable(true);
-                        showText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
-                            @Override
-                            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                                menu.clear();
-                                return true;
-                            }
-
-                            @Override
-                            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-
-                                return false;
-                            }
-
-                            @Override
-                            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                                return false;
-                            }
-
-                            @Override
-                            public void onDestroyActionMode(ActionMode mode) {
-
-                            }
-                        });
                         int sixteen = Reddit.dpToPxVertical(24);
                         showText.setPadding(sixteen, 0, sixteen, 0);
                         AlertDialogWrapper.Builder builder =
@@ -857,13 +902,6 @@ public class PopulateSubmissionViewHolder {
                                                         Toast.LENGTH_SHORT).show();
                                             }
                                         })
-                                .show();
-                        break;
-                    case 26:
-                        new CommentCacheAsync(Arrays.asList(submission), mContext,
-                                CommentCacheAsync.SAVED_SUBMISSIONS,
-                                new boolean[]{true, true}).execute();
-                        Toast.makeText(mContext, R.string.submission_post_saved, Toast.LENGTH_SHORT)
                                 .show();
                         break;
                 }
@@ -944,8 +982,10 @@ public class PopulateSubmissionViewHolder {
 
             @Override
             public void onPreExecute() {
-                d = new MaterialDialog.Builder(mContext).progress(true, 100)
+                d = new MaterialDialog.Builder(mContext)
+                        .progress(true, 100)
                         .title(R.string.profile_category_loading)
+                        .content(R.string.misc_please_wait)
                         .show();
             }
 
@@ -1191,12 +1231,11 @@ public class PopulateSubmissionViewHolder {
                 ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.report, null);
         final Drawable approve =
                 ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.support, null);
-        final Drawable spam =
-                ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.fontsizedarker,
-                        null);
         final Drawable nsfw =
                 ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.hide, null);
         final Drawable pin =
+                ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.sub, null);
+        final Drawable lock =
                 ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.lock, null);
         final Drawable flair = ResourcesCompat.getDrawable(mContext.getResources(),
                 R.drawable.ic_format_quote_white_48dp, null);
@@ -1206,6 +1245,11 @@ public class PopulateSubmissionViewHolder {
                 ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.reportreason, null);
         final Drawable ban =
                 ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.ban, null);
+        final Drawable spam =
+                ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.spam, null);
+        final Drawable distinguish =
+                ResourcesCompat.getDrawable(mContext.getResources(), R.drawable.iconstarfilled,
+                        null);
 
 
         profile.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
@@ -1218,6 +1262,9 @@ public class PopulateSubmissionViewHolder {
         remove.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         remove_reason.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         ban.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+        spam.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+        distinguish.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+        lock.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
 
         ta.recycle();
 
@@ -1231,7 +1278,10 @@ public class PopulateSubmissionViewHolder {
 
         boolean approved = false;
         String whoApproved = "";
-        if (submission.getDataNode().get("approved_by").asText().equals("null")) {
+        if (SubmissionCache.removed.contains(submission.getFullName()) || (submission.getDataNode()
+                .get("approved_by")
+                .asText()
+                .equals("null") && !SubmissionCache.approved.contains(submission.getFullName()))) {
             b.sheet(1, approve, res.getString(R.string.mod_btn_approve));
         } else {
             approved = true;
@@ -1240,7 +1290,8 @@ public class PopulateSubmissionViewHolder {
         }
 
         b.sheet(6, remove, mContext.getString(R.string.mod_btn_remove))
-                .sheet(7, remove_reason, res.getString(R.string.mod_btn_remove_reason));
+                .sheet(7, remove_reason, res.getString(R.string.mod_btn_remove_reason))
+                .sheet(30, spam, "Mark as spam");
 
         // b.sheet(2, spam, mContext.getString(R.string.mod_btn_spam)) todo this
         b.sheet(20, flair, res.getString(R.string.mod_btn_submission_flair));
@@ -1252,11 +1303,29 @@ public class PopulateSubmissionViewHolder {
             b.sheet(3, nsfw, res.getString(R.string.mod_btn_mark_nsfw));
         }
 
+        final boolean locked = submission.isLocked();
+        if (locked) {
+            b.sheet(9, lock, "Unlock thread");
+        } else {
+            b.sheet(9, lock, "Lock thread");
+        }
+
         final boolean stickied = submission.isStickied();
         if (stickied) {
             b.sheet(4, pin, res.getString(R.string.mod_btn_unpin));
         } else {
             b.sheet(4, pin, res.getString(R.string.mod_btn_pin));
+        }
+
+        final boolean distinguished =
+                submission.getDistinguishedStatus() == DistinguishedStatus.MODERATOR
+                        || submission.getDistinguishedStatus() == DistinguishedStatus.ADMIN;
+        if (submission.getAuthor().equalsIgnoreCase(Authentication.name)) {
+            if (distinguished) {
+                b.sheet(5, distinguish, "Undistingiush");
+            } else {
+                b.sheet(5, distinguish, "Distinguish");
+            }
         }
 
         final String finalWhoApproved = whoApproved;
@@ -1308,87 +1377,7 @@ public class PopulateSubmissionViewHolder {
                             i.putExtra(Profile.EXTRA_PROFILE, finalWhoApproved);
                             mContext.startActivity(i);
                         } else {
-                            new AlertDialogWrapper.Builder(mContext).setTitle(R.string.mod_approve)
-                                    .setPositiveButton(R.string.btn_yes,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(final DialogInterface dialog,
-                                                        int which) {
-
-                                                    new AsyncTask<Void, Void, Boolean>() {
-
-                                                        @Override
-                                                        public void onPostExecute(Boolean b) {
-                                                            if (b) {
-                                                                dialog.dismiss();
-                                                                if (mContext instanceof ModQueue) {
-                                                                    final int pos = posts.indexOf(
-                                                                            submission);
-                                                                    posts.remove(submission);
-
-                                                                    if (pos == 0) {
-                                                                        recyclerview.getAdapter()
-                                                                                .notifyDataSetChanged();
-                                                                    } else {
-                                                                        recyclerview.getAdapter()
-                                                                                .notifyItemRemoved(
-                                                                                        pos + 1);
-                                                                    }
-                                                                    dialog.dismiss();
-                                                                }
-
-                                                                try {
-                                                                    Snackbar s = Snackbar.make(
-                                                                            holder.itemView,
-                                                                            R.string.mod_approved,
-                                                                            Snackbar.LENGTH_LONG);
-                                                                    View view = s.getView();
-                                                                    TextView tv =
-                                                                            (TextView) view.findViewById(
-                                                                                    android.support.design.R.id.snackbar_text);
-                                                                    tv.setTextColor(Color.WHITE);
-                                                                    s.show();
-                                                                } catch (Exception ignored) {
-
-                                                                }
-
-                                                            } else {
-                                                                new AlertDialogWrapper.Builder(
-                                                                        mContext).setTitle(
-                                                                        R.string.err_general)
-                                                                        .setMessage(
-                                                                                R.string.err_retry_later)
-                                                                        .show();
-                                                            }
-                                                        }
-
-                                                        @Override
-                                                        protected Boolean doInBackground(
-                                                                Void... params) {
-                                                            try {
-                                                                new ModerationManager(
-                                                                        Authentication.reddit).approve(
-                                                                        submission);
-                                                            } catch (ApiException e) {
-                                                                e.printStackTrace();
-                                                                return false;
-
-                                                            }
-                                                            return true;
-                                                        }
-                                                    }.execute();
-
-                                                }
-                                            })
-                                    .setNegativeButton(R.string.btn_no,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog,
-                                                        int which) {
-
-                                                }
-                                            })
-                                    .show();
+                            approveSubmission(mContext, posts, submission, recyclerview, holder);
                         }
                         break;
                     case 2:
@@ -1396,505 +1385,40 @@ public class PopulateSubmissionViewHolder {
                         break;
                     case 3:
                         if (isNsfw) {
-                            new AlertDialogWrapper.Builder(mContext).setTitle(
-                                    R.string.mod_remove_nsfw)
-                                    .setPositiveButton(R.string.btn_yes,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(final DialogInterface dialog,
-                                                        int which) {
-                                                    new AsyncTask<Void, Void, Boolean>() {
-
-                                                        @Override
-                                                        public void onPostExecute(Boolean b) {
-                                                            if (b) {
-                                                                dialog.dismiss();
-                                                            } else {
-                                                                new AlertDialogWrapper.Builder(
-                                                                        mContext).setTitle(
-                                                                        R.string.err_general)
-                                                                        .setMessage(
-                                                                                R.string.err_retry_later)
-                                                                        .show();
-                                                            }
-                                                        }
-
-                                                        @Override
-                                                        protected Boolean doInBackground(
-                                                                Void... params) {
-                                                            try {
-                                                                new ModerationManager(
-                                                                        Authentication.reddit).setNsfw(
-                                                                        submission, false);
-                                                            } catch (ApiException e) {
-                                                                e.printStackTrace();
-                                                                return false;
-
-                                                            }
-                                                            return true;
-                                                        }
-                                                    }.execute();
-
-                                                }
-                                            })
-                                    .setNegativeButton(R.string.btn_no,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog,
-                                                        int which) {
-
-                                                }
-                                            })
-                                    .show();
-
+                            unNsfwSubmission(mContext, submission, holder);
                         } else {
-                            new AlertDialogWrapper.Builder(mContext).setTitle(
-                                    R.string.mod_mark_nsfw)
-                                    .setPositiveButton(R.string.btn_yes,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(final DialogInterface dialog,
-                                                        int which) {
-                                                    new AsyncTask<Void, Void, Boolean>() {
-
-                                                        @Override
-                                                        public void onPostExecute(Boolean b) {
-                                                            if (b) {
-                                                                dialog.dismiss();
-
-                                                            } else {
-                                                                new AlertDialogWrapper.Builder(
-                                                                        mContext).setTitle(
-                                                                        R.string.err_general)
-                                                                        .setMessage(
-                                                                                R.string.err_retry_later)
-                                                                        .show();
-                                                            }
-                                                        }
-
-                                                        @Override
-                                                        protected Boolean doInBackground(
-                                                                Void... params) {
-                                                            try {
-                                                                new ModerationManager(
-                                                                        Authentication.reddit).setNsfw(
-                                                                        submission, true);
-                                                            } catch (ApiException e) {
-                                                                e.printStackTrace();
-                                                                return false;
-
-                                                            }
-                                                            return true;
-                                                        }
-                                                    }.execute();
-                                                }
-                                            })
-                                    .setNegativeButton(R.string.btn_no,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog,
-                                                        int which) {
-
-                                                }
-                                            })
-                                    .show();
-
+                            setPostNsfw(mContext, submission, holder);
+                        }
+                        break;
+                    case 9:
+                        if (locked) {
+                            unLockSubmission(mContext, submission, holder);
+                        } else {
+                            lockSubmission(mContext, submission, holder);
                         }
                         break;
                     case 4:
                         if (stickied) {
-                            new AlertDialogWrapper.Builder(mContext).setTitle(
-                                    R.string.really_unpin_submission)
-                                    .setPositiveButton(R.string.btn_yes,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(final DialogInterface dialog,
-                                                        int which) {
-
-                                                    new AsyncTask<Void, Void, Boolean>() {
-
-                                                        @Override
-                                                        public void onPostExecute(Boolean b) {
-                                                            if (b) {
-                                                                dialog.dismiss();
-                                                                if (mContext instanceof ModQueue) {
-                                                                    final int pos = posts.indexOf(
-                                                                            submission);
-                                                                    posts.remove(submission);
-
-                                                                    if (pos == 0) {
-                                                                        recyclerview.getAdapter()
-                                                                                .notifyDataSetChanged();
-                                                                    } else {
-                                                                        recyclerview.getAdapter()
-                                                                                .notifyItemRemoved(
-                                                                                        pos + 1);
-                                                                    }
-
-                                                                    dialog.dismiss();
-                                                                }
-                                                                Snackbar s = Snackbar.make(
-                                                                        holder.itemView,
-                                                                        R.string.really_unpin_submission_message,
-                                                                        Snackbar.LENGTH_LONG);
-                                                                View view = s.getView();
-                                                                TextView tv =
-                                                                        (TextView) view.findViewById(
-                                                                                android.support.design.R.id.snackbar_text);
-                                                                tv.setTextColor(Color.WHITE);
-                                                                s.show();
-
-                                                            } else {
-                                                                new AlertDialogWrapper.Builder(
-                                                                        mContext).setTitle(
-                                                                        R.string.err_general)
-                                                                        .setMessage(
-                                                                                R.string.err_retry_later)
-                                                                        .show();
-                                                            }
-                                                        }
-
-                                                        @Override
-                                                        protected Boolean doInBackground(
-                                                                Void... params) {
-                                                            try {
-                                                                new ModerationManager(
-                                                                        Authentication.reddit).setSticky(
-                                                                        submission, false);
-                                                            } catch (ApiException e) {
-                                                                e.printStackTrace();
-                                                                return false;
-
-                                                            }
-                                                            return true;
-                                                        }
-                                                    }.execute();
-
-                                                }
-                                            })
-                                    .setNegativeButton(R.string.btn_no, null)
-                                    .show();
+                            unStickySubmission(mContext, submission, holder);
                         } else {
-                            new AlertDialogWrapper.Builder(mContext).setTitle(
-                                    R.string.really_pin_submission)
-                                    .setPositiveButton(R.string.btn_yes,
-                                            new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(final DialogInterface dialog,
-                                                        int which) {
-
-                                                    new AsyncTask<Void, Void, Boolean>() {
-
-                                                        @Override
-                                                        public void onPostExecute(Boolean b) {
-                                                            if (b) {
-                                                                dialog.dismiss();
-                                                                if (mContext instanceof ModQueue) {
-                                                                    final int pos = posts.indexOf(
-                                                                            submission);
-                                                                    posts.remove(submission);
-
-                                                                    if (pos == 0) {
-                                                                        recyclerview.getAdapter()
-                                                                                .notifyDataSetChanged();
-                                                                    } else {
-                                                                        recyclerview.getAdapter()
-                                                                                .notifyItemRemoved(
-                                                                                        pos + 1);
-                                                                    }
-
-                                                                    dialog.dismiss();
-                                                                }
-                                                                Snackbar s = Snackbar.make(
-                                                                        holder.itemView,
-                                                                        R.string.really_pin_submission_message,
-                                                                        Snackbar.LENGTH_LONG);
-                                                                View view = s.getView();
-                                                                TextView tv =
-                                                                        (TextView) view.findViewById(
-                                                                                android.support.design.R.id.snackbar_text);
-                                                                tv.setTextColor(Color.WHITE);
-                                                                s.show();
-
-                                                            } else {
-                                                                new AlertDialogWrapper.Builder(
-                                                                        mContext).setTitle(
-                                                                        R.string.err_general)
-                                                                        .setMessage(
-                                                                                R.string.err_retry_later)
-                                                                        .show();
-                                                            }
-                                                        }
-
-                                                        @Override
-                                                        protected Boolean doInBackground(
-                                                                Void... params) {
-                                                            try {
-                                                                new ModerationManager(
-                                                                        Authentication.reddit).setSticky(
-                                                                        submission, true);
-                                                            } catch (ApiException e) {
-                                                                e.printStackTrace();
-                                                                return false;
-
-                                                            }
-                                                            return true;
-                                                        }
-                                                    }.execute();
-
-                                                }
-                                            })
-                                    .setNegativeButton(R.string.btn_no, null)
-                                    .show();
+                            stickySubmission(mContext, submission, holder);
                         }
-
                         break;
                     case 5:
-                        new AsyncTask<Void, Void, ArrayList<String>>() {
-                            String currentFlair;
-                            List<FlairTemplate> flair;
-                            String input;
-
-                            @Override
-                            protected ArrayList<String> doInBackground(Void... params) {
-                                FlairReference allFlairs =
-                                        new FluentRedditClient(Authentication.reddit).subreddit(
-                                                submission.getSubredditName()).flair();
-
-
-                                try {
-                                    flair = allFlairs.options();
-                                    currentFlair = allFlairs.current().getText();
-                                    final ArrayList<String> finalFlairs = new ArrayList<>();
-                                    for (FlairTemplate temp : flair) {
-                                        finalFlairs.add(temp.getText());
-                                    }
-                                    mContext.runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            new MaterialDialog.Builder(mContext).title(
-                                                    R.string.mod_flair_post)
-                                                    .inputType(InputType.TYPE_CLASS_TEXT)
-                                                    .input(mContext.getString(
-                                                            R.string.mod_flair_hint), "",
-                                                            new MaterialDialog.InputCallback() {
-                                                                @Override
-                                                                public void onInput(
-                                                                        MaterialDialog dialog,
-                                                                        CharSequence out) {
-                                                                    input = out.toString();
-                                                                }
-                                                            })
-                                                    .items(finalFlairs.toArray(
-                                                            new String[finalFlairs.size()]))
-                                                    .itemsCallback(
-                                                            new MaterialDialog.ListCallback() {
-                                                                @Override
-                                                                public void onSelection(
-                                                                        MaterialDialog materialDialog,
-                                                                        View view, int i,
-                                                                        CharSequence charSequence) {
-                                                                    materialDialog.dismiss();
-                                                                    try {
-                                                                        new ModerationManager(
-                                                                                Authentication.reddit)
-                                                                                .setFlair(
-                                                                                        submission.getSubredditName(),
-                                                                                        flair.get(
-                                                                                                finalFlairs
-                                                                                                        .indexOf(
-                                                                                                                currentFlair)),
-                                                                                        input,
-                                                                                        submission);
-                                                                    } catch (ApiException e) {
-                                                                        e.printStackTrace();
-                                                                    }
-                                                                }
-                                                            })
-                                                    .show();
-                                        }
-                                    });
-                                    return finalFlairs;
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                    //sub probably has no flairs?
-                                }
-
-
-                                return null;
-                            }
-
-                            @Override
-                            public void onPostExecute(final ArrayList<String> data) {
-
-                            }
-                        }.execute();
-
-
+                        if (distinguished) {
+                            unDistinguishSubmission(mContext, submission, holder);
+                        } else {
+                            distinguishSubmission(mContext, submission, holder);
+                        }
                         break;
                     case 6:
-
-                        new AlertDialogWrapper.Builder(mContext).setTitle(
-                                R.string.really_remove_submission)
-                                .setPositiveButton(R.string.btn_yes,
-                                        new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(final DialogInterface dialog,
-                                                    int which) {
-
-                                                new AsyncTask<Void, Void, Boolean>() {
-
-                                                    @Override
-                                                    public void onPostExecute(Boolean b) {
-                                                        if (b) {
-                                                            dialog.dismiss();
-                                                            if (mContext instanceof ModQueue) {
-                                                                final int pos =
-                                                                        posts.indexOf(submission);
-                                                                posts.remove(submission);
-
-                                                                if (pos == 0) {
-                                                                    recyclerview.getAdapter()
-                                                                            .notifyDataSetChanged();
-                                                                } else {
-                                                                    recyclerview.getAdapter()
-                                                                            .notifyItemRemoved(
-                                                                                    pos + 1);
-                                                                }
-                                                                dialog.dismiss();
-                                                            }
-                                                            Snackbar s =
-                                                                    Snackbar.make(holder.itemView,
-                                                                            R.string.submission_removed,
-                                                                            Snackbar.LENGTH_LONG);
-                                                            View view = s.getView();
-                                                            TextView tv =
-                                                                    (TextView) view.findViewById(
-                                                                            android.support.design.R.id.snackbar_text);
-                                                            tv.setTextColor(Color.WHITE);
-                                                            s.show();
-
-                                                        } else {
-                                                            new AlertDialogWrapper.Builder(mContext)
-                                                                    .setTitle(R.string.err_general)
-                                                                    .setMessage(
-                                                                            R.string.err_retry_later)
-                                                                    .show();
-                                                        }
-                                                    }
-
-                                                    @Override
-                                                    protected Boolean doInBackground(
-                                                            Void... params) {
-                                                        try {
-                                                            new ModerationManager(
-                                                                    Authentication.reddit).remove(
-                                                                    submission, false);
-                                                        } catch (ApiException e) {
-                                                            e.printStackTrace();
-                                                            return false;
-
-                                                        }
-                                                        return true;
-                                                    }
-                                                }.execute();
-
-                                            }
-                                        })
-                                .setNegativeButton(R.string.btn_no, null)
-                                .show();
+                        removeSubmission(mContext, submission, posts, recyclerview, holder, false);
                         break;
                     case 7:
-                        reason = "";
-                        new MaterialDialog.Builder(mContext).title(R.string.mod_remove_title)
-                                .positiveText(R.string.btn_remove)
-                                .alwaysCallInputCallback()
-                                .input(mContext.getString(R.string.mod_remove_hint),
-                                        mContext.getString(R.string.mod_remove_template), false,
-                                        new MaterialDialog.InputCallback() {
-                                            @Override
-                                            public void onInput(MaterialDialog dialog,
-                                                    CharSequence input) {
-                                                reason = input.toString();
-                                            }
-                                        })
-                                .inputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES)
-                                .neutralText(R.string.mod_remove_insert_draft)
-                                .onNeutral(new MaterialDialog.SingleButtonCallback() {
-                                    @Override
-                                    public void onClick(@NonNull MaterialDialog dialog,
-                                            @NonNull DialogAction which) {
-
-                                    }
-                                })
-                                .onPositive(new MaterialDialog.SingleButtonCallback() {
-                                    @Override
-                                    public void onClick(final MaterialDialog dialog,
-                                            DialogAction which) {
-
-                                        new AsyncTask<Void, Void, Boolean>() {
-
-                                            @Override
-                                            public void onPostExecute(Boolean b) {
-                                                if (b) {
-                                                    dialog.dismiss();
-                                                    if (mContext instanceof ModQueue) {
-                                                        final int pos = posts.indexOf(submission);
-                                                        posts.remove(submission);
-
-                                                        if (pos == 0) {
-                                                            recyclerview.getAdapter()
-                                                                    .notifyDataSetChanged();
-                                                        } else {
-                                                            recyclerview.getAdapter()
-                                                                    .notifyItemRemoved(pos + 1);
-                                                        }
-
-                                                        dialog.dismiss();
-                                                    }
-                                                    Snackbar s = Snackbar.make(holder.itemView,
-                                                            R.string.submission_removed,
-                                                            Snackbar.LENGTH_LONG);
-                                                    View view = s.getView();
-                                                    TextView tv = (TextView) view.findViewById(
-                                                            android.support.design.R.id.snackbar_text);
-                                                    tv.setTextColor(Color.WHITE);
-                                                    s.show();
-
-                                                } else {
-                                                    new AlertDialogWrapper.Builder(
-                                                            mContext).setTitle(R.string.err_general)
-                                                            .setMessage(R.string.err_retry_later)
-                                                            .show();
-                                                }
-                                            }
-
-                                            @Override
-                                            protected Boolean doInBackground(Void... params) {
-                                                try {
-                                                    new ModerationManager(
-                                                            Authentication.reddit).remove(
-                                                            submission, false);
-                                                    new AccountManager(Authentication.reddit).reply(
-                                                            submission, reason);
-                                                    new ModerationManager(
-                                                            Authentication.reddit).setDistinguishedStatus(
-                                                            submission,
-                                                            DistinguishedStatus.MODERATOR);
-                                                } catch (ApiException e) {
-                                                    e.printStackTrace();
-                                                    return false;
-
-                                                }
-                                                return true;
-                                            }
-                                        }.execute();
-
-                                    }
-                                })
-                                .negativeText(R.string.btn_cancel)
-                                .onNegative(null)
-                                .show();
+                        doRemoveSubmissionReason(mContext, submission, posts, recyclerview, holder);
+                        break;
+                    case 30:
+                        removeSubmission(mContext, submission, posts, recyclerview, holder, true);
                         break;
                     case 8:
                         Intent i = new Intent(mContext, Profile.class);
@@ -1902,227 +1426,7 @@ public class PopulateSubmissionViewHolder {
                         mContext.startActivity(i);
                         break;
                     case 20:
-                        new AsyncTask<Void, Void, ArrayList<String>>() {
-                            List<FlairTemplate> flair;
-
-                            @Override
-                            protected ArrayList<String> doInBackground(Void... params) {
-                                FlairReference allFlairs =
-                                        new FluentRedditClient(Authentication.reddit).subreddit(
-                                                submission.getSubredditName()).flair();
-                                try {
-                                    flair = allFlairs.options(submission);
-                                    final ArrayList<String> finalFlairs = new ArrayList<>();
-                                    for (FlairTemplate temp : flair) {
-                                        finalFlairs.add(temp.getText());
-                                    }
-                                    return finalFlairs;
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                    //sub probably has no flairs?
-                                }
-
-
-                                return null;
-                            }
-
-                            @Override
-                            public void onPostExecute(final ArrayList<String> data) {
-                                try {
-
-                                    if (data.isEmpty()) {
-                                        new AlertDialogWrapper.Builder(mContext).setTitle(
-                                                R.string.mod_flair_none_found)
-                                                .setPositiveButton(R.string.btn_ok, null)
-                                                .show();
-                                    } else {
-                                        new MaterialDialog.Builder(mContext).items(data)
-                                                .title(R.string.sidebar_select_flair)
-                                                .itemsCallback(new MaterialDialog.ListCallback() {
-                                                    @Override
-                                                    public void onSelection(MaterialDialog dialog,
-                                                            View itemView, int which,
-                                                            CharSequence text) {
-                                                        final FlairTemplate t = flair.get(which);
-                                                        if (t.isTextEditable()) {
-                                                            new MaterialDialog.Builder(
-                                                                    mContext).title(
-                                                                    R.string.sidebar_select_flair_text)
-                                                                    .input(mContext.getString(
-                                                                            R.string.mod_flair_hint),
-                                                                            t.getText(), true,
-                                                                            new MaterialDialog.InputCallback() {
-                                                                                @Override
-                                                                                public void onInput(
-                                                                                        MaterialDialog dialog,
-                                                                                        CharSequence input) {
-
-                                                                                }
-                                                                            })
-                                                                    .positiveText(R.string.btn_set)
-                                                                    .onPositive(
-                                                                            new MaterialDialog.SingleButtonCallback() {
-                                                                                @Override
-                                                                                public void onClick(
-                                                                                        MaterialDialog dialog,
-                                                                                        DialogAction which) {
-                                                                                    final String
-                                                                                            flair =
-                                                                                            dialog.getInputEditText()
-                                                                                                    .getText()
-                                                                                                    .toString();
-                                                                                    new AsyncTask<Void, Void, Boolean>() {
-                                                                                        @Override
-                                                                                        protected Boolean doInBackground(
-                                                                                                Void... params) {
-                                                                                            try {
-                                                                                                new ModerationManager(
-                                                                                                        Authentication.reddit)
-                                                                                                        .setFlair(
-                                                                                                                submission
-                                                                                                                        .getSubredditName(),
-                                                                                                                t,
-                                                                                                                flair,
-                                                                                                                submission);
-                                                                                                return true;
-                                                                                            } catch (ApiException e) {
-                                                                                                e.printStackTrace();
-                                                                                                return false;
-                                                                                            }
-                                                                                        }
-
-                                                                                        @Override
-                                                                                        protected void onPostExecute(
-                                                                                                Boolean done) {
-                                                                                            Snackbar
-                                                                                                    s =
-                                                                                                    null;
-                                                                                            if (done) {
-                                                                                                if (recyclerview
-                                                                                                        != null) {
-                                                                                                    s =
-                                                                                                            Snackbar.make(
-                                                                                                                    recyclerview,
-                                                                                                                    R.string.snackbar_flair_success,
-                                                                                                                    Snackbar.LENGTH_SHORT);
-                                                                                                }
-                                                                                                if (holder.itemView
-                                                                                                        != null) {
-                                                                                                    SubmissionCache
-                                                                                                            .updateTitleFlair(
-                                                                                                                    submission,
-                                                                                                                    flair,
-                                                                                                                    mContext);
-                                                                                                    holder.title
-                                                                                                            .setText(
-                                                                                                                    SubmissionCache
-                                                                                                                            .getTitleLine(
-                                                                                                                                    submission,
-                                                                                                                                    mContext));
-                                                                                                }
-                                                                                            } else {
-                                                                                                if (recyclerview
-                                                                                                        != null) {
-                                                                                                    s =
-                                                                                                            Snackbar.make(
-                                                                                                                    recyclerview,
-                                                                                                                    R.string.snackbar_flair_error,
-                                                                                                                    Snackbar.LENGTH_SHORT);
-                                                                                                }
-                                                                                            }
-                                                                                            if (s
-                                                                                                    != null) {
-                                                                                                View
-                                                                                                        view =
-                                                                                                        s.getView();
-                                                                                                TextView
-                                                                                                        tv =
-                                                                                                        (TextView) view
-                                                                                                                .findViewById(
-                                                                                                                        android.support.design.R.id.snackbar_text);
-                                                                                                tv.setTextColor(
-                                                                                                        Color.WHITE);
-                                                                                                s.show();
-                                                                                            }
-                                                                                        }
-                                                                                    }.execute();
-                                                                                }
-                                                                            })
-                                                                    .negativeText(
-                                                                            R.string.btn_cancel)
-                                                                    .show();
-                                                        } else {
-                                                            new AsyncTask<Void, Void, Boolean>() {
-                                                                @Override
-                                                                protected Boolean doInBackground(
-                                                                        Void... params) {
-                                                                    try {
-                                                                        new ModerationManager(
-                                                                                Authentication.reddit)
-                                                                                .setFlair(
-                                                                                        submission.getSubredditName(),
-                                                                                        t, null,
-                                                                                        submission);
-                                                                        return true;
-                                                                    } catch (ApiException e) {
-                                                                        e.printStackTrace();
-                                                                        return false;
-                                                                    }
-                                                                }
-
-                                                                @Override
-                                                                protected void onPostExecute(
-                                                                        Boolean done) {
-                                                                    Snackbar s = null;
-                                                                    if (done) {
-                                                                        if (recyclerview != null) {
-                                                                            s = Snackbar.make(
-                                                                                    recyclerview,
-                                                                                    R.string.snackbar_flair_success,
-                                                                                    Snackbar.LENGTH_SHORT);
-                                                                        }
-                                                                        if (holder.itemView
-                                                                                != null) {
-                                                                            SubmissionCache.updateTitleFlair(
-                                                                                    submission,
-                                                                                    t.getCssClass(),
-                                                                                    mContext);
-                                                                            holder.title.setText(
-                                                                                    SubmissionCache.getTitleLine(
-                                                                                            submission,
-                                                                                            mContext));
-                                                                        }
-                                                                    } else {
-                                                                        if (recyclerview != null) {
-                                                                            s = Snackbar.make(
-                                                                                    recyclerview,
-                                                                                    R.string.snackbar_flair_error,
-                                                                                    Snackbar.LENGTH_SHORT);
-                                                                        }
-                                                                    }
-                                                                    if (s != null) {
-                                                                        View view = s.getView();
-                                                                        TextView tv =
-                                                                                (TextView) view.findViewById(
-                                                                                        android.support.design.R.id.snackbar_text);
-                                                                        tv.setTextColor(
-                                                                                Color.WHITE);
-                                                                        s.show();
-                                                                    }
-                                                                }
-                                                            }.execute();
-                                                        }
-                                                    }
-                                                })
-                                                .show();
-
-                                    }
-                                } catch (Exception ignored) {
-
-                                }
-                            }
-                        }.execute();
-
+                        doSetFlair(mContext, submission, holder);
                         break;
                     case 23:
                         //ban a user
@@ -2134,6 +1438,643 @@ public class PopulateSubmissionViewHolder {
 
 
         b.show();
+    }
+
+    private <T extends Contribution> void doRemoveSubmissionReason(final Activity mContext,
+            final Submission submission, final List<T> posts, final RecyclerView recyclerview,
+            final SubmissionViewHolder holder) {
+        reason = "";
+        new MaterialDialog.Builder(mContext).title(R.string.mod_remove_title)
+                .positiveText(R.string.btn_remove)
+                .alwaysCallInputCallback()
+                .input(mContext.getString(R.string.mod_remove_hint),
+                        mContext.getString(R.string.mod_remove_template), false,
+                        new MaterialDialog.InputCallback() {
+                            @Override
+                            public void onInput(MaterialDialog dialog, CharSequence input) {
+                                reason = input.toString();
+                            }
+                        })
+                .inputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES)
+                .neutralText(R.string.mod_remove_insert_draft)
+                .onNeutral(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog,
+                            @NonNull DialogAction which) {
+
+                    }
+                })
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(final MaterialDialog dialog, DialogAction which) {
+
+                        removeSubmissionReason(submission, mContext, posts, reason, holder,
+                                recyclerview);
+
+                    }
+                })
+                .negativeText(R.string.btn_cancel)
+                .onNegative(null)
+                .show();
+    }
+
+    private <T extends Contribution> void removeSubmissionReason(final Submission submission,
+            final Activity mContext, final List<T> posts, final String reason,
+            final SubmissionViewHolder holder, final RecyclerView recyclerview) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    SubmissionCache.removed.add(submission.getFullName());
+                    SubmissionCache.approved.remove(submission.getFullName());
+
+                    SubmissionCache.updateInfoSpannable(submission, mContext,
+                            submission.getSubredditName());
+
+                    if (mContext instanceof ModQueue) {
+                        final int pos = posts.indexOf(submission);
+                        posts.remove(submission);
+
+                        if (pos == 0) {
+                            recyclerview.getAdapter().notifyDataSetChanged();
+                        } else {
+                            recyclerview.getAdapter().notifyItemRemoved(pos + 1);
+                        }
+                    } else {
+                        recyclerview.getAdapter().notifyItemChanged(holder.getAdapterPosition());
+                    }
+                    Snackbar s = Snackbar.make(holder.itemView, R.string.submission_removed,
+                            Snackbar.LENGTH_LONG);
+
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).remove(submission, false);
+                    new AccountManager(Authentication.reddit).reply(submission, reason);
+                    new ModerationManager(Authentication.reddit).setDistinguishedStatus(submission,
+                            DistinguishedStatus.MODERATOR);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+    private <T extends Contribution> void removeSubmission(final Activity mContext,
+            final Submission submission, final List<T> posts, final RecyclerView recyclerview,
+            final SubmissionViewHolder holder, final boolean spam) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+
+                SubmissionCache.removed.add(submission.getFullName());
+                SubmissionCache.approved.remove(submission.getFullName());
+
+                SubmissionCache.updateInfoSpannable(submission, mContext,
+                        submission.getSubredditName());
+
+                if (b) {
+                    if (mContext instanceof ModQueue) {
+                        final int pos = posts.indexOf(submission);
+                        posts.remove(submission);
+
+                        if (pos == 0) {
+                            recyclerview.getAdapter().notifyDataSetChanged();
+                        } else {
+                            recyclerview.getAdapter().notifyItemRemoved(pos + 1);
+                        }
+                    } else {
+                        recyclerview.getAdapter().notifyItemChanged(holder.getAdapterPosition());
+                    }
+
+
+                    Snackbar s = Snackbar.make(holder.itemView, R.string.submission_removed,
+                            Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).remove(submission, spam);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+
+    private void doSetFlair(final Activity mContext, final Submission submission,
+            final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, ArrayList<String>>() {
+            ArrayList<FlairTemplate> flair;
+
+            @Override
+            protected ArrayList<String> doInBackground(Void... params) {
+                FlairReference allFlairs = new FluentRedditClient(Authentication.reddit).subreddit(
+                        submission.getSubredditName()).flair();
+                try {
+                    flair = new ArrayList<>(allFlairs.options(submission));
+                    final ArrayList<String> finalFlairs = new ArrayList<>();
+                    for (FlairTemplate temp : flair) {
+                        finalFlairs.add(temp.getText());
+                    }
+                    return finalFlairs;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    //sub probably has no flairs?
+                }
+                return null;
+            }
+
+            @Override
+            public void onPostExecute(final ArrayList<String> data) {
+                try {
+                    if (data.isEmpty()) {
+                        new AlertDialogWrapper.Builder(mContext).setTitle(
+                                R.string.mod_flair_none_found)
+                                .setPositiveButton(R.string.btn_ok, null)
+                                .show();
+                    } else {
+                        showFlairSelectionDialog(mContext, submission, data, flair, holder);
+                    }
+                } catch (Exception ignored) {
+
+                }
+            }
+        }.execute();
+    }
+
+    private void showFlairSelectionDialog(final Activity mContext, final Submission submission,
+            ArrayList<String> data, final ArrayList<FlairTemplate> flair,
+            final SubmissionViewHolder holder) {
+        new MaterialDialog.Builder(mContext).items(data)
+                .title(R.string.sidebar_select_flair)
+                .itemsCallback(new MaterialDialog.ListCallback() {
+                    @Override
+                    public void onSelection(MaterialDialog dialog, View itemView, int which,
+                            CharSequence text) {
+                        final FlairTemplate t = flair.get(which);
+                        if (t.isTextEditable()) {
+                            showFlairEditDialog(mContext, submission, t, holder);
+                        } else {
+                            setFlair(mContext, null, submission, t, holder);
+                        }
+                    }
+                })
+                .show();
+    }
+
+    private void showFlairEditDialog(final Activity mContext, final Submission submission,
+            final FlairTemplate t, final SubmissionViewHolder holder) {
+        new MaterialDialog.Builder(mContext).title(R.string.sidebar_select_flair_text)
+                .input(mContext.getString(R.string.mod_flair_hint), t.getText(), true,
+                        new MaterialDialog.InputCallback() {
+                            @Override
+                            public void onInput(MaterialDialog dialog, CharSequence input) {
+
+                            }
+                        })
+                .positiveText(R.string.btn_set)
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(MaterialDialog dialog, DialogAction which) {
+                        final String flair = dialog.getInputEditText().getText().toString();
+                        setFlair(mContext, flair, submission, t, holder);
+                    }
+                })
+                .negativeText(R.string.btn_cancel)
+                .show();
+    }
+
+    private void setFlair(final Context mContext, final String flair, final Submission submission,
+            final FlairTemplate t, final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setFlair(
+                            submission.getSubredditName(), t, flair, submission);
+                    return true;
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+
+            @Override
+            protected void onPostExecute(Boolean done) {
+                Snackbar s = null;
+                if (done) {
+                    if (holder.itemView != null) {
+                        s = Snackbar.make(holder.itemView, R.string.snackbar_flair_success,
+                                Snackbar.LENGTH_SHORT);
+                    }
+                    if (holder.itemView != null) {
+                        SubmissionCache.updateTitleFlair(submission, flair, mContext);
+                        holder.title.setText(SubmissionCache.getTitleLine(submission, mContext));
+                    }
+                } else {
+                    if (holder.itemView != null) {
+                        s = Snackbar.make(holder.itemView, R.string.snackbar_flair_error,
+                                Snackbar.LENGTH_SHORT);
+                    }
+                }
+                if (s != null) {
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+                }
+            }
+        }.execute();
+    }
+
+    private void stickySubmission(final Activity mContext, final Submission submission,
+            final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s =
+                            Snackbar.make(holder.itemView, R.string.really_pin_submission_message,
+                                    Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setSticky(submission, true);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+    private void unStickySubmission(final Activity mContext, final Submission submission,
+            final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s =
+                            Snackbar.make(holder.itemView, R.string.really_unpin_submission_message,
+                                    Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setSticky(submission, false);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+    private void lockSubmission(final Activity mContext, final Submission submission,
+            final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s =
+                            Snackbar.make(holder.itemView, "Thread locked", Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setLocked(submission);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+    private void unLockSubmission(final Activity mContext, final Submission submission,
+            final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s =
+                            Snackbar.make(holder.itemView, "Thread unlocked", Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setUnlocked(submission);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+    private void distinguishSubmission(final Activity mContext, final Submission submission,
+            final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s = Snackbar.make(holder.itemView, "Submission distinguished",
+                            Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setDistinguishedStatus(submission,
+                            DistinguishedStatus.MODERATOR);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+    private void unDistinguishSubmission(final Activity mContext, final Submission submission,
+            final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s = Snackbar.make(holder.itemView, "Submission distinguish removed",
+                            Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setDistinguishedStatus(submission,
+                            DistinguishedStatus.MODERATOR);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+    private void setPostNsfw(final Activity mContext, final Submission submission,
+            final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s =
+                            Snackbar.make(holder.itemView, "NSFW status set", Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setNsfw(submission, true);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+    private void unNsfwSubmission(final Context mContext, final Submission submission,
+            final SubmissionViewHolder holder) {
+        //todo update view with NSFW tag
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s = Snackbar.make(holder.itemView, "NSFW status removed",
+                            Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv =
+                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setNsfw(submission, false);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
+    }
+
+    private <T extends Thing> void approveSubmission(final Context mContext, final List<T> posts,
+            final Submission submission, final RecyclerView recyclerview,
+            final SubmissionViewHolder holder) {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    SubmissionCache.approved.add(submission.getFullName());
+                    SubmissionCache.removed.remove(submission.getFullName());
+                    SubmissionCache.updateInfoSpannable(submission, mContext,
+                            submission.getSubredditName());
+
+                    if (mContext instanceof ModQueue) {
+                        final int pos = posts.indexOf(submission);
+                        posts.remove(submission);
+
+                        if (pos == 0) {
+                            recyclerview.getAdapter().notifyDataSetChanged();
+                        } else {
+                            recyclerview.getAdapter().notifyItemRemoved(pos + 1);
+                        }
+                    } else {
+                        recyclerview.getAdapter().notifyItemChanged(holder.getAdapterPosition());
+                    }
+
+                    try {
+                        Snackbar s = Snackbar.make(holder.itemView, R.string.mod_approved,
+                                Snackbar.LENGTH_LONG);
+                        View view = s.getView();
+                        TextView tv = (TextView) view.findViewById(
+                                android.support.design.R.id.snackbar_text);
+                        tv.setTextColor(Color.WHITE);
+                        s.show();
+                    } catch (Exception ignored) {
+
+                    }
+
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).approve(submission);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
+
+                }
+                return true;
+            }
+        }.execute();
     }
 
     public void showBan(final Context mContext, final View mToolbar, final Submission submission,
@@ -2170,7 +2111,7 @@ public class PopulateSubmissionViewHolder {
 
         AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(mContext);
         builder.setView(l)
-                .setTitle(mContext.getString(R.string.mod_ban_title) + submission.getAuthor())
+                .setTitle(mContext.getString(R.string.mod_ban_title, submission.getAuthor()))
                 .setCancelable(true)
                 .setPositiveButton(R.string.mod_btn_ban, new DialogInterface.OnClickListener() {
                             @Override
@@ -2348,18 +2289,7 @@ public class PopulateSubmissionViewHolder {
         holder.menu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (offline) {
-                    Snackbar s = Snackbar.make(holder.itemView, R.string.offline_msg,
-                            Snackbar.LENGTH_SHORT);
-                    View view2 = s.getView();
-                    TextView tv = (TextView) view2.findViewById(
-                            android.support.design.R.id.snackbar_text);
-                    tv.setTextColor(Color.WHITE);
-                    s.show();
-                } else {
-                    showBottomSheet(mContext, submission, holder, posts, baseSub, recyclerview,
-                            full);
-                }
+                showBottomSheet(mContext, submission, holder, posts, baseSub, recyclerview, full);
             }
         });
 

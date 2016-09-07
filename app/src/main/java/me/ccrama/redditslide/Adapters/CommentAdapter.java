@@ -22,6 +22,7 @@ import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
+import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.util.TypedValue;
@@ -113,6 +114,8 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private String currentlyEditingId = "";
     public SubmissionViewHolder submissionViewHolder;
     long lastSeen = 0;
+    public ArrayList<String> approved = new ArrayList<>();
+    public ArrayList<String> removed = new ArrayList<>();
 
     public CommentAdapter(CommentPage mContext, SubmissionComments dataSet, RecyclerView listView,
             Submission submission, FragmentManager fm) {
@@ -238,9 +241,9 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         notifyItemChanged(2);
     }
 
-    public void doScoreText(CommentViewHolder holder, Comment comment) {
+    public void doScoreText(CommentViewHolder holder, Comment comment, CommentAdapter adapter) {
         holder.content.setText(
-                CommentAdapterHelper.getScoreString(comment, mContext, holder, submission));
+                CommentAdapterHelper.getScoreString(comment, mContext, holder, submission, adapter));
     }
 
     public void doTimes() {
@@ -285,7 +288,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 holder.itemView.setPadding(0, 0, 0, 0);
             }
 
-            doScoreText(holder, comment);
+            doScoreText(holder, comment, this);
 
             //Long click listeners
             View.OnLongClickListener onLongClickListener = new View.OnLongClickListener() {
@@ -458,7 +461,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             submissionViewHolder = (SubmissionViewHolder) firstHolder;
             new PopulateSubmissionViewHolder().populateSubmissionViewHolder(
                     (SubmissionViewHolder) firstHolder, submission, (Activity) mContext, true, true,
-                    null, null, false, false, null, this);
+                    null, listView, false, false, null, this);
             if (Authentication.isLoggedIn && Authentication.didOnline) {
                 if (submission.isArchived() || submission.isLocked()) {
                     firstHolder.itemView.findViewById(R.id.reply).setVisibility(View.GONE);
@@ -1312,13 +1315,13 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     if (ActionStates.getVoteDirection(comment) == VoteDirection.UPVOTE) {
                         new Vote(v, mContext).execute(n);
                         ActionStates.setVoteDirection(comment, VoteDirection.NO_VOTE);
-                        doScoreText(holder, n);
+                        doScoreText(holder, n, CommentAdapter.this);
                         upvote.clearColorFilter();
                     } else {
                         new Vote(true, v, mContext).execute(n);
                         ActionStates.setVoteDirection(comment, VoteDirection.UPVOTE);
                         downvote.clearColorFilter(); // reset colour
-                        doScoreText(holder, n);
+                        doScoreText(holder, n, CommentAdapter.this);
                         upvote.setColorFilter(holder.textColorUp, PorterDuff.Mode.MULTIPLY);
                     }
                 }
@@ -1331,14 +1334,14 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     if (ActionStates.getVoteDirection(comment) == VoteDirection.DOWNVOTE) {
                         new Vote(v, mContext).execute(n);
                         ActionStates.setVoteDirection(comment, VoteDirection.NO_VOTE);
-                        doScoreText(holder, n);
+                        doScoreText(holder, n, CommentAdapter.this);
                         downvote.clearColorFilter();
 
                     } else {
                         new Vote(false, v, mContext).execute(n);
                         ActionStates.setVoteDirection(comment, VoteDirection.DOWNVOTE);
                         upvote.clearColorFilter(); // reset colour
-                        doScoreText(holder, n);
+                        doScoreText(holder, n, CommentAdapter.this);
                         downvote.setColorFilter(holder.textColorDown, PorterDuff.Mode.MULTIPLY);
                     }
                 }
@@ -2140,9 +2143,8 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     try {
                         new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_comment_post)
                                 .setMessage(((why == null) ? ""
-                                        : mContext.getString(R.string.err_comment_post_reason)
-                                                + why) + mContext.getString(
-                                        R.string.err_comment_post_message))
+                                        : mContext.getString(R.string.err_comment_post_reason, why))
+                                        + mContext.getString(R.string.err_comment_post_message))
                                 .setPositiveButton(R.string.btn_ok, null)
                                 .show();
                     } catch (Exception ignored) {
@@ -2152,9 +2154,8 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     try {
                         new AlertDialogWrapper.Builder(mContext).setTitle(R.string.err_comment_post)
                                 .setMessage(((why == null) ? ""
-                                        : mContext.getString(R.string.err_comment_post_reason)
-                                                + why) + mContext.getString(
-                                        R.string.err_comment_post_nosave_message))
+                                        : mContext.getString(R.string.err_comment_post_reason, why))
+                                        + mContext.getString(R.string.err_comment_post_nosave_message))
                                 .setPositiveButton(R.string.btn_ok, null)
                                 .show();
                     } catch (Exception ignored) {

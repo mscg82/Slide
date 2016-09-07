@@ -227,6 +227,9 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
             if (SettingValues.typeInText) {
                 setLinkTypes(builder, span);
             }
+            if (SettingValues.largeLinks) {
+                setLargeLinks(builder, span);
+            }
             File emoteDir = new File(Environment.getExternalStorageDirectory(), "RedditEmotes");
             File emoteFile = new File(emoteDir, span.getURL().replace("/", "").replaceAll("-.*", "")
                     + ".png"); //BPM uses "-" to add dynamics for emotes in browser. Fall back to original here if exists.
@@ -263,6 +266,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                     builder.setSpan(new StyleSpan(Typeface.ITALIC), start + 1, end + 1,
                             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
+                builder.append("\n"); //Newline to fix text wrapping issues
             }
         }
     }
@@ -296,6 +300,9 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
         }
     }
 
+    private void setLargeLinks(SpannableStringBuilder builder, URLSpan span) {
+        builder.setSpan(new RelativeSizeSpan(1.3f), builder.getSpanStart(span), builder.getSpanEnd(span), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
 
     private void setStrikethrough(SpannableStringBuilder builder) {
         final int offset = "[[d[".length(); // == "]d]]".length()

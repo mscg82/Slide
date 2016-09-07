@@ -251,6 +251,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     }
 
     public static Integer getSortingId(String subreddit) {
+        subreddit = subreddit.toLowerCase();
         Sorting sort =
                 sorting.containsKey(subreddit) ? sorting.get(subreddit) : Reddit.defaultSorting;
 
@@ -275,6 +276,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     }
 
     public static Integer getSortingIdTime(String subreddit) {
+        subreddit = subreddit.toLowerCase();
         TimePeriod time = times.containsKey(subreddit) ? times.get(subreddit) : Reddit.timePeriod;
 
         return getSortingIdTime(time);
@@ -319,13 +321,11 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
 
     public static String[] getSortingStrings(Context c) {
         String[] current = new String[]{
-                c.getString(R.string.sorting_hot),
-                c.getString(R.string.sorting_new),
-                c.getString(R.string.sorting_rising),
-                c.getString(R.string.sorting_top),
+                c.getString(R.string.sorting_hot), c.getString(R.string.sorting_new),
+                c.getString(R.string.sorting_rising), c.getString(R.string.sorting_top),
                 c.getString(R.string.sorting_controversial),
         };
-        return  current;
+        return current;
     }
 
     public static Spannable[] getSortingSpannables(Context c, String currentSub) {
@@ -343,9 +343,8 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
         for (int i = 0; i < sortingStrings.length; i++) {
             SpannableString spanString = new SpannableString(sortingStrings[i]);
             if (i == sortingId) {
-                spanString.setSpan(new ForegroundColorSpan(
-                                new ColorPreferences(c).getColor(sub)), 0,
-                        spanString.length(), 0);
+                spanString.setSpan(new ForegroundColorSpan(new ColorPreferences(c).getColor(sub)),
+                        0, spanString.length(), 0);
                 spanString.setSpan(new StyleSpan(Typeface.BOLD), 0, spanString.length(), 0);
             }
             spannables.add(spanString);
@@ -355,12 +354,9 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
 
     public static String[] getSortingStringsTime(Context c) {
         String[] current = new String[]{
-                c.getString(R.string.sorting_hour),
-                c.getString(R.string.sorting_day),
-                c.getString(R.string.sorting_week),
-                c.getString(R.string.sorting_month),
-                c.getString(R.string.sorting_year),
-                c.getString(R.string.sorting_all),
+                c.getString(R.string.sorting_hour), c.getString(R.string.sorting_day),
+                c.getString(R.string.sorting_week), c.getString(R.string.sorting_month),
+                c.getString(R.string.sorting_year), c.getString(R.string.sorting_all),
         };
         return current;
     }
@@ -379,9 +375,8 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
         for (int i = 0; i < sortingStrings.length; i++) {
             SpannableString spanString = new SpannableString(sortingStrings[i]);
             if (i == sortingId) {
-                spanString.setSpan(new ForegroundColorSpan(
-                                new ColorPreferences(c).getColor(sub)), 0,
-                        spanString.length(), 0);
+                spanString.setSpan(new ForegroundColorSpan(new ColorPreferences(c).getColor(sub)),
+                        0, spanString.length(), 0);
                 spanString.setSpan(new StyleSpan(Typeface.BOLD), 0, spanString.length(), 0);
             }
             spannables.add(spanString);
@@ -432,6 +427,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
 
     @Override
     public void onActivityResumed(Activity activity) {
+        doLanguages(activity);
         if (authentication != null
                 && Authentication.didOnline
                 && Authentication.authentication.getLong("expires", 0) <= Calendar.getInstance()
@@ -566,13 +562,16 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
                                 + ((NetworkException) t).getResponse().getStatusMessage()
                                 + ": "
                                 + (t).getMessage(), Toast.LENGTH_LONG).show();
-                    } else if(t instanceof NullPointerException && t.getMessage().contains("Attempt to invoke virtual method 'android.content.Context android.view.ViewGroup.getContext()' on a null object reference")){
+                    } else if (t instanceof NullPointerException && t.getMessage()
+                            .contains(
+                                    "Attempt to invoke virtual method 'android.content.Context android.view.ViewGroup.getContext()' on a null object reference")) {
                         t.printStackTrace();
-                    } else if(t instanceof MaterialDialog.DialogException){
+                    } else if (t instanceof MaterialDialog.DialogException) {
                         t.printStackTrace();
-                    } else if(t instanceof  IllegalArgumentException && t.getMessage().contains("pointerIndex out of range")){
+                    } else if (t instanceof IllegalArgumentException && t.getMessage()
+                            .contains("pointerIndex out of range")) {
                         t.printStackTrace();
-                    }else {
+                    } else {
                         appRestart.edit()
                                 .putString("startScreen", "a")
                                 .apply(); //Force reload of data after crash incase state was not saved
@@ -605,6 +604,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
 
     @Override
     public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+        doLanguages(activity);
     }
 
     @Override
@@ -652,13 +652,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
         colors = getSharedPreferences("COLOR", 0);
         tags = getSharedPreferences("TAGS", 0);
         KVStore.init(this, "SEEN");
-        if (SettingValues.overrideLanguage) {
-            Locale locale = new Locale("en_US");
-            Locale.setDefault(locale);
-            Configuration config = new Configuration();
-            config.locale = locale;
-            getResources().updateConfiguration(config, null);
-        }
+        doLanguages(this);
         lastposition = new ArrayList<>();
 
         new SetupIAB().execute();
@@ -703,6 +697,16 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
         videoPlugin = isVideoPluginInstalled(this);
 
         GifCache.init(this);
+    }
+
+    public void doLanguages(Context c) {
+        if (SettingValues.overrideLanguage) {
+            Locale locale = new Locale("en_US");
+            Locale.setDefault(locale);
+            Configuration config = c.getResources().getConfiguration();
+            config.locale = locale;
+            c.getResources().updateConfiguration(config, null);
+        }
     }
 
     public static void setSorting(String s, Sorting sort) {

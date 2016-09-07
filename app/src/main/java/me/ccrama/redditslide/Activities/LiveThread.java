@@ -121,6 +121,7 @@ public class LiveThread extends BaseActivityAnim {
             public void onPreExecute() {
                 d = new MaterialDialog.Builder(LiveThread.this)
                         .title(R.string.livethread_loading_title)
+                        .content(R.string.misc_please_wait)
                         .progress(true, 100)
                         .cancelable(false)
                         .show();
@@ -159,7 +160,7 @@ public class LiveThread extends BaseActivityAnim {
                     (findViewById(R.id.toolbar)).setBackgroundResource(R.color.md_red_300);
                     (findViewById(R.id.header_sub)).setBackgroundResource(R.color.md_red_300);
                     themeSystemBars(Palette.getDarkerColor(getResources().getColor(R.color.md_red_300)));
-                    setRecentBar(getString(R.string.livethread_recents_title) + thread.getTitle(), getResources().getColor(R.color.md_red_300));
+                    setRecentBar(getString(R.string.livethread_recents_title, thread.getTitle()), getResources().getColor(R.color.md_red_300));
 
                     doPaginator();
                 }

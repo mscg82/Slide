@@ -38,7 +38,7 @@ import me.ccrama.redditslide.util.NetworkUtil;
  */
 public class CommentCacheAsync extends AsyncTask{
 
-    public static final String SAVED_SUBMISSIONS = "saved submissions";
+    public static final String SAVED_SUBMISSIONS = "read later";
     List<Submission> alreadyReceived;
 
     NotificationManager mNotifyManager;
@@ -178,6 +178,9 @@ public class CommentCacheAsync extends AsyncTask{
         if (Authentication.reddit == null)
             Reddit.authentication = new Authentication(context);
 
+        ArrayList<String> success = new ArrayList<>();
+        ArrayList<String> error = new ArrayList<>();
+
         for (final String fSub : subs) {
             final String sub;
             final String name = fSub;
@@ -194,7 +197,9 @@ public class CommentCacheAsync extends AsyncTask{
                         mNotifyManager =
                                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
                         mBuilder = new NotificationCompat.Builder(context);
-                        mBuilder.setContentTitle(context.getString(R.string.offline_caching_title) + (sub.equalsIgnoreCase("frontpage") ? name : (name.contains("/m/") ? name : "/r/" + name))).setSmallIcon(R.drawable.savecontent);
+                        mBuilder.setContentTitle(context.getString(R.string.offline_caching_title,
+                                sub.equalsIgnoreCase("frontpage") ? name : (name.contains("/m/") ? name : "/r/" + name)))
+                                .setSmallIcon(R.drawable.savecontent);
                     }
                 List<Submission> submissions = new ArrayList<>();
                 ArrayList<String> newFullnames = new ArrayList<>();
@@ -257,16 +262,22 @@ public class CommentCacheAsync extends AsyncTask{
                     }
 
                 }
-                if (mBuilder != null) {
-                    mBuilder.setContentText(context.getString(R.string.offline_caching_complete))
-                            // Removes the progress bar
-                            .setProgress(0, 0, false);
-                    mNotifyManager.notify(random, mBuilder.build());
-                }
 
                 OfflineSubreddit.newSubreddit(sub).writeToMemory(newFullnames);
+                if (mBuilder != null) {
+                    mNotifyManager.cancel(random);
+                }
+                success.add(sub);
             }
         }
+        if (mBuilder != null) {
+            mBuilder.setContentText(context.getString(R.string.offline_caching_complete))
+                    // Removes the progress bar
+                    .setSubText(success.size() + " subreddits cached")
+                    .setProgress(0, 0, false);
+            mNotifyManager.notify(2001, mBuilder.build());
+        }
+
         return null;
     }
 

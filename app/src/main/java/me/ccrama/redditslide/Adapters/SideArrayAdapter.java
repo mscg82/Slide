@@ -142,14 +142,16 @@ public class SideArrayAdapter extends ArrayAdapter<String> {
                         }
                         Intent inte = new Intent(getContext(), SubredditView.class);
                         inte.putExtra(SubredditView.EXTRA_SUBREDDIT, subreddit);
-                        ((Activity) getContext()).startActivityForResult(inte, 4);
+                        ((Activity) getContext()).startActivityForResult(inte, 2001);
                     } else {
                         if (((MainActivity) getContext()).commentPager && ((MainActivity) getContext()).adapter instanceof MainActivity.OverviewPagerAdapterComment) {
                             ((MainActivity) getContext()).openingComments = null;
                             ((MainActivity) getContext()).toOpenComments = -1;
                             ((MainActivity.OverviewPagerAdapterComment) ((MainActivity) getContext()).adapter).size = (((MainActivity) getContext()).usedArray.size() + 1);
+                            ((MainActivity) getContext()).reloadItemNumber = ((MainActivity) getContext()).usedArray.indexOf(base);
                             ((MainActivity) getContext()).adapter.notifyDataSetChanged();
                             ((MainActivity) getContext()).doPageSelectedComments(((MainActivity) getContext()).usedArray.indexOf(base));
+                            ((MainActivity) getContext()).reloadItemNumber = -2;
                         }
                         try {
                             //Hide the toolbar search UI with an animation because we're just changing tabs
@@ -163,16 +165,13 @@ public class SideArrayAdapter extends ArrayAdapter<String> {
                         }
 
                         ((MainActivity) getContext()).pager.setCurrentItem(((MainActivity) getContext()).usedArray.indexOf(base));
+                        ((MainActivity) getContext()).drawerLayout.closeDrawers();
+                        if (((MainActivity) getContext()).drawerSearch != null) {
+                            ((MainActivity) getContext()).drawerSearch.setText("");
+                        }
                     }
                     InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                     imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-
-                    ((MainActivity) getContext()).drawerLayout.closeDrawers();
-
-                    if (SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_DRAWER
-                            || SettingValues.subredditSearchMethod == R.integer.SUBREDDIT_SEARCH_METHOD_BOTH) {
-                        ((MainActivity) getContext()).drawerSearch.setText("");
-                    }
                 }
             });
         } else {

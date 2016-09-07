@@ -70,6 +70,17 @@ public class SettingsComments extends BaseActivityAnim {
             });
         }
         {
+            SwitchCompat single = (SwitchCompat) findViewById(R.id.gestures);
+            single.setChecked(SettingValues.voteGestures);
+            single.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    SettingValues.voteGestures = isChecked;
+                    SettingValues.prefs.edit().putBoolean(SettingValues.PREF_VOTE_GESTURES, isChecked).apply();
+                }
+            });
+        }
+        {
             SwitchCompat single = (SwitchCompat) findViewById(R.id.percentvote);
             single.setChecked(SettingValues.upvotePercentage);
             single.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -116,17 +127,6 @@ public class SettingsComments extends BaseActivityAnim {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     SettingValues.collapseCommentsDefault = isChecked;
                     SettingValues.prefs.edit().putBoolean(SettingValues.PREF_COLLAPSE_COMMENTS_DEFAULT, isChecked).apply();
-                }
-            });
-        }
-        {
-            SwitchCompat single = (SwitchCompat) findViewById(R.id.linktype);
-            single.setChecked(SettingValues.typeInText);
-            single.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    SettingValues.typeInText = isChecked;
-                    SettingValues.prefs.edit().putBoolean(SettingValues.PREF_TYPE_IN_TEXT, isChecked).apply();
                 }
             });
         }

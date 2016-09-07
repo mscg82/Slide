@@ -11,6 +11,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
@@ -25,6 +27,9 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.ImageSpan;
+import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.util.TypedValue;
@@ -76,6 +81,7 @@ import me.ccrama.redditslide.UserTags;
 import me.ccrama.redditslide.Views.CommentOverflow;
 import me.ccrama.redditslide.Views.DoEditorActions;
 import me.ccrama.redditslide.Views.RoundedBackgroundSpan;
+import me.ccrama.redditslide.Visuals.FontPreferences;
 import me.ccrama.redditslide.Visuals.Palette;
 
 /**
@@ -203,34 +209,12 @@ public class CommentAdapterHelper {
                     case 7:
                         //Show select and copy text to clipboard
                         final TextView showText = new TextView(mContext);
-                        showText.setText(Html.fromHtml(n.getBody()), TextView.BufferType.SPANNABLE);
+                        showText.setText(Html.fromHtml(n.getBody()));
                         showText.setTextIsSelectable(true);
-                        showText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
-                            @Override
-                            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                                menu.clear();
-                                return true;
-                            }
-
-                            @Override
-                            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-
-                                return false;
-                            }
-
-                            @Override
-                            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                                return false;
-                            }
-
-                            @Override
-                            public void onDestroyActionMode(ActionMode mode) {
-
-                            }
-                        });
                         int sixteen = Reddit.dpToPxVertical(24);
                         showText.setPadding(sixteen, 0, sixteen, 0);
-                        AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(mContext);
+                        AlertDialogWrapper.Builder builder =
+                                new AlertDialogWrapper.Builder(mContext);
                         builder.setView(showText)
                                 .setTitle("Select text to copy")
                                 .setCancelable(true)
@@ -367,7 +351,9 @@ public class CommentAdapterHelper {
 
             @Override
             public void onPreExecute() {
-                d = new MaterialDialog.Builder(mContext).progress(true, 100)
+                d = new MaterialDialog.Builder(mContext)
+                        .progress(true, 100)
+                        .content(R.string.misc_please_wait)
                         .title(R.string.profile_category_loading)
                         .show();
             }
@@ -550,10 +536,11 @@ public class CommentAdapterHelper {
         final Drawable report = mContext.getResources().getDrawable(R.drawable.report);
         final Drawable approve = mContext.getResources().getDrawable(R.drawable.support);
         final Drawable nsfw = mContext.getResources().getDrawable(R.drawable.hide);
-        final Drawable pin = mContext.getResources().getDrawable(R.drawable.lock);
+        final Drawable pin = mContext.getResources().getDrawable(R.drawable.sub);
         final Drawable distinguish = mContext.getResources().getDrawable(R.drawable.iconstarfilled);
         final Drawable remove = mContext.getResources().getDrawable(R.drawable.close);
         final Drawable ban = mContext.getResources().getDrawable(R.drawable.ban);
+        final Drawable spam = mContext.getResources().getDrawable(R.drawable.spam);
 
         //Tint drawables
         profile.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
@@ -564,6 +551,7 @@ public class CommentAdapterHelper {
         remove.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         pin.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         ban.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+        spam.setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
 
         ta.recycle();
 
@@ -582,7 +570,7 @@ public class CommentAdapterHelper {
 
         boolean approved = false;
         String whoApproved = "";
-        if (comment.getDataNode().get("approved_by").asText().equals("null")) {
+        if (adapter.removed.contains(comment.getFullName()) || comment.getDataNode().get("approved_by").asText().equals("null")) {
             b.sheet(1, approve, mContext.getString(R.string.mod_btn_approve));
         } else {
             approved = true;
@@ -617,7 +605,7 @@ public class CommentAdapterHelper {
 
         final String finalWhoApproved = whoApproved;
         final boolean finalApproved = approved;
-        b.sheet(6, remove, mContext.getString(R.string.btn_remove))
+        b.sheet(6, remove, mContext.getString(R.string.btn_remove)).sheet(10, spam, "Mark as spam")
                 .sheet(8, profile, mContext.getString(R.string.mod_btn_author))
                 .listener(new DialogInterface.OnClickListener() {
                     @Override
@@ -628,7 +616,7 @@ public class CommentAdapterHelper {
                                 break;
                             case 1:
                                 doApproval(finalApproved, mContext, finalWhoApproved, holder,
-                                        comment);
+                                        comment, adapter);
                                 break;
                             case 4:
                                 if (stickied) {
@@ -645,7 +633,10 @@ public class CommentAdapterHelper {
                                 }
                                 break;
                             case 6:
-                                removeComment(mContext, holder, comment, adapter);
+                                removeComment(mContext, holder, comment, adapter, false);
+                                break;
+                            case 10:
+                                removeComment(mContext, holder, comment, adapter, true);
                                 break;
                             case 8:
                                 Intent i = new Intent(mContext, Profile.class);
@@ -696,7 +687,7 @@ public class CommentAdapterHelper {
 
         AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(mContext);
         builder.setView(l)
-                .setTitle(mContext.getString(R.string.mod_ban_title) + submission.getAuthor())
+                .setTitle(mContext.getString(R.string.mod_ban_title, submission.getAuthor()))
                 .setCancelable(true)
                 .setPositiveButton(R.string.mod_btn_ban, new DialogInterface.OnClickListener() {
                             @Override
@@ -820,154 +811,115 @@ public class CommentAdapterHelper {
 
     private static void distinguishComment(final Context mContext, final CommentViewHolder holder,
             final Comment comment) {
-        new AlertDialogWrapper.Builder(mContext).setTitle(R.string.distinguish_comment)
-                .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(final DialogInterface dialog, int which) {
+        new AsyncTask<Void, Void, Boolean>() {
 
-                        new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s = Snackbar.make(holder.itemView,
+                            R.string.comment_distinguished, Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv = (TextView) view.findViewById(
+                            android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(
+                            R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
 
-                            @Override
-                            public void onPostExecute(Boolean b) {
-                                if (b) {
-                                    dialog.dismiss();
-                                    Snackbar s = Snackbar.make(holder.itemView,
-                                            R.string.comment_distinguished, Snackbar.LENGTH_LONG);
-                                    View view = s.getView();
-                                    TextView tv = (TextView) view.findViewById(
-                                            android.support.design.R.id.snackbar_text);
-                                    tv.setTextColor(Color.WHITE);
-                                    s.show();
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(
+                            Authentication.reddit).setDistinguishedStatus(comment,
+                            DistinguishedStatus.MODERATOR);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
 
-
-                                } else {
-                                    new AlertDialogWrapper.Builder(mContext).setTitle(
-                                            R.string.err_general)
-                                            .setMessage(R.string.err_retry_later)
-                                            .show();
-                                }
-                            }
-
-                            @Override
-                            protected Boolean doInBackground(Void... params) {
-                                try {
-                                    new ModerationManager(
-                                            Authentication.reddit).setDistinguishedStatus(comment,
-                                            DistinguishedStatus.MODERATOR);
-                                } catch (ApiException e) {
-                                    e.printStackTrace();
-                                    return false;
-
-                                }
-                                return true;
-                            }
-                        }.execute();
-
-                    }
-                })
-                .setNegativeButton(R.string.btn_no, null)
-                .show();
+                }
+                return true;
+            }
+        }.execute();
     }
 
     private static void unDistinguishComment(final Context mContext, final CommentViewHolder holder,
             final Comment comment) {
-        new AlertDialogWrapper.Builder(mContext).setTitle(R.string.undistinguish_comment)
-                .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(final DialogInterface dialog, int which) {
+        new AsyncTask<Void, Void, Boolean>() {
 
-                        new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s = Snackbar.make(holder.itemView,
+                            R.string.comment_undistinguished, Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv = (TextView) view.findViewById(
+                            android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(
+                            R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
 
-                            @Override
-                            public void onPostExecute(Boolean b) {
-                                if (b) {
-                                    dialog.dismiss();
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(
+                            Authentication.reddit).setDistinguishedStatus(comment,
+                            DistinguishedStatus.NORMAL);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
 
-                                    Snackbar s = Snackbar.make(holder.itemView,
-                                            R.string.comment_undistinguished, Snackbar.LENGTH_LONG);
-                                    View view = s.getView();
-                                    TextView tv = (TextView) view.findViewById(
-                                            android.support.design.R.id.snackbar_text);
-                                    tv.setTextColor(Color.WHITE);
-                                    s.show();
-
-                                } else {
-                                    new AlertDialogWrapper.Builder(mContext).setTitle(
-                                            R.string.err_general)
-                                            .setMessage(R.string.err_retry_later)
-                                            .show();
-                                }
-                            }
-
-                            @Override
-                            protected Boolean doInBackground(Void... params) {
-                                try {
-                                    new ModerationManager(
-                                            Authentication.reddit).setDistinguishedStatus(comment,
-                                            DistinguishedStatus.NORMAL);
-                                } catch (ApiException e) {
-                                    e.printStackTrace();
-                                    return false;
-
-                                }
-                                return true;
-                            }
-                        }.execute();
-
-                    }
-                })
-                .setNegativeButton(R.string.btn_no, null)
-                .show();
+                }
+                return true;
+            }
+        }.execute();
     }
 
     private static void stickyComment(final Context mContext, final CommentViewHolder holder,
             final Comment comment) {
-        new AlertDialogWrapper.Builder(mContext).setTitle(R.string.sticky_comment)
-                .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(final DialogInterface dialog, int which) {
+        new AsyncTask<Void, Void, Boolean>() {
 
-                        new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s = Snackbar.make(holder.itemView,
+                            R.string.comment_stickied, Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv = (TextView) view.findViewById(
+                            android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(
+                            R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
 
-                            @Override
-                            public void onPostExecute(Boolean b) {
-                                if (b) {
-                                    dialog.dismiss();
-                                    Snackbar s = Snackbar.make(holder.itemView,
-                                            R.string.comment_stickied, Snackbar.LENGTH_LONG);
-                                    View view = s.getView();
-                                    TextView tv = (TextView) view.findViewById(
-                                            android.support.design.R.id.snackbar_text);
-                                    tv.setTextColor(Color.WHITE);
-                                    s.show();
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setSticky(comment,
+                            true);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
 
-
-                                } else {
-                                    new AlertDialogWrapper.Builder(mContext).setTitle(
-                                            R.string.err_general)
-                                            .setMessage(R.string.err_retry_later)
-                                            .show();
-                                }
-                            }
-
-                            @Override
-                            protected Boolean doInBackground(Void... params) {
-                                try {
-                                    new ModerationManager(Authentication.reddit).setSticky(comment,
-                                            true);
-                                } catch (ApiException e) {
-                                    e.printStackTrace();
-                                    return false;
-
-                                }
-                                return true;
-                            }
-                        }.execute();
-
-                    }
-                })
-                .setNegativeButton(R.string.btn_no, null)
-                .show();
+                }
+                return true;
+            }
+        }.execute();
     }
 
     public static void viewReports(final Context mContext, final Map<String, Integer> reports,
@@ -1005,168 +957,161 @@ public class CommentAdapterHelper {
     }
 
     public static void doApproval(boolean approved, final Context mContext, String whoApproved,
-            final CommentViewHolder holder, final Comment comment) {
+            final CommentViewHolder holder, final Comment comment, final CommentAdapter adapter) {
         if (approved) {
             Intent i = new Intent(mContext, Profile.class);
             i.putExtra(Profile.EXTRA_PROFILE, whoApproved);
             mContext.startActivity(i);
         } else {
-            new AlertDialogWrapper.Builder(mContext).setTitle(R.string.mod_approve)
-                    .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(final DialogInterface dialog, int which) {
+            new AsyncTask<Void, Void, Boolean>() {
 
-                            new AsyncTask<Void, Void, Boolean>() {
+                @Override
+                public void onPostExecute(Boolean b) {
+                    if (b) {
+                        adapter.approved.add(comment.getFullName());
+                        adapter.removed.remove(comment.getFullName());
+                        holder.content.setText(
+                                CommentAdapterHelper.getScoreString(comment,
+                                        mContext, holder, adapter.submission,
+                                        adapter));
+                        Snackbar.make(holder.itemView, R.string.mod_approved,
+                                Snackbar.LENGTH_LONG).show();
 
-                                @Override
-                                public void onPostExecute(Boolean b) {
-                                    if (b) {
-                                        dialog.dismiss();
-                                        Snackbar.make(holder.itemView, R.string.mod_approved,
-                                                Snackbar.LENGTH_LONG).show();
+                    } else {
+                        new AlertDialogWrapper.Builder(mContext).setTitle(
+                                R.string.err_general)
+                                .setMessage(R.string.err_retry_later)
+                                .show();
+                    }
+                }
 
-                                    } else {
-                                        new AlertDialogWrapper.Builder(mContext).setTitle(
-                                                R.string.err_general)
-                                                .setMessage(R.string.err_retry_later)
-                                                .show();
-                                    }
-                                }
+                @Override
+                protected Boolean doInBackground(Void... params) {
+                    try {
+                        new ModerationManager(Authentication.reddit).approve(
+                                comment);
+                    } catch (ApiException e) {
+                        e.printStackTrace();
+                        return false;
 
-                                @Override
-                                protected Boolean doInBackground(Void... params) {
-                                    try {
-                                        new ModerationManager(Authentication.reddit).approve(
-                                                comment);
-                                    } catch (ApiException e) {
-                                        e.printStackTrace();
-                                        return false;
-
-                                    }
-                                    return true;
-                                }
-                            }.execute();
-
-                        }
-                    })
-                    .setNegativeButton(R.string.btn_no, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-
-                        }
-                    })
-                    .show();
+                    }
+                    return true;
+                }
+            }.execute();
         }
     }
 
     public static void unStickyComment(final Context mContext, final CommentViewHolder holder,
             final Comment comment) {
-        new AlertDialogWrapper.Builder(mContext).setTitle(R.string.unsticky_comment)
-                .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(final DialogInterface dialog, int which) {
+        new AsyncTask<Void, Void, Boolean>() {
 
-                        new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s = Snackbar.make(holder.itemView,
+                            R.string.comment_unstickied, Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv = (TextView) view.findViewById(
+                            android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(
+                            R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
 
-                            @Override
-                            public void onPostExecute(Boolean b) {
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).setSticky(comment,
+                            false);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
 
-                                if (b) {
-                                    dialog.dismiss();
-
-                                    Snackbar s = Snackbar.make(holder.itemView,
-                                            R.string.comment_unstickied, Snackbar.LENGTH_LONG);
-                                    View view = s.getView();
-                                    TextView tv = (TextView) view.findViewById(
-                                            android.support.design.R.id.snackbar_text);
-                                    tv.setTextColor(Color.WHITE);
-                                    s.show();
-
-
-                                } else {
-                                    new AlertDialogWrapper.Builder(mContext).setTitle(
-                                            R.string.err_general)
-                                            .setMessage(R.string.err_retry_later)
-                                            .show();
-                                }
-                            }
-
-                            @Override
-                            protected Boolean doInBackground(Void... params) {
-                                try {
-                                    new ModerationManager(Authentication.reddit).setSticky(comment,
-                                            false);
-                                } catch (ApiException e) {
-                                    e.printStackTrace();
-                                    return false;
-
-                                }
-                                return true;
-                            }
-                        }.execute();
-
-                    }
-                })
-                .setNegativeButton(R.string.btn_no, null)
-                .show();
+                }
+                return true;
+            }
+        }.execute();
     }
 
     public static void removeComment(final Context mContext, final CommentViewHolder holder,
-            final Comment comment, final CommentAdapter adapter) {
-        new AlertDialogWrapper.Builder(mContext).setTitle(R.string.remove_comment)
-                .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(final DialogInterface dialog, int which) {
+            final Comment comment, final CommentAdapter adapter, final boolean spam) {
+        new AsyncTask<Void, Void, Boolean>() {
 
-                        new AsyncTask<Void, Void, Boolean>() {
+            @Override
+            public void onPostExecute(Boolean b) {
+                if (b) {
+                    Snackbar s =
+                            Snackbar.make(holder.itemView, R.string.comment_removed,
+                                    Snackbar.LENGTH_LONG);
+                    View view = s.getView();
+                    TextView tv = (TextView) view.findViewById(
+                            android.support.design.R.id.snackbar_text);
+                    tv.setTextColor(Color.WHITE);
+                    s.show();
 
-                            @Override
-                            public void onPostExecute(Boolean b) {
-                                if (b) {
-                                    dialog.dismiss();
-                                    Snackbar s =
-                                            Snackbar.make(holder.itemView, R.string.comment_removed,
-                                                    Snackbar.LENGTH_LONG);
-                                    View view = s.getView();
-                                    TextView tv = (TextView) view.findViewById(
-                                            android.support.design.R.id.snackbar_text);
-                                    tv.setTextColor(Color.WHITE);
-                                    s.show();
+                    adapter.removed.add(comment.getFullName());
+                    adapter.approved.remove(comment.getFullName());
+                    holder.content.setText(
+                            CommentAdapterHelper.getScoreString(comment, mContext,
+                                    holder, adapter.submission, adapter));
+                } else {
+                    new AlertDialogWrapper.Builder(mContext).setTitle(
+                            R.string.err_general)
+                            .setMessage(R.string.err_retry_later)
+                            .show();
+                }
+            }
 
-                                    adapter.deleted.add(comment.getFullName());
-                                    holder.firstTextView.setTextHtml(
-                                            mContext.getString(R.string.content_removed));
-                                    holder.content.setText(R.string.content_removed);
-                                } else {
-                                    new AlertDialogWrapper.Builder(mContext).setTitle(
-                                            R.string.err_general)
-                                            .setMessage(R.string.err_retry_later)
-                                            .show();
-                                }
-                            }
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    new ModerationManager(Authentication.reddit).remove(comment,
+                            spam);
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                    return false;
 
-                            @Override
-                            protected Boolean doInBackground(Void... params) {
-                                try {
-                                    new ModerationManager(Authentication.reddit).remove(comment,
-                                            false);
-                                } catch (ApiException e) {
-                                    e.printStackTrace();
-                                    return false;
+                }
+                return true;
+            }
+        }.execute();
+    }
 
-                                }
-                                return true;
-                            }
-                        }.execute();
+    public static SpannableStringBuilder createRemovedLine(String removedBy, Context c) {
+        SpannableStringBuilder removedString = new SpannableStringBuilder("\n");
+        SpannableStringBuilder mod = new SpannableStringBuilder("Removed by ");
+        mod.append(removedBy);
+        mod.setSpan(new StyleSpan(Typeface.BOLD), 0, mod.length(),
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        mod.setSpan(new RelativeSizeSpan(0.8f), 0, mod.length(),
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        mod.setSpan(new ForegroundColorSpan(c.getResources().getColor(R.color.md_red_300)), 0,
+                mod.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        removedString.append(mod);
+        return removedString;
+    }
 
-                    }
-                })
-                .setNegativeButton(R.string.btn_no, null)
-                .show();
+    public static SpannableStringBuilder createApprovedLine(String removedBy, Context c) {
+        SpannableStringBuilder removedString = new SpannableStringBuilder("\n");
+        SpannableStringBuilder mod = new SpannableStringBuilder("Approved by ");
+        mod.append(removedBy);
+        mod.setSpan(new StyleSpan(Typeface.BOLD), 0, mod.length(),
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        mod.setSpan(new RelativeSizeSpan(0.8f), 0, mod.length(),
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        mod.setSpan(new ForegroundColorSpan(c.getResources().getColor(R.color.md_green_300)), 0,
+                mod.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        removedString.append(mod);
+        return removedString;
     }
 
     public static Spannable getScoreString(Comment comment, Context mContext,
-            CommentViewHolder holder, Submission submission) {
+            CommentViewHolder holder, Submission submission, CommentAdapter adapter) {
         final String spacer =
                 " " + mContext.getString(R.string.submission_properties_seperator_comments) + " ";
         SpannableStringBuilder titleString =
@@ -1181,12 +1126,12 @@ public class CommentAdapterHelper {
         if (comment.getDistinguishedStatus() == DistinguishedStatus.ADMIN) {
             author.replace(0, author.length(), " " + comment.getAuthor() + " ");
             author.setSpan(
-                    new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_red_500, false),
+                    new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_red_300, false),
                     0, author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         } else if (comment.getDistinguishedStatus() == DistinguishedStatus.SPECIAL) {
             author.replace(0, author.length(), " " + comment.getAuthor() + " ");
             author.setSpan(
-                    new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_red_900, false),
+                    new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_red_500, false),
                     0, author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         } else if (comment.getDistinguishedStatus() == DistinguishedStatus.MODERATOR) {
             author.replace(0, author.length(), " " + comment.getAuthor() + " ");
@@ -1271,12 +1216,19 @@ public class CommentAdapterHelper {
         if (comment.getTimesGilded() > 0) {
             //if the comment has only been gilded once, don't show a number
             final String timesGilded = (comment.getTimesGilded() == 1) ? ""
-                    : "\u200A" + Integer.toString(comment.getTimesGilded());
-            SpannableStringBuilder pinned =
-                    new SpannableStringBuilder("\u00A0★" + timesGilded + "\u00A0");
-            pinned.setSpan(new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_orange_500,
-                    false), 0, pinned.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            titleString.append(pinned);
+                    : "\u200Ax" + Integer.toString(comment.getTimesGilded());
+            SpannableStringBuilder gilded = new SpannableStringBuilder("\u00A0★" + timesGilded + "\u00A0");
+            TypedArray a = mContext.obtainStyledAttributes(new FontPreferences(mContext).getPostFontStyle().getResId(), R.styleable.FontStyle);
+            int fontsize = (int) (a.getDimensionPixelSize(R.styleable.FontStyle_font_cardtitle, -1)*.75);
+            a.recycle();
+            Bitmap image = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.gold);
+            float aspectRatio = (float) (1.00 * image.getWidth() / image.getHeight());
+            image = Bitmap.createScaledBitmap(image,
+                    (int) Math.ceil(fontsize * aspectRatio),
+                    (int) Math.ceil(fontsize), true);
+            gilded.setSpan(new ImageSpan(mContext, image, ImageSpan.ALIGN_BASELINE), 0, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            gilded.setSpan(new RelativeSizeSpan(0.75f), 3, gilded.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            titleString.append(gilded);
             titleString.append(" ");
         }
         if (UserTags.isUserTagged(comment.getAuthor())) {
@@ -1323,6 +1275,17 @@ public class CommentAdapterHelper {
                             false, mContext), 0, pinned.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             titleString.append(pinned);
             titleString.append(" ");
+        }
+        if (adapter.removed.contains(comment.getFullName()) || (comment.getBannedBy() != null
+                && !adapter.approved.contains(comment.getFullName()))) {
+            titleString.append(CommentAdapterHelper.createRemovedLine(
+                    (comment.getBannedBy() == null) ? Authentication.name : comment.getBannedBy(),
+                    mContext));
+        } else if (adapter.approved.contains(comment.getFullName()) || (comment.getApprovedBy()
+                != null && !adapter.removed.contains(comment.getFullName()))) {
+            titleString.append(CommentAdapterHelper.createApprovedLine(
+                    (comment.getApprovedBy() == null) ? Authentication.name
+                            : comment.getApprovedBy(), mContext));
         }
         return titleString;
     }

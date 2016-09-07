@@ -238,8 +238,11 @@ public class SettingsBackup extends BaseActivityAnim {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected void onPreExecute() {
-                progress = new MaterialDialog.Builder(SettingsBackup.this).title(
-                        R.string.backup_backing_up).progress(false, 40).cancelable(false).build();
+                progress = new MaterialDialog.Builder(SettingsBackup.this)
+                        .title(R.string.backup_backing_up)
+                        .progress(false, 40)
+                        .cancelable(false)
+                        .build();
                 progress.show();
             }
 
@@ -250,12 +253,13 @@ public class SettingsBackup extends BaseActivityAnim {
                 if (prefsdir.exists() && prefsdir.isDirectory()) {
                     String[] list = prefsdir.list();
 
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).mkdirs();
 
                     File backedup = new File(Environment.getExternalStoragePublicDirectory(
                             Environment.DIRECTORY_DOWNLOADS)
                             + File.separator
                             + "Slide"
-                            + new SimpleDateFormat("HH:mm-MMddyy").format(
+                            + new SimpleDateFormat("MMddyy-hh:mm").format(
                             Calendar.getInstance().getTime())
                             + (!personal ? "-personal" : "")
                             + ".txt");
@@ -328,8 +332,8 @@ public class SettingsBackup extends BaseActivityAnim {
                                         } else {
                                             Snackbar s =
                                                     Snackbar.make(findViewById(R.id.restorefile),
-                                                            getString(R.string.settings_backup_err_no_explorer) + file.getAbsolutePath()
-                                                                    + file,
+                                                            getString(R.string.settings_backup_err_no_explorer,
+                                                                    file.getAbsolutePath() + file),
                                                             Snackbar.LENGTH_INDEFINITE);
                                             View view = s.getView();
                                             TextView tv = (TextView) view.findViewById(
