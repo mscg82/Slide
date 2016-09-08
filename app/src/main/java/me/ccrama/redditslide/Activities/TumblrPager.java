@@ -58,13 +58,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 import me.ccrama.redditslide.Adapters.ImageGridAdapter;
+import me.ccrama.redditslide.Adapters.ImageGridAdapterTumblr;
 import me.ccrama.redditslide.ColorPreferences;
+import me.ccrama.redditslide.ContentType;
 import me.ccrama.redditslide.Fragments.BlankFragment;
 import me.ccrama.redditslide.Fragments.FolderChooserDialogCreate;
 import me.ccrama.redditslide.Fragments.SubmissionsView;
@@ -75,6 +79,8 @@ import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.SpoilerRobotoTextView;
+import me.ccrama.redditslide.Tumblr.Photo;
+import me.ccrama.redditslide.Tumblr.TumblrUtils;
 import me.ccrama.redditslide.Views.ImageSource;
 import me.ccrama.redditslide.Views.MediaVideoView;
 import me.ccrama.redditslide.Views.SubsamplingScaleImageView;
@@ -91,7 +97,7 @@ import me.ccrama.redditslide.util.SubmissionParser;
  * ViewPager for Imgur content instead of a RecyclerView (horizontal vs vertical). It also supports
  * gifs and progress bars which Album.java doesn't.
  */
-public class AlbumPager extends FullScreenActivity
+public class TumblrPager extends FullScreenActivity
         implements FolderChooserDialogCreate.FolderCallback {
 
     private static int adapterPosition;
@@ -106,7 +112,7 @@ public class AlbumPager extends FullScreenActivity
         if (id == R.id.vertical) {
             SettingValues.albumSwipe = false;
             SettingValues.prefs.edit().putBoolean(SettingValues.PREF_ALBUM_SWIPE, false).apply();
-            Intent i = new Intent(AlbumPager.this, Album.class);
+            Intent i = new Intent(TumblrPager.this, Tumblr.class);
             if (getIntent().hasExtra(MediaView.SUBMISSION_URL)) {
                 i.putExtra(MediaView.SUBMISSION_URL,
                         getIntent().getStringExtra(MediaView.SUBMISSION_URL));
@@ -132,8 +138,8 @@ public class AlbumPager extends FullScreenActivity
 
         if (id == R.id.download) {
             int index = 0;
-            for (final Image elem : images) {
-                doImageSave(false, elem.getImageUrl(), index);
+            for (final Photo elem : images) {
+                doImageSave(false, elem.getOriginalSize().getUrl(), index);
                 index++;
             }
         }
@@ -180,7 +186,7 @@ public class AlbumPager extends FullScreenActivity
 
     }
 
-    public class LoadIntoPager extends AlbumUtils.GetAlbumWithCallback {
+    public class LoadIntoPager extends TumblrUtils.GetTumblrPostWithCallback {
 
         String url;
 
@@ -195,8 +201,8 @@ public class AlbumPager extends FullScreenActivity
                 @Override
                 public void run() {
                     try {
-                        new AlertDialogWrapper.Builder(AlbumPager.this).setTitle(
-                                R.string.error_album_not_found)
+                        new AlertDialogWrapper.Builder(TumblrPager.this).setTitle(
+                                "Tumblr data not found")
                                 .setMessage(R.string.error_album_not_found_text)
                                 .setNegativeButton(R.string.btn_no,
                                         new DialogInterface.OnClickListener() {
@@ -211,7 +217,7 @@ public class AlbumPager extends FullScreenActivity
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
                                                 Intent i =
-                                                        new Intent(AlbumPager.this, Website.class);
+                                                        new Intent(TumblrPager.this, Website.class);
                                                 i.putExtra(Website.EXTRA_URL, url);
                                                 startActivity(i);
                                                 finish();
@@ -227,7 +233,7 @@ public class AlbumPager extends FullScreenActivity
         }
 
         @Override
-        public void doWithData(final List<Image> jsonElements) {
+        public void doWithData(final List<Photo> jsonElements) {
             super.doWithData(jsonElements);
             findViewById(R.id.progress).setVisibility(View.GONE);
             images = new ArrayList<>(jsonElements);
@@ -246,9 +252,9 @@ public class AlbumPager extends FullScreenActivity
                 public void onClick(View v) {
                     LayoutInflater l = getLayoutInflater();
                     View body = l.inflate(R.layout.album_grid_dialog, null, false);
-                    AlertDialogWrapper.Builder b = new AlertDialogWrapper.Builder(AlbumPager.this);
+                    AlertDialogWrapper.Builder b = new AlertDialogWrapper.Builder(TumblrPager.this);
                     GridView gridview = (GridView) body.findViewById(R.id.images);
-                    gridview.setAdapter(new ImageGridAdapter(AlbumPager.this, images));
+                    gridview.setAdapter(new ImageGridAdapterTumblr(TumblrPager.this, images));
 
 
                     b.setView(body);
@@ -293,7 +299,7 @@ public class AlbumPager extends FullScreenActivity
 
     ViewPager p;
 
-    public List<Image> images;
+    public List<Photo> images;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -320,17 +326,26 @@ public class AlbumPager extends FullScreenActivity
             }
 
             i--;
-            Image current = images.get(i);
+            Photo current = images.get(i);
 
-            if (current.isAnimated()) {
-                //do gif stuff
-                Fragment f = new Gif();
-                Bundle args = new Bundle();
-                args.putInt("page", i);
-                f.setArguments(args);
+            try {
+                if (ContentType.isGif(new URI(current.getOriginalSize().getUrl()))) {
+                    //do gif stuff
+                    Fragment f = new Gif();
+                    Bundle args = new Bundle();
+                    args.putInt("page", i);
+                    f.setArguments(args);
 
-                return f;
-            } else {
+                    return f;
+                } else {
+                    Fragment f = new ImageFullNoSubmission();
+                    Bundle args = new Bundle();
+                    args.putInt("page", i);
+                    f.setArguments(args);
+
+                    return f;
+                }
+            } catch (URISyntaxException e) {
                 Fragment f = new ImageFullNoSubmission();
                 Bundle args = new Bundle();
                 args.putInt("page", i);
@@ -390,7 +405,7 @@ public class AlbumPager extends FullScreenActivity
             final MediaVideoView v = (MediaVideoView) gif;
             v.clearFocus();
 
-            final String url = ((AlbumPager) getActivity()).images.get(i).getImageUrl();
+            final String url = ((TumblrPager) getActivity()).images.get(i).getOriginalSize().getUrl();
 
             new GifUtils.AsyncLoadGif(getActivity(),
                     (MediaVideoView) rootView.findViewById(R.id.gif), loader, null, new Runnable() {
@@ -403,7 +418,7 @@ public class AlbumPager extends FullScreenActivity
             rootView.findViewById(R.id.more).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    ((AlbumPager) getActivity()).showBottomSheetImage(url, true, i);
+                    ((TumblrPager) getActivity()).showBottomSheetImage(url, true, i);
                 }
             });
             rootView.findViewById(R.id.save).setOnClickListener(new View.OnClickListener() {
@@ -455,7 +470,7 @@ public class AlbumPager extends FullScreenActivity
             public void onClick(DialogInterface dialog, int which) {
                 switch (which) {
                     case (2): {
-                        LinkUtil.openExternally(contentUrl, AlbumPager.this, false);
+                        LinkUtil.openExternally(contentUrl, TumblrPager.this, false);
                     }
                     break;
                     case (3): {
@@ -463,7 +478,7 @@ public class AlbumPager extends FullScreenActivity
                     }
                     break;
                     case (5): {
-                        Reddit.defaultShareText("", contentUrl, AlbumPager.this);
+                        Reddit.defaultShareText("", contentUrl, TumblrPager.this);
                     }
                     break;
                     case (4): {
@@ -509,14 +524,14 @@ public class AlbumPager extends FullScreenActivity
             final ViewGroup rootView =
                     (ViewGroup) inflater.inflate(R.layout.album_image_pager, container, false);
 
-            if (((AlbumPager) getActivity()).images == null) {
+            if (((TumblrPager) getActivity()).images == null) {
                 getActivity().finish();
             }
-            if (((AlbumPager) getActivity()).images == null) {
+            if (((TumblrPager) getActivity()).images == null) {
                 getActivity().finish();
             }
-            final Image current = ((AlbumPager) getActivity()).images.get(i);
-            final String url = current.getImageUrl();
+            final Photo current = ((TumblrPager) getActivity()).images.get(i);
+            final String url = current.getOriginalSize().getUrl();
             boolean lq = false;
             if (SettingValues.loadImageLq && (SettingValues.lowResAlways
                     || (!NetworkUtil.isConnectedWifi(getActivity())
@@ -534,7 +549,7 @@ public class AlbumPager extends FullScreenActivity
                 rootView.findViewById(R.id.more).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        ((AlbumPager) getActivity()).showBottomSheetImage(url, false, i);
+                        ((TumblrPager) getActivity()).showBottomSheetImage(url, false, i);
                     }
                 });
                 {
@@ -542,7 +557,7 @@ public class AlbumPager extends FullScreenActivity
 
                         @Override
                         public void onClick(View v2) {
-                            ((AlbumPager) getActivity()).doImageSave(false, url, i);
+                            ((TumblrPager) getActivity()).doImageSave(false, url, i);
                         }
 
                     });
@@ -553,13 +568,9 @@ public class AlbumPager extends FullScreenActivity
             {
                 String title = "";
                 String description = "";
-                if (current.getTitle() != null) {
-                    List<String> text = SubmissionParser.getBlocks(current.getTitle());
-                    title = text.get(0).trim();
-                }
 
-                if (current.getDescription() != null) {
-                    List<String> text = SubmissionParser.getBlocks(current.getDescription());
+                if (current.getCaption() != null) {
+                    List<String> text = SubmissionParser.getBlocks(current.getCaption());
                     description = text.get(0).trim();
                 }
                 if (title.isEmpty() && description.isEmpty()) {
@@ -728,12 +739,12 @@ public class AlbumPager extends FullScreenActivity
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                new AlertDialogWrapper.Builder(AlbumPager.this).setTitle(R.string.set_save_location)
+                new AlertDialogWrapper.Builder(TumblrPager.this).setTitle(R.string.set_save_location)
                         .setMessage(R.string.set_save_location_msg)
                         .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                new FolderChooserDialogCreate.Builder(AlbumPager.this).chooseButton(
+                                new FolderChooserDialogCreate.Builder(TumblrPager.this).chooseButton(
                                         R.string.btn_select)  // changes label of the choose button
                                         .initialPath(Environment.getExternalStorageDirectory()
                                                 .getPath())  // changes initial path, defaults to external storage directory
@@ -748,7 +759,7 @@ public class AlbumPager extends FullScreenActivity
     }
 
     public void showNotifPhoto(final File localAbsoluteFilePath, final Bitmap loadedImage) {
-        MediaScannerConnection.scanFile(AlbumPager.this,
+        MediaScannerConnection.scanFile(TumblrPager.this,
                 new String[]{localAbsoluteFilePath.getAbsolutePath()}, null,
                 new MediaScannerConnection.OnScanCompletedListener() {
                     public void onScanCompleted(String path, Uri uri) {
@@ -756,12 +767,12 @@ public class AlbumPager extends FullScreenActivity
                         final Intent shareIntent = new Intent(Intent.ACTION_VIEW);
                         shareIntent.setDataAndType(Uri.fromFile(localAbsoluteFilePath), "image/*");
                         PendingIntent contentIntent =
-                                PendingIntent.getActivity(AlbumPager.this, 0, shareIntent,
+                                PendingIntent.getActivity(TumblrPager.this, 0, shareIntent,
                                         PendingIntent.FLAG_CANCEL_CURRENT);
 
 
                         Notification notif =
-                                new NotificationCompat.Builder(AlbumPager.this).setContentTitle(
+                                new NotificationCompat.Builder(TumblrPager.this).setContentTitle(
                                         getString(R.string.info_photo_saved))
                                         .setSmallIcon(R.drawable.notif)
                                         .setLargeIcon(loadedImage)
@@ -869,13 +880,13 @@ public class AlbumPager extends FullScreenActivity
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                new AlertDialogWrapper.Builder(AlbumPager.this).setTitle(
+                new AlertDialogWrapper.Builder(TumblrPager.this).setTitle(
                         R.string.err_something_wrong)
                         .setMessage(R.string.err_couldnt_save_choose_new)
                         .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                new FolderChooserDialogCreate.Builder(AlbumPager.this).chooseButton(
+                                new FolderChooserDialogCreate.Builder(TumblrPager.this).chooseButton(
                                         R.string.btn_select)  // changes label of the choose button
                                         .initialPath(Environment.getExternalStorageDirectory()
                                                 .getPath())  // changes initial path, defaults to external storage directory

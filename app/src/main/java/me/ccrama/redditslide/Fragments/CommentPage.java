@@ -78,6 +78,8 @@ import me.ccrama.redditslide.Activities.Sendmessage;
 import me.ccrama.redditslide.Activities.ShadowboxComments;
 import me.ccrama.redditslide.Activities.Submit;
 import me.ccrama.redditslide.Activities.SubredditView;
+import me.ccrama.redditslide.Activities.Tumblr;
+import me.ccrama.redditslide.Activities.TumblrPager;
 import me.ccrama.redditslide.Activities.Wiki;
 import me.ccrama.redditslide.Adapters.CommentAdapter;
 import me.ccrama.redditslide.Adapters.CommentItem;
@@ -824,6 +826,30 @@ public class CommentPage extends Fragment {
                                                         R.anim.slideright, R.anim.fade_out);
                                             } else {
                                                 Intent i = new Intent(getActivity(), Album.class);
+                                                i.putExtra(Album.EXTRA_URL,
+                                                        adapter.submission.getUrl());
+                                                getActivity().startActivity(i);
+                                                getActivity().overridePendingTransition(
+                                                        R.anim.slideright, R.anim.fade_out);
+                                            }
+                                        } else {
+                                            Reddit.defaultShare(adapter.submission.getUrl(),
+                                                    getActivity());
+
+                                        }
+                                        break;
+                                    case TUMBLR:
+                                        if (SettingValues.image) {
+                                            if (SettingValues.albumSwipe) {
+                                                Intent i =
+                                                        new Intent(getActivity(), TumblrPager.class);
+                                                i.putExtra(Album.EXTRA_URL,
+                                                        adapter.submission.getUrl());
+                                                getActivity().startActivity(i);
+                                                getActivity().overridePendingTransition(
+                                                        R.anim.slideright, R.anim.fade_out);
+                                            } else {
+                                                Intent i = new Intent(getActivity(), Tumblr.class);
                                                 i.putExtra(Album.EXTRA_URL,
                                                         adapter.submission.getUrl());
                                                 getActivity().startActivity(i);
@@ -1809,28 +1835,8 @@ public class CommentPage extends Fragment {
                 }
             };
             rv.addOnScrollListener(toolbarScroll);
-        } else if (!override) {
+        } else {
             toolbarScroll.reset = true;
-        }
-    }
-
-    public static class TopSnappedSmoothScroller extends LinearSmoothScroller {
-        final PreCachingLayoutManagerComments lm;
-
-        public TopSnappedSmoothScroller(Context context, PreCachingLayoutManagerComments lm) {
-            super(context);
-            this.lm = lm;
-
-        }
-
-        @Override
-        public PointF computeScrollVectorForPosition(int targetPosition) {
-            return lm.computeScrollVectorForPosition(targetPosition);
-        }
-
-        @Override
-        protected int getVerticalSnapPreference() {
-            return SNAP_TO_START;
         }
     }
 

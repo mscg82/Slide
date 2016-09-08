@@ -4,13 +4,9 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.Html;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.style.URLSpan;
-import android.text.util.Linkify;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,29 +20,32 @@ import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.devspark.robototextview.util.RobotoTypefaceManager;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 
 import me.ccrama.redditslide.Activities.Album;
 import me.ccrama.redditslide.Activities.MediaView;
+import me.ccrama.redditslide.ContentType;
 import me.ccrama.redditslide.ImgurAlbum.Image;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.SpoilerRobotoTextView;
+import me.ccrama.redditslide.Tumblr.Photo;
 import me.ccrama.redditslide.Visuals.FontPreferences;
-import me.ccrama.redditslide.util.LogUtil;
 import me.ccrama.redditslide.util.SubmissionParser;
 
-public class AlbumView extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private final List<Image> users;
+public class TumblrView extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private final List<Photo> users;
 
     private final Activity main;
 
     public boolean paddingBottom;
     public int height;
 
-    public AlbumView(final Activity context, final List<Image> users, int height) {
+    public TumblrView(final Activity context, final List<Photo> users, int height) {
 
         this.height = height;
         main = context;
@@ -61,7 +60,7 @@ public class AlbumView extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     View body = l.inflate(R.layout.album_grid_dialog, null, false);
                     AlertDialogWrapper.Builder b = new AlertDialogWrapper.Builder(context);
                     GridView gridview = (GridView) body.findViewById(R.id.images);
-                    gridview.setAdapter(new ImageGridAdapter(context, users));
+                    gridview.setAdapter(new ImageGridAdapterTumblr(context, users));
 
 
                     b.setView(body);
@@ -120,15 +119,15 @@ public class AlbumView extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             AlbumViewHolder holder = (AlbumViewHolder) holder2;
 
-            final Image user = users.get(position);
-            ((Reddit) main.getApplicationContext()).getImageLoader().displayImage(user.getImageUrl(), holder.image, ImageGridAdapter.options);
+            final Photo user = users.get(position);
+            ((Reddit) main.getApplicationContext()).getImageLoader().displayImage(user.getOriginalSize().getUrl(), holder.image, ImageGridAdapter.options);
             holder.body.setVisibility(View.VISIBLE);
             holder.text.setVisibility(View.VISIBLE);
             View imageView = holder.image;
             if (imageView.getWidth() == 0) {
                 holder.image.setLayoutParams(new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT));
             } else {
-                holder.image.setLayoutParams(new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, (int) getHeightFromAspectRatio(user.getHeight(), user.getWidth(), imageView.getWidth())));
+                holder.image.setLayoutParams(new LinearLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, (int) getHeightFromAspectRatio(user.getOriginalSize().getHeight(), user.getOriginalSize().getWidth(), imageView.getWidth())));
             }
             {
                 int type = new FontPreferences(holder.body.getContext()).getFontTypeComment().getTypeface();
@@ -151,21 +150,11 @@ public class AlbumView extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 holder.text.setTypeface(typeface);
             }
             {
-                if (user.getTitle() != null) {
-                    List<String> text = SubmissionParser.getBlocks(user.getTitle());
-                    setTextWithLinks(text.get(0), holder.text);
-                    if (holder.text.getText().toString().isEmpty()) {
-                        holder.text.setVisibility(View.GONE);
-                    }
-
-                } else {
                     holder.text.setVisibility(View.GONE);
-
-                }
             }
             {
-                if (user.getDescription() != null) {
-                    List<String> text = SubmissionParser.getBlocks(user.getDescription());
+                if (user.getCaption() != null) {
+                    List<String> text = SubmissionParser.getBlocks(user.getCaption());
                     setTextWithLinks(text.get(0), holder.body);
                     if (holder.body.getText().toString().isEmpty()) {
                         holder.body.setVisibility(View.GONE);
@@ -179,22 +168,26 @@ public class AlbumView extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             View.OnClickListener onGifImageClickListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (SettingValues.image && !user.isAnimated() || SettingValues.gif && user.isAnimated()) {
+                    if (SettingValues.image ) {
                         Intent myIntent = new Intent(main, MediaView.class);
-                        myIntent.putExtra(MediaView.EXTRA_URL, user.getImageUrl());
+                        myIntent.putExtra(MediaView.EXTRA_URL, user.getOriginalSize().getUrl());
                         main.startActivity(myIntent);
                     } else {
-                        Reddit.defaultShare(user.getImageUrl(), main);
+                        Reddit.defaultShare(user.getOriginalSize().getUrl(), main);
                     }
                 }
             };
 
 
-            if (user.isAnimated()) {
-                holder.body.setVisibility(View.VISIBLE);
-                holder.body.setSingleLine(false);
-                holder.body.setTextHtml(holder.text.getText() + main.getString(R.string.submission_tap_gif).toUpperCase()); //got rid of the \n thing, because it didnt parse and it was already a new line so...
-                holder.body.setOnClickListener(onGifImageClickListener);
+            try {
+                if (ContentType.isGif(new URI(user.getOriginalSize().getUrl()))) {
+                    holder.body.setVisibility(View.VISIBLE);
+                    holder.body.setSingleLine(false);
+                    holder.body.setTextHtml(holder.text.getText() + main.getString(R.string.submission_tap_gif).toUpperCase()); //got rid of the \n thing, because it didnt parse and it was already a new line so...
+                    holder.body.setOnClickListener(onGifImageClickListener);
+                }
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
             }
 
             holder.itemView.setOnClickListener(onGifImageClickListener);

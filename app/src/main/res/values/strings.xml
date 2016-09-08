@@ -764,6 +764,7 @@
     <string name="nsfw">NSFW content</string>
     <string name="content_thumbnails">Content thumbnails</string>
     <string name="view_reddit_settings">Open Reddit settings in browser</string>
+    <string name="font_styles">Font styles</string>
 
 
     <!-- Titles displayed in action bar / head / recents overview-->
@@ -1016,8 +1017,8 @@
     <string name="mode_centered">Card with centered image</string>
     <string name="mode_card">Card</string>
     <string name="mode_thumbnail">Thumbnail</string>
-    <string name="mode_big_thumbnails">Big Thumbnails</string>
-    <string name="mode_cropped">Big picture cropped</string>
+    <string name="mode_big_thumbnails">Wide thumbnails</string>
+    <string name="mode_cropped">Cropped big picture</string>
     <string name="mode_bigpic">Big picture</string>
     <string name="press_actionbar">Press arrow to show actionbar</string>
     <string name="tap_actionbar">Long press for actionbar</string>
@@ -1140,6 +1141,9 @@
     <string name="nav_gestures_description">Upvote and downvote by swiping on the comment navigation arrows</string>
     <string name="subreddit_sidebar_progress">Getting sidebar...</string>
     <string name="manage_your_subreddits">Manage your subreddits</string>
-
+    <string name="enlarge_links">Enlarge links</string>
+    <string name="enlarge_links_warning">May cause some lines to be bigger than others, but makes links easier to touch</string>
+    <string name="type_tumblr">Tumblr</string>
+    <string name="type_nsfw_tumblr">NSFW Tumblr</string>
 
 </resources>

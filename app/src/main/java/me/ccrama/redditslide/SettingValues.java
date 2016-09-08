@@ -10,6 +10,7 @@ import java.util.Calendar;
 
 import me.ccrama.redditslide.Views.CreateCardView;
 import me.ccrama.redditslide.Visuals.Palette;
+import me.ccrama.redditslide.util.LogUtil;
 
 /**
  * Created by ccrama on 9/19/2015.
@@ -224,7 +225,11 @@ public class SettingValues {
         fab = prefs.getBoolean(PREF_FAB, true);
         fabType = prefs.getInt(PREF_FAB_TYPE, R.integer.FAB_DISMISS);
         subredditSearchMethod = prefs.getInt(PREF_SUBREDDIT_SEARCH_METHOD,
-                R.integer.SUBREDDIT_SEARCH_METHOD_DRAWER);
+                Constants.SUBREDDIT_SEARCH_METHOD_DRAWER);
+        if(subredditSearchMethod > 3 || subredditSearchMethod < 0){
+            subredditSearchMethod = 1;
+            prefs.edit().putInt(PREF_SUBREDDIT_SEARCH_METHOD, 1).apply();
+        }
         nightMode = prefs.getBoolean(PREF_NIGHT_MODE, false);
         nightTheme = prefs.getInt(PREF_NIGHT_THEME, 0);
         autoTime = prefs.getBoolean(PREF_AUTOTHEME, false);
