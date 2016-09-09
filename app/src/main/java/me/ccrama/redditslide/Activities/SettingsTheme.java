@@ -403,7 +403,8 @@ public class SettingsTheme extends BaseActivityAnim {
                         if (SettingValues.colorIcon) {
                             getPackageManager().setComponentEnabledSetting(
                                     new ComponentName(SettingsTheme.this,
-                                            ".Activities.Slide"),
+                                            ColorPreferences.getIconName(SettingsTheme.this,
+                                                    Reddit.colors.getInt("DEFAULTCOLOR", 0))),
                                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                                     PackageManager.DONT_KILL_APP);
 

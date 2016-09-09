@@ -50,7 +50,7 @@
                 android:name=".Activities.MainActivity"
                 android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
                 android:label="@string/app_name"
-                android:windowSoftInputMode="adjustNothing">
+                android:windowSoftInputMode="adjustResize">
         </activity>
 
         <activity-alias
@@ -472,6 +472,18 @@
                 <data android:mimeType="image/*"/>
                 <data android:mimeType="text/plain"/>
 
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+        <activity
+                android:name=".Activities.Related"
+                android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
+                android:label="Related Reddit submissions"
+                android:theme="@style/swipeable"
+                android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <data android:mimeType="text/plain"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>

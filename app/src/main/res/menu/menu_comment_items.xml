@@ -26,6 +26,13 @@
             android:icon="@drawable/shadowbox"
             android:title="@string/comment_shadowbox"
             app:showAsAction="ifRoom"/>
+
+    <item
+            android:id="@+id/related"
+            android:icon="@drawable/world"
+            android:title="Related submissions"
+            app:showAsAction="ifRoom"/>
+
     <item
             android:id="@+id/sidebar"
             android:icon="@drawable/infonew"
