@@ -12,12 +12,14 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v7.app.NotificationCompat;
 import android.view.View;
 import android.widget.MediaController;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.google.gson.Gson;
@@ -42,6 +44,7 @@ import me.ccrama.redditslide.Activities.MediaView;
 import me.ccrama.redditslide.Activities.Shadowbox;
 import me.ccrama.redditslide.Activities.Website;
 import me.ccrama.redditslide.Fragments.FolderChooserDialogCreate;
+import me.ccrama.redditslide.Notifications.ImageDownloadNotificationService;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.Views.MediaVideoView;
@@ -167,7 +170,12 @@ public class GifUtils {
                                 @Override
                                 public void run() {
                                     saveGif(downloaded, c);
+                                    try {
+                                        Toast.makeText(c, "Downloading image...",
+                                                Toast.LENGTH_SHORT).show();
+                                    } catch (Exception ignored) {
 
+                                    }
                                 }
                             };
                         }
@@ -207,10 +215,10 @@ public class GifUtils {
             } else if (s.contains("gfycat") && (!s.contains("mp4") && !s.contains("webm"))) {
                 if (s.contains("-size_restricted"))
                     s = s.replace("-size_restricted", "");
-
             }
-            if (s.contains(".gif") && !s.contains(".gifv") && s.contains("imgur.com")) {
+            if ((s.contains(".webm") || s.contains(".gif")) && !s.contains(".gifv") && s.contains("imgur.com")) {
                 s = s.replace(".gif", ".mp4");
+                s = s.replace(".webm", ".mp4");
             }
             if (s.endsWith("/"))
                 s = s.substring(0, s.length() - 1);
@@ -232,7 +240,7 @@ public class GifUtils {
             return VideoType.OTHER;
         }
 
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = Reddit.client;
 
         @Override
         protected Void doInBackground(String... sub) {
@@ -298,7 +306,7 @@ public class GifUtils {
                             c.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    (c).startActivity(new Intent(c, MediaView.class).putExtra(MediaView.EXTRA_URL,url.replace(".mp4", "h.png") ));//Load the high quality thumbnail, which is a JPG
+                                    (c).startActivity(new Intent(c, MediaView.class).putExtra(MediaView.EXTRA_URL,url.replace(".mp4", ".png") ));//Load the high quality thumbnail, which is a JPG
                                     (c).finish();
                                 }
                             });
@@ -586,6 +594,12 @@ public class GifUtils {
     }
 
     public static void saveGif(File from, Activity a) {
+        try {
+            Toast.makeText(a, "Downloading image...",
+                    Toast.LENGTH_SHORT).show();
+        } catch (Exception ignored) {
+
+        }
         if (Reddit.appRestart.getString("imagelocation", "").isEmpty()) {
             showFirstDialog(a);
         } else if (!new File(Reddit.appRestart.getString("imagelocation", "")).exists()) {
@@ -647,7 +661,7 @@ public class GifUtils {
 
         NotificationManager mNotificationManager =
                 (NotificationManager) c.getSystemService(Activity.NOTIFICATION_SERVICE);
-        mNotificationManager.notify(1, notif);
+        mNotificationManager.notify((int) System.currentTimeMillis(), notif);
     }
 
     /**

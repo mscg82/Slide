@@ -182,8 +182,7 @@ public class CommentsScreen extends BaseActivityAnim implements SubmissionDispla
         }
 
 
-        if (currentPosts.isEmpty() || currentPosts.get(firstPage) == null || firstPage < 0) {
-            LogUtil.v("Closing");
+        if (currentPosts.isEmpty() || currentPosts.size() < firstPage || currentPosts.get(firstPage) == null || firstPage < 0) {
             finish();
         } else {
             updateSubredditAndSubmission(currentPosts.get(firstPage));
@@ -260,14 +259,6 @@ public class CommentsScreen extends BaseActivityAnim implements SubmissionDispla
         subreddit = post.getSubredditName();
         themeSystemBars(subreddit);
         setRecentBar(subreddit);
-
-        if (SettingValues.storeHistory) {
-            if (post.isNsfw() && !SettingValues.storeNSFWHistory) {
-            } else {
-                HasSeen.addSeen(post.getFullName());
-            }
-            LastComments.setComments(post);
-        }
     }
 
 
@@ -350,6 +341,7 @@ public class CommentsScreen extends BaseActivityAnim implements SubmissionDispla
                 String name = currentPosts.get(i).getFullName();
                 args.putString("id", name.substring(3, name.length()));
                 args.putBoolean("archived", currentPosts.get(i).isArchived());
+                args.putBoolean("contest", currentPosts.get(i).getDataNode().get("contest_mode").asBoolean());
                 args.putBoolean("locked", currentPosts.get(i).isLocked());
                 args.putInt("page", i);
                 args.putString("subreddit", currentPosts.get(i).getSubredditName());

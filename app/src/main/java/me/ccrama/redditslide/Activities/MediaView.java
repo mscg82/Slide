@@ -46,6 +46,8 @@ import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingProgressListener;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -449,7 +451,7 @@ public class MediaView extends FullScreenActivity
         super.onCreate(savedInstanceState);
         getTheme().applyStyle(new ColorPreferences(this).getDarkThemeSubreddit(""), true);
 
-        client = new OkHttpClient();
+        client = Reddit.client;
         gson = new Gson();
         mashapeKey = SecretConstants.getImgurApiKey(this);
 
@@ -479,6 +481,7 @@ public class MediaView extends FullScreenActivity
         if (contentUrl != null && shouldTruncate(contentUrl)) {
             contentUrl = contentUrl.substring(0, contentUrl.lastIndexOf("."));
         }
+
         actuallyLoaded = contentUrl;
         if (getIntent().hasExtra(SUBMISSION_URL)) {
             final int commentUrl = getIntent().getExtras().getInt(ADAPTER_POSITION);
@@ -526,7 +529,11 @@ public class MediaView extends FullScreenActivity
             if (!firstUrl.isEmpty() && contentUrl != null && ContentType.displayImage(
                     ContentType.getContentType(contentUrl))) {
                 ((ProgressBar) findViewById(R.id.progress)).setIndeterminate(true);
-                displayImage(firstUrl);
+                if (ContentType.isImgurHash(firstUrl)) {
+                    displayImage(firstUrl + ".png");
+                } else {
+                    displayImage(firstUrl);
+                }
             } else if (firstUrl.isEmpty()) {
                 imageShown = false;
                 ((ProgressBar) findViewById(R.id.progress)).setIndeterminate(true);
@@ -648,7 +655,7 @@ public class MediaView extends FullScreenActivity
                                 if (type.contains("gif")) {
                                     doLoadGif(urls);
                                 } else if (!imageShown) { //only load if there is no image
-                                    doLoadImage(urls);
+                                    displayImage(urls);
                                 }
                             } else if (result != null && result.has("data")) {
                                 String type = result.get("data")
@@ -670,7 +677,7 @@ public class MediaView extends FullScreenActivity
                                 if (type.contains("gif")) {
                                     doLoadGif(((mp4 == null || mp4.isEmpty()) ? urls : mp4));
                                 } else if (!imageShown) { //only load if there is no image
-                                    doLoadImage(urls);
+                                    displayImage(urls);
                                 }
                             } else {
                                 if (!imageShown) doLoadImage(finalUrl);
@@ -789,7 +796,6 @@ public class MediaView extends FullScreenActivity
         if (contentUrl != null && ContentType.isImgurLink(contentUrl)) {
             contentUrl = contentUrl + ".png";
         }
-
         findViewById(R.id.gifprogress).setVisibility(View.GONE);
 
         if (contentUrl != null && contentUrl.contains("m.imgur.com")) {
@@ -867,7 +873,10 @@ public class MediaView extends FullScreenActivity
         }
     }
 
-    public void displayImage(final String url) {
+    public void displayImage(final String urlB) {
+        LogUtil.v("Displaying " + urlB);
+        final String url = StringEscapeUtils.unescapeHtml4(urlB);
+
         if (!imageShown) {
             actuallyLoaded = url;
             final SubsamplingScaleImageView i =
@@ -895,9 +904,37 @@ public class MediaView extends FullScreenActivity
             if (f != null && f.exists()) {
                 imageShown = true;
 
+                i.setOnImageEventListener(new SubsamplingScaleImageView.OnImageEventListener() {
+                    @Override
+                    public void onReady() {
+
+                    }
+
+                    @Override
+                    public void onImageLoaded() {
+
+                    }
+
+                    @Override
+                    public void onPreviewLoadError(Exception e) {
+
+                    }
+
+                    @Override
+                    public void onImageLoadError(Exception e) {
+                        imageShown = false;
+                        LogUtil.v("No image displayed");
+                    }
+
+                    @Override
+                    public void onTileLoadError(Exception e) {
+
+                    }
+                });
                 try {
                     i.setImage(ImageSource.uri(f.getAbsolutePath()));
                 } catch (Exception e) {
+                    imageShown = false;
                     //todo  i.setImage(ImageSource.bitmap(loadedImage));
                 }
                 (findViewById(R.id.progress)).setVisibility(View.GONE);
@@ -978,7 +1015,7 @@ public class MediaView extends FullScreenActivity
                                     public void onLoadingFailed(String imageUri, View view,
                                             FailReason failReason) {
                                         Log.v(LogUtil.getTag(), "LOADING FAILED");
-
+                                        imageShown = false;
                                     }
 
                                     @Override

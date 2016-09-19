@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.ccrama.redditslide.Constants;
+import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.util.HttpUtil;
 import me.ccrama.redditslide.util.LogUtil;
 import okhttp3.OkHttpClient;
@@ -58,7 +59,7 @@ public class TumblrUtils {
             id = i.getPathSegments().get(1);
             blog = i.getHost().split("\\.")[0];
 
-            client = new OkHttpClient();
+            client = Reddit.client;
             gson = new Gson();
         }
 
@@ -98,15 +99,15 @@ public class TumblrUtils {
                         + Constants.TUMBLR_API_KEY
                         + "&id="
                         + id;
+                LogUtil.v(apiUrl);
                 if (tumblrRequests.contains(apiUrl) && new JsonParser().parse(
                         tumblrRequests.getString(apiUrl, "")).getAsJsonObject().has("response")) {
                     parseJson(new JsonParser().parse(tumblrRequests.getString(apiUrl, ""))
                             .getAsJsonObject());
                 } else {
                     LogUtil.v(apiUrl);
-                    // This call requires no mashape headers, don't pass in the headers Map
                     final JsonObject result = HttpUtil.getJsonObject(client, gson, apiUrl);
-                    if (result != null && result.has("response")) {
+                    if (result != null && result.has("response") && result.get("response").getAsJsonObject().has("posts") && result.get("response").getAsJsonObject().get("posts").getAsJsonArray().get(0).getAsJsonObject().has("photos")) {
                         tumblrRequests.edit().putString(apiUrl, result.toString()).apply();
                         parseJson(result);
                     } else {

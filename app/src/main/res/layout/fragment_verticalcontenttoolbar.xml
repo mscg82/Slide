@@ -20,78 +20,6 @@
     </me.ccrama.redditslide.Views.GeneralSwipeRefreshLayout>
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="wrap_content">
-
-        <android.support.design.widget.AppBarLayout
-            android:id="@+id/header"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:elevation="16dp"
-            android:orientation="vertical"
-            android:theme="@style/Theme.AppCompat">
-
-            <android.support.v7.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/standard_toolbar_height"
-                android:minHeight="@dimen/standard_toolbar_height" />
-
-            <TextView
-                android:id="@+id/np"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:padding="8dp"
-                android:text="@string/submission_np_link"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/archived"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:padding="8dp"
-                android:text="@string/submission_info_archived"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/locked"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:padding="8dp"
-                android:text="@string/submission_info_locked"
-                android:textColor="@color/white"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/loadall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?attr/colorAccent"
-                android:gravity="center"
-                android:padding="8dp"
-                android:text="@string/submission_load_full"
-                android:textColor="?attr/font"
-                android:textSize="14sp" />
-        </android.support.design.widget.AppBarLayout>
-        <ProgressBar
-            android:id="@+id/progress"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:visibility="gone"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="-7dp"
-            android:indeterminate="true"
-            android:max="100"
-            android:progress="0" />
-    </LinearLayout>
-
-    <LinearLayout
         android:id="@+id/commentnav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -138,4 +66,85 @@
         app:layout_behavior="me.ccrama.redditslide.Views.AutoHideFAB"
         app:pressedTranslationZ="12dp"
         app:srcCompat="@drawable/reply" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_height="wrap_content">
+
+        <android.support.design.widget.AppBarLayout
+            android:id="@+id/header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="16dp"
+            android:orientation="vertical"
+            >
+
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:theme="@style/Theme.AppCompat"
+                android:layout_height="@dimen/standard_toolbar_height"
+                android:minHeight="@dimen/standard_toolbar_height" />
+
+            <TextView
+                android:id="@+id/np"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="@string/submission_np_link"
+                android:textColor="@color/white"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/archived"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="@string/submission_info_archived"
+                android:textColor="@color/white"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/locked"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="@string/submission_info_locked"
+                android:textColor="@color/white"
+                android:textSize="12sp" />
+            <TextView
+                    android:id="@+id/contest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:text="@string/submission_info_contest"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+            <TextView
+                android:id="@+id/loadall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorAccent"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="@string/submission_load_full"
+                android:textColor="?attr/font"
+                android:textSize="14sp" />
+        </android.support.design.widget.AppBarLayout>
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:visibility="gone"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-7dp"
+            android:indeterminate="true"
+            android:max="100"
+            android:progress="0" />
+    </LinearLayout>
 </FrameLayout>

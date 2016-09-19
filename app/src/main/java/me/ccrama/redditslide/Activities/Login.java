@@ -55,7 +55,12 @@ public class Login extends BaseActivityAnim {
         overrideSwipeFromAnywhere();
         super.onCreate(savedInstance);
         applyColorTheme("");
-        setContentView(R.layout.activity_login);
+        try {
+            setContentView(R.layout.activity_login);
+        } catch(Exception e){
+            finish();
+            return;
+        }
         setupAppBar(R.id.toolbar, R.string.title_login, true, true);
 
         String[] scopes = {
@@ -83,14 +88,15 @@ public class Login extends BaseActivityAnim {
 //                activity.setProgress(newProgress * 1000);
             }
         });
-        CookieSyncManager.createInstance(this);
-        CookieManager cookieManager = CookieManager.getInstance();
-        cookieManager.removeAllCookies(null);
-        CookieManager.getInstance().flush();
+        try {
+            CookieSyncManager.createInstance(this);
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.removeAllCookies(null);
+            CookieManager.getInstance().flush();
+        } catch(NoSuchMethodError e){
+            //Ignore, some devices can't clear cookies
+        }
 
-        WebSettings ws = webView.getSettings();
-        ws.setSaveFormData(false);
-        ws.setSavePassword(false);
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {

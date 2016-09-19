@@ -2,7 +2,6 @@ package me.ccrama.redditslide.Views;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
-import android.content.ClipData;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,20 +11,21 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.afollestad.materialdialogs.DialogAction;
@@ -52,8 +52,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import gun0912.tedbottompicker.TedBottomPicker;
 import me.ccrama.redditslide.Activities.Draw;
-import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.ColorPreferences;
 import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.Drafts;
@@ -245,31 +245,22 @@ public class DoEditorActions {
         baseView.findViewById(R.id.imagerep).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent();
-                intent.setType("image/*");
-                intent.setAction(Intent.ACTION_GET_CONTENT);
-                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-                if (a instanceof MainActivity) {
-                    LogUtil.v("Running on main");
-                    ((MainActivity) a).doImage = new Runnable() {
-                        @Override
-                        public void run() {
-                            handleImageIntent(((MainActivity) a).data, editText, a);
-                        }
-                    };
-                    a.startActivityForResult(Intent.createChooser(intent,
-                            Integer.toString(R.string.editor_select_img)), 3333);
-                } else {
-                    Fragment auxiliary = new AuxiliaryFragment();
-                    Bundle data = new Bundle();
-                    data.putInt("textId", editText.getId());
-                    auxiliary.setArguments(data);
-                    fm.beginTransaction().add(auxiliary, "IMAGE_CHOOSER").commit();
-                    fm.executePendingTransactions();
+                e = editText.getText();
+                TedBottomPicker tedBottomPicker = new TedBottomPicker.Builder(editText.getContext())
+                        .setOnImageSelectedListener(new TedBottomPicker.OnImageSelectedListener() {
+                            @Override
+                            public void onImageSelected(List<Uri> uri) {
+                                handleImageIntent(uri, editText, a);
+                            }
+                        })
+                        .setLayoutResource(R.layout.image_sheet_dialog)
+                        .setTitle("Choose a photo")
+                        .create();
 
-                    auxiliary.startActivityForResult(Intent.createChooser(intent,
-                            Integer.toString(R.string.editor_select_img)), 3333);
-                }
+                tedBottomPicker.show(fm);
+                InputMethodManager imm = (InputMethodManager) editText.getContext()
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
             }
         });
 
@@ -488,29 +479,49 @@ public class DoEditorActions {
         });
     }
 
-    public static void doDraw(final Activity a, final EditText editText, final FragmentManager fm) {
-        Intent intent = new Intent(a, Draw.class);
-        if (a instanceof MainActivity) {
-            LogUtil.v("Running on main");
-            ((MainActivity) a).doImage = new Runnable() {
-                @Override
-                public void run() {
-                    handleImageIntent(((MainActivity) a).data, editText, a);
-                }
-            };
-            a.startActivityForResult(intent, 3333);
-        } else {
-            Fragment auxiliary = new AuxiliaryFragment();
-            Bundle data = new Bundle();
-            data.putInt("textId", editText.getId());
-            auxiliary.setArguments(data);
-            fm.beginTransaction().add(auxiliary, "IMAGE_CHOOSER").commit();
-            fm.executePendingTransactions();
+    public static Editable e;
+    public static int      sStart, sEnd;
 
-            auxiliary.startActivityForResult(intent, 3333);
+    public static void doDraw(final Activity a, final EditText editText, final FragmentManager fm) {
+        final Intent intent = new Intent(a, Draw.class);
+        InputMethodManager imm = (InputMethodManager) editText.getContext()
+                .getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
+        e = editText.getText();
+        TedBottomPicker tedBottomPicker = new TedBottomPicker.Builder(editText.getContext())
+                .setOnImageSelectedListener(new TedBottomPicker.OnImageSelectedListener() {
+                    @Override
+                    public void onImageSelected(List<Uri> uri) {
+                        Draw.uri = uri.get(0);
+                        Fragment auxiliary = new AuxiliaryFragment();
+
+                        sStart = editText.getSelectionStart();
+                        sEnd = editText.getSelectionEnd();
+
+                        fm.beginTransaction().add(auxiliary, "IMAGE_UPLOAD").commit();
+                        fm.executePendingTransactions();
+
+                        auxiliary.startActivityForResult(intent, 3333);
+                    }
+                })
+                .setLayoutResource(R.layout.image_sheet_dialog)
+                .setTitle("Choose a photo")
+                .create();
+
+        tedBottomPicker.show(fm);
+    }
+    public static class AuxiliaryFragment extends Fragment {
+        @Override
+        public void onActivityResult(int requestCode, int resultCode, final Intent data) {
+            super.onActivityResult(requestCode, resultCode, data);
+            handleImageIntent(new ArrayList<Uri>(){{add(data.getData());}},
+                    e,
+                    getContext());
+
+            getActivity().getSupportFragmentManager().beginTransaction().remove(this).commit();
+
         }
     }
-
     public static String getImageLink(Bitmap b) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         b.compress(Bitmap.CompressFormat.JPEG, 100,
@@ -575,13 +586,11 @@ public class DoEditorActions {
     private static class UploadImgur extends AsyncTask<Uri, Integer, JSONObject> {
 
         final         Context        c;
-        final         EditText       editText;
         private final MaterialDialog dialog;
         public        Bitmap         b;
 
-        public UploadImgur(EditText editText) {
-            this.c = editText.getContext();
-            this.editText = editText;
+        public UploadImgur(Context c) {
+            this.c = c;
             dialog = new MaterialDialog.Builder(c).title(
                     c.getString(R.string.editor_uploading_image))
                     .progress(false, 100)
@@ -667,7 +676,7 @@ public class DoEditorActions {
         protected JSONObject doInBackground(Uri... sub) {
             File bitmap = createFile(sub[0], c);
 
-            final OkHttpClient client = new OkHttpClient();
+            final OkHttpClient client = Reddit.client;
 
             try {
                 RequestBody formBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
@@ -710,32 +719,33 @@ public class DoEditorActions {
             dialog.dismiss();
             try {
                 int[] attrs = {R.attr.font};
-                TypedArray ta = editText.getContext()
-                        .obtainStyledAttributes(
-                                new ColorPreferences(editText.getContext()).getFontStyle()
-                                        .getBaseId(), attrs);
+                TypedArray ta =
+                        c.obtainStyledAttributes(new ColorPreferences(c).getFontStyle().getBaseId(),
+                                attrs);
                 final String url = result.getJSONObject("data").getString("link");
-                LinearLayout layout = new LinearLayout(editText.getContext());
+                LinearLayout layout = new LinearLayout(c);
                 layout.setOrientation(LinearLayout.VERTICAL);
 
-                final TextView titleBox = new TextView(editText.getContext());
+                final TextView titleBox = new TextView(c);
                 titleBox.setText(url);
                 layout.addView(titleBox);
                 titleBox.setEnabled(false);
                 titleBox.setTextColor(ta.getColor(0, Color.WHITE));
 
-                final EditText descriptionBox = new EditText(editText.getContext());
+                final EditText descriptionBox = new EditText(c);
                 descriptionBox.setHint(R.string.editor_title);
                 descriptionBox.setEnabled(true);
                 descriptionBox.setTextColor(ta.getColor(0, Color.WHITE));
-
+                final InputMethodManager imm =
+                        (InputMethodManager) c.getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,
+                        InputMethodManager.HIDE_IMPLICIT_ONLY);
 
                 ta.recycle();
                 int sixteen = Reddit.dpToPxVertical(16);
                 layout.setPadding(sixteen, sixteen, sixteen, sixteen);
                 layout.addView(descriptionBox);
-                new AlertDialogWrapper.Builder(editText.getContext()).setTitle(
-                        R.string.editor_title_link)
+                new AlertDialogWrapper.Builder(c).setTitle(R.string.editor_title_link)
                         .setView(layout)
                         .setPositiveButton(R.string.editor_action_link,
                                 new DialogInterface.OnClickListener() {
@@ -747,9 +757,12 @@ public class DoEditorActions {
                                                 + "]("
                                                 + url
                                                 + ")";
-                                        int start = Math.max(editText.getSelectionStart(), 0);
-                                        int end = Math.max(editText.getSelectionEnd(), 0);
-                                        editText.getText().insert(Math.max(start, end), s);
+                                        int start = Math.max(sStart, 0);
+                                        int end = Math.max(sEnd, 0);
+                                        DoEditorActions.e.insert(Math.max(start, end), s);
+                                        DoEditorActions.e = null;
+                                        sStart = 0;
+                                        sEnd = 0;
                                     }
                                 })
                         .show();
@@ -777,13 +790,11 @@ public class DoEditorActions {
     private static class UploadImgurAlbum extends AsyncTask<Uri, Integer, String> {
 
         final         Context        c;
-        final         EditText       editText;
         private final MaterialDialog dialog;
         public        Bitmap         b;
 
-        public UploadImgurAlbum(EditText editText) {
-            this.c = editText.getContext();
-            this.editText = editText;
+        public UploadImgurAlbum(Context c) {
+            this.c = c;
             dialog = new MaterialDialog.Builder(c).title(
                     c.getString(R.string.editor_uploading_image))
                     .progress(false, 100)
@@ -870,7 +881,7 @@ public class DoEditorActions {
         @Override
         protected String doInBackground(Uri... sub) {
             totalCount = sub.length;
-            final OkHttpClient client = new OkHttpClient();
+            final OkHttpClient client = Reddit.client;
 
             String albumurl;
             {
@@ -956,20 +967,19 @@ public class DoEditorActions {
             dialog.dismiss();
             try {
                 int[] attrs = {R.attr.font};
-                TypedArray ta = editText.getContext()
-                        .obtainStyledAttributes(
-                                new ColorPreferences(editText.getContext()).getFontStyle()
-                                        .getBaseId(), attrs);
-                LinearLayout layout = new LinearLayout(editText.getContext());
+                TypedArray ta =
+                        c.obtainStyledAttributes(new ColorPreferences(c).getFontStyle().getBaseId(),
+                                attrs);
+                LinearLayout layout = new LinearLayout(c);
                 layout.setOrientation(LinearLayout.VERTICAL);
 
-                final TextView titleBox = new TextView(editText.getContext());
+                final TextView titleBox = new TextView(c);
                 titleBox.setText(finalUrl);
                 layout.addView(titleBox);
                 titleBox.setEnabled(false);
                 titleBox.setTextColor(ta.getColor(0, Color.WHITE));
 
-                final EditText descriptionBox = new EditText(editText.getContext());
+                final EditText descriptionBox = new EditText(c);
                 descriptionBox.setHint(R.string.editor_title);
                 descriptionBox.setEnabled(true);
                 descriptionBox.setTextColor(ta.getColor(0, Color.WHITE));
@@ -979,8 +989,7 @@ public class DoEditorActions {
                 int sixteen = Reddit.dpToPxVertical(16);
                 layout.setPadding(sixteen, sixteen, sixteen, sixteen);
                 layout.addView(descriptionBox);
-                new AlertDialogWrapper.Builder(editText.getContext()).setTitle(
-                        R.string.editor_title_link)
+                new AlertDialogWrapper.Builder(c).setTitle(R.string.editor_title_link)
                         .setView(layout)
                         .setPositiveButton(R.string.editor_action_link,
                                 new DialogInterface.OnClickListener() {
@@ -992,9 +1001,12 @@ public class DoEditorActions {
                                                 + "]("
                                                 + finalUrl
                                                 + ")";
-                                        int start = Math.max(editText.getSelectionStart(), 0);
-                                        int end = Math.max(editText.getSelectionEnd(), 0);
-                                        editText.getText().insert(Math.max(start, end), s);
+                                        int start = Math.max(sStart, 0);
+                                        int end = Math.max(sEnd, 0);
+                                        DoEditorActions.e.insert(Math.max(start, end), s);
+                                        DoEditorActions.e = null;
+                                        sStart = 0;
+                                        sEnd = 0;
                                     }
                                 })
                         .show();
@@ -1019,63 +1031,36 @@ public class DoEditorActions {
         protected void onProgressUpdate(Integer... values) {
             int progress = values[0];
             if (progress < dialog.getCurrentProgress() || uploadCount == 0) {
-                uploadCount +=1;
+                uploadCount += 1;
             }
             dialog.setContent("Image " + uploadCount + "/" + totalCount);
             dialog.setProgress(progress);
         }
     }
 
-    public static void handleImageIntent(Intent data, EditText ed, Context c) {
-        if (data != null) {
-            if (data.getData() != null && data.getClipData() == null) {
-                // Get the Image from data (single image)
-                Uri selectedImageUri = data.getData();
-                try {
-                    new UploadImgur(ed).execute(selectedImageUri);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else {
-                //Multiple images
-                if (data.getClipData() != null) {
-                    ClipData mClipData = data.getClipData();
-                    ArrayList<Uri> mArrayUri = new ArrayList<Uri>();
-                    for (int i = 0; i < mClipData.getItemCount(); i++) {
-                        ClipData.Item item = mClipData.getItemAt(i);
-                        Uri uri = item.getUri();
-                        mArrayUri.add(uri);
-                    }
-                    try {
-                        new UploadImgurAlbum(ed).execute(
-                                mArrayUri.toArray(new Uri[mArrayUri.size()]));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
+    public static void handleImageIntent(List<Uri> uris, EditText ed, Context c) {
+        handleImageIntent(uris, ed.getText(), c);
+    }
+
+    public static void handleImageIntent(List<Uri> uris, Editable ed, Context c) {
+        if (uris.size() == 1) {
+            // Get the Image from data (single image)
+            try {
+                new UploadImgur(c).execute(uris.get(0));
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         } else {
+            //Multiple images
             try {
-                Toast.makeText(c, "No image was selected", Toast.LENGTH_LONG).show();
+                new UploadImgurAlbum(c).execute(uris.toArray(new Uri[uris.size()]));
             } catch (Exception e) {
+                e.printStackTrace();
 
             }
         }
     }
 
-
-    public static class AuxiliaryFragment extends Fragment {
-        @Override
-        public void onActivityResult(int requestCode, int resultCode, Intent data) {
-            super.onActivityResult(requestCode, resultCode, data);
-            handleImageIntent(data,
-                    ((EditText) getActivity().findViewById(getArguments().getInt("textId", 0))),
-                    getContext());
-
-            getActivity().getSupportFragmentManager().beginTransaction().remove(this).commit();
-
-        }
-    }
 
     public static class ProgressRequestBody extends RequestBody {
 

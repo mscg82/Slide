@@ -130,7 +130,7 @@ public class AlbumPager extends FullScreenActivity
             //SubmissionAdapter.setOpen(this, getIntent().getStringExtra(MediaView.SUBMISSION_URL));
         }
 
-        if (id == R.id.download) {
+        if (id == R.id.download && images != null) {
             int index = 0;
             for (final Image elem : images) {
                 doImageSave(false, elem.getImageUrl(), index);
@@ -509,12 +509,6 @@ public class AlbumPager extends FullScreenActivity
             final ViewGroup rootView =
                     (ViewGroup) inflater.inflate(R.layout.album_image_pager, container, false);
 
-            if (((AlbumPager) getActivity()).images == null) {
-                getActivity().finish();
-            }
-            if (((AlbumPager) getActivity()).images == null) {
-                getActivity().finish();
-            }
             final Image current = ((AlbumPager) getActivity()).images.get(i);
             final String url = current.getImageUrl();
             boolean lq = false;
@@ -681,7 +675,7 @@ public class AlbumPager extends FullScreenActivity
                 .displayImage(url, new ImageViewAware(fakeImage),
                         new DisplayImageOptions.Builder().resetViewBeforeLoading(true)
                                 .cacheOnDisk(true)
-                                .imageScaleType(ImageScaleType.IN_SAMPLE_POWER_OF_2)
+                                .imageScaleType(ImageScaleType.NONE_SAFE)
                                 .cacheInMemory(false)
                                 .build(), new ImageLoadingListener() {
                             private View mView;

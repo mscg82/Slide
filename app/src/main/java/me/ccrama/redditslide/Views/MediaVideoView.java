@@ -20,6 +20,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.MediaController;
 import android.widget.MediaController.MediaPlayerControl;
+import android.widget.SeekBar;
 
 import java.io.IOException;
 
@@ -97,7 +98,6 @@ public class MediaVideoView extends TextureView implements MediaController.Media
     private int                              currentBufferPercentage;
     private MediaPlayer.OnErrorListener      onErrorListener;
     private MediaPlayer.OnInfoListener       onInfoListener;
-
     private int     mSeekWhenPrepared;  // recording the seek position while preparing
     private boolean mCanPause;
     private boolean mCanSeekBack;
@@ -209,10 +209,7 @@ public class MediaVideoView extends TextureView implements MediaController.Media
             return;
         }
         // Tell the music playback service to pause
-        // TODO: these constants need to be published somewhere in the framework.
-        Intent i = new Intent("com.android.music.musicservicecommand");
-        i.putExtra("command", "pause");
-        mContext.sendBroadcast(i);
+
         LogUtil.v( "Opening video.");
         release(false);
         try {
@@ -229,6 +226,7 @@ public class MediaVideoView extends TextureView implements MediaController.Media
             LogUtil.v( "Setting data source.");
             mediaPlayer.setDataSource(mContext, uri);
             LogUtil.v( "Setting media player listeners.");
+
             mediaPlayer.setOnBufferingUpdateListener(bufferingUpdateListener);
             mediaPlayer.setOnPreparedListener(preparedListener);
             mediaPlayer.setOnErrorListener(errorListener);

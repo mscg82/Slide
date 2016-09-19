@@ -2,10 +2,12 @@ package me.ccrama.redditslide.Activities;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
+import android.text.Html;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -18,6 +20,7 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import net.dean.jraw.paginators.SubmissionSearchPaginator;
 import net.dean.jraw.paginators.TimePeriod;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import me.ccrama.redditslide.Adapters.ContributionAdapter;
@@ -26,6 +29,7 @@ import me.ccrama.redditslide.ColorPreferences;
 import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
+import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.Views.CatchStaggeredGridLayoutManager;
 import me.ccrama.redditslide.Views.PreCachingLayoutManager;
 import me.ccrama.redditslide.Visuals.Palette;
@@ -72,7 +76,7 @@ public class Search extends BaseActivityAnim {
 
     public void reloadSubs() {
         posts.refreshLayout.setRefreshing(true);
-        posts.reset();
+        posts.reset(time);
     }
 
     public void openTimeFramePopup() {
@@ -191,6 +195,7 @@ public class Search extends BaseActivityAnim {
     }
 
     public boolean multireddit;
+    RecyclerView rv;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -224,11 +229,13 @@ public class Search extends BaseActivityAnim {
             subreddit = getIntent().getExtras().getString(EXTRA_SUBREDDIT, "");
         }
 
+        where = StringEscapeUtils.unescapeHtml4(where);
+
         setupSubredditAppBar(R.id.toolbar, "Search", true, subreddit.toLowerCase());
 
         time = TimePeriod.ALL;
 
-        getSupportActionBar().setTitle(where);
+        getSupportActionBar().setTitle(Html.fromHtml(where));
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         assert mToolbar != null; //it won't be, trust me
         mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
@@ -243,9 +250,10 @@ public class Search extends BaseActivityAnim {
         //So, make it lowercase, then capitalize the first letter of each.
         getSupportActionBar().setSubtitle(StringUtils.capitalize(Reddit.search.name().toLowerCase()) + " › " + StringUtils.capitalize(time.name().toLowerCase()));
 
-        final RecyclerView rv = ((RecyclerView) findViewById(R.id.vertical_content));
-        final PreCachingLayoutManager mLayoutManager;
-        mLayoutManager = new PreCachingLayoutManager(this);
+        rv = ((RecyclerView) findViewById(R.id.vertical_content));
+        final RecyclerView.LayoutManager mLayoutManager;
+        mLayoutManager =
+                createLayoutManager(getNumColumns(getResources().getConfiguration().orientation));
         rv.setLayoutManager(mLayoutManager);
 
         rv.addOnScrollListener(new ToolbarScrollHideHandler(mToolbar, findViewById(R.id.header)) {
@@ -304,5 +312,34 @@ public class Search extends BaseActivityAnim {
                     }
                 }
         );
+    }
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        final int currentOrientation = newConfig.orientation;
+
+        final CatchStaggeredGridLayoutManager mLayoutManager =
+                (CatchStaggeredGridLayoutManager) rv.getLayoutManager();
+
+        mLayoutManager.setSpanCount(getNumColumns(currentOrientation));
+    }
+    @NonNull
+    private RecyclerView.LayoutManager createLayoutManager(final int numColumns) {
+        return new CatchStaggeredGridLayoutManager(numColumns,
+                CatchStaggeredGridLayoutManager.VERTICAL);
+    }
+
+    public static int getNumColumns(final int orientation) {
+        final int numColumns;
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE && SettingValues.tabletUI) {
+            numColumns = Reddit.dpWidth;
+        } else if (orientation == Configuration.ORIENTATION_PORTRAIT
+                && SettingValues.dualPortrait) {
+            numColumns = 2;
+        } else {
+            numColumns = 1;
+        }
+        return numColumns;
     }
 }
