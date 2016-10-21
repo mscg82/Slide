@@ -1,9 +1,15 @@
 package me.ccrama.redditslide.Activities;
 
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 
+import jp.wasabeef.blurry.Blurry;
 import me.ccrama.redditslide.R;
+import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.Visuals.Palette;
 
 /**
@@ -18,9 +24,13 @@ public class FullScreenActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         //TODO something like this getWindow().setFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS,
              //   WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        overridePendingTransition(R.anim.slide_up_fade_in, 0);
-
+        if (Reddit.peek) {
+            overridePendingTransition(R.anim.pop_in, 0);
+        } else {
+            overridePendingTransition(R.anim.slide_up_fade_in, 0);
+        }
         setRecentBar(null, Palette.getDefaultColor());
+
 
     }
     @Override
@@ -29,5 +39,18 @@ public class FullScreenActivity extends BaseActivity {
         overridePendingTransition(0, R.anim.slide_down_fade_out);
     }
 
+    @Override
+    public void onPostCreate(Bundle savedInstanceState) {
+        try {
+            findViewById(android.R.id.content).getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                 //   Blurry.with(FullScreenActivity.this).radius(2).sampling(5).animate().color(Color.parseColor("#99000000")).onto((ViewGroup) findViewById(android.R.id.content));
+                }
+            });
+        } catch(Exception e){
 
+        }
+        super.onPostCreate(savedInstanceState);
+    }
 }

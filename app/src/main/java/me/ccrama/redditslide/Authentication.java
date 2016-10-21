@@ -50,10 +50,11 @@ public class Authentication {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
+                if(httpAdapter.getNativeClient() != null)
                 httpAdapter.getNativeClient().connectionPool().evictAll();
                 return null;
             }
-        }.execute();
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public Authentication(Context context) {
@@ -98,9 +99,9 @@ public class Authentication {
             reddit.setLoggingMode(LoggingMode.ALWAYS);
             didOnline = true;
 
-            new VerifyCredentials(c).execute();
+            new VerifyCredentials(c).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         } else {
-            new UpdateToken(c).execute();
+            new UpdateToken(c).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 
@@ -202,7 +203,7 @@ public class Authentication {
                                                                         DialogInterface dialog,
                                                                         int which) {
                                                                     new UpdateToken(
-                                                                            context).execute();
+                                                                            context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                                                                 }
                                                             })
                                                     .setNegativeButton(R.string.btn_no,
@@ -314,6 +315,7 @@ public class Authentication {
                                 .putString("backedCreds", authData.getDataNode().toString())
                                 .apply();
                         reddit.authenticate(authData);
+
                         Authentication.name = "LOGGEDOUT";
                         Reddit.notFirst = true;
                         didOnline = true;

@@ -462,7 +462,7 @@ public class MediaFragment extends Fragment {
                     getActivity().startActivity(i);
                 }
             }
-        }.execute();
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public void doLoadImgur(String url) {
@@ -547,7 +547,7 @@ public class MediaFragment extends Fragment {
                         }
                     }
                 }
-            }.execute();
+            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 
@@ -603,7 +603,7 @@ public class MediaFragment extends Fragment {
                     }
 
                 }
-            }.execute();
+            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 
@@ -675,7 +675,7 @@ public class MediaFragment extends Fragment {
                 protected void onPostExecute(Void aVoid) {
                     rootView.findViewById(R.id.progress).setVisibility(View.GONE);
                 }
-            }.execute();
+            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
         } else {
             displayImage(contentUrl);
@@ -882,15 +882,6 @@ public class MediaFragment extends Fragment {
                                     }
                                 });
             }
-
-            rootView.findViewById(R.id.submission_image)
-                    .setOnClickListener(new View.OnClickListener() {
-
-                        @Override
-                        public void onClick(View v2) {
-                            getActivity().finish();
-                        }
-                    });
         }
     }
 }

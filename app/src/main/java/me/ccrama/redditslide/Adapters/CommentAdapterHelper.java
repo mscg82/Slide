@@ -169,7 +169,7 @@ public class CommentAdapterHelper {
                                         + adapter.submission.getPermalink()
                                         +
                                         n.getFullName().substring(3, n.getFullName().length())
-                                        + "?context=3");
+                                        + "?context=3&inapp=false");
                         i.putExtra(Website.EXTRA_COLOR, Palette.getColor(n.getSubredditName()));
                         mContext.startActivity(i);
                     }
@@ -1143,7 +1143,7 @@ public class CommentAdapterHelper {
                             false), 0, author.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         } else if (submission != null && comment.getAuthor()
                 .toLowerCase()
-                .equals(submission.getAuthor().toLowerCase())) {
+                .equals(submission.getAuthor().toLowerCase()) && !comment.getAuthor().equals("[deleted]")) {
             author.replace(0, author.length(), " " + comment.getAuthor() + " ");
             author.setSpan(
                     new RoundedBackgroundSpan(mContext, R.color.white, R.color.md_blue_300, false),
@@ -1341,7 +1341,7 @@ public class CommentAdapterHelper {
             @Override
             public void onClick(View v) {
                 final String text = e.getText().toString();
-                new AsyncEditTask(adapter, baseNode, text, mContext, d, holder).execute();
+                new AsyncEditTask(adapter, baseNode, text, mContext, d, holder).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
         });
 
@@ -1354,7 +1354,7 @@ public class CommentAdapterHelper {
                 .setPositiveButton(R.string.btn_yes, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        new AsyncDeleteTask(adapter, baseNode, holder, mContext).execute();
+                        new AsyncDeleteTask(adapter, baseNode, holder, mContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                     }
                 })
                 .setNegativeButton(R.string.btn_no, new DialogInterface.OnClickListener() {

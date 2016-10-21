@@ -540,6 +540,7 @@
     <string name="settings_delete_sub_settings">Do you really want to delete settings for %1$s?</string>
     <string name="settings_layout_default">Post layout</string>
     <string name="settings_link_album">Internal album view</string>
+    <string name="settings_link_peek">Peek content (experimental)</string>
     <string name="settings_link_gif">Internal GIF view</string>
     <string name="settings_link_handling">Link handling</string>
     <string name="settings_link_image">Internal image view</string>
@@ -558,6 +559,7 @@
     <string name="posts_hidden_forever">Posts hidden forever</string>
     <string name="share_image">Share image</string>
     <string name="settings_libs">Open-source libraries</string>
+    <string name="settings_about_libs">About Libs</string>
     <string name="settings_bugs">Report bugs</string>
     <string name="settings_changelog">View changelog</string>
     <string name="settings_google">Connecting to Google</string>
@@ -916,7 +918,7 @@
     <string name="mediaview_converting_fail">Converting the gif through Gfycat did not work</string>
     <string name="mediaview_converting_fail_btn">Open in web</string>
     <string name="mediaview_save">Save %1$s</string>
-    <string name="mediaview_saving">Saving</string>
+    <string name="mediaview_saving">Saving %1$s</string>
 
     <!-- Drafts -->
     <string name="draft_saving">Saving draft</string>
