@@ -1426,6 +1426,7 @@ public class MainActivity extends BaseActivity
 
     @Override
     public void onDestroy() {
+        unregisterReceiver(networkStateReceiver);
         dismissProgressDialog();
         Slide.hasStarted = false;
         super.onDestroy();
@@ -2955,8 +2956,8 @@ public class MainActivity extends BaseActivity
                                         public void onClick(@NonNull MaterialDialog dialog,
                                                 @NonNull DialogAction which) {
                                             Intent i = new Intent(MainActivity.this,
-                                                    Sendmessage.class);
-                                            i.putExtra(Sendmessage.EXTRA_NAME, "/r/" + subreddit);
+                                                    SendMessage.class);
+                                            i.putExtra(SendMessage.EXTRA_NAME, "/r/" + subreddit);
                                             startActivity(i);
                                         }
                                     })
@@ -4637,7 +4638,7 @@ public class MainActivity extends BaseActivity
                         SubmissionsView page = (SubmissionsView) adapter.getCurrentFragment();
                         if (page != null && page.adapter != null) {
                             SubredditPosts p = page.adapter.dataSet;
-                            if (p.offline) {
+                            if (p.offline && !isRestart) {
                                 p.doMainActivityOffline(p.displayer);
                             }
                         }

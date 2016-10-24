@@ -58,8 +58,6 @@ import net.dean.jraw.paginators.Sorting;
 import net.dean.jraw.paginators.TimePeriod;
 import net.dean.jraw.paginators.UserRecordPaginator;
 
-import org.apache.http.auth.AUTH;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -75,7 +73,7 @@ import me.ccrama.redditslide.Activities.MainActivity;
 import me.ccrama.redditslide.Activities.MediaView;
 import me.ccrama.redditslide.Activities.Profile;
 import me.ccrama.redditslide.Activities.Related;
-import me.ccrama.redditslide.Activities.Sendmessage;
+import me.ccrama.redditslide.Activities.SendMessage;
 import me.ccrama.redditslide.Activities.ShadowboxComments;
 import me.ccrama.redditslide.Activities.Submit;
 import me.ccrama.redditslide.Activities.SubredditView;
@@ -385,13 +383,13 @@ public class CommentPage extends Fragment {
             v.findViewById(R.id.down).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (adapter.keys != null && adapter.keys.size() > 0) goDown();
+                    if (adapter != null && adapter.keys != null && adapter.keys.size() > 0) goDown();
                 }
             });
             v.findViewById(R.id.up).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    goUp();
+                    if (adapter != null && adapter.keys != null && adapter.keys.size() > 0) goUp();
                 }
             });
             v.findViewById(R.id.nav).setOnClickListener(new View.OnClickListener() {
@@ -1192,9 +1190,9 @@ public class CommentPage extends Fragment {
                                                                             @NonNull DialogAction which) {
                                                                         Intent i = new Intent(
                                                                                 getActivity(),
-                                                                                Sendmessage.class);
+                                                                                SendMessage.class);
                                                                         i.putExtra(
-                                                                                Sendmessage.EXTRA_NAME,
+                                                                                SendMessage.EXTRA_NAME,
                                                                                 "/r/" + subreddit);
                                                                         startActivity(i);
                                                                     }
