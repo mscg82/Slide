@@ -145,7 +145,6 @@ import me.ccrama.redditslide.Fragments.CommentPage;
 import me.ccrama.redditslide.Fragments.SubmissionsView;
 import me.ccrama.redditslide.Notifications.CheckForMail;
 import me.ccrama.redditslide.Notifications.NotificationJobScheduler;
-import me.ccrama.redditslide.PostLoaderManager;
 import me.ccrama.redditslide.PostMatch;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
@@ -848,10 +847,9 @@ public class MainActivity extends BaseActivity
             return true;
             case R.id.gallery:
                 if (SettingValues.tabletUI) {
-                    SubredditPosts loader = ((SubmissionsView) adapter.getCurrentFragment()).posts;
-                    List<Submission> posts = loader.posts;
+                    List<Submission> posts =
+                            ((SubmissionsView) adapter.getCurrentFragment()).posts.posts;
                     if (posts != null && !posts.isEmpty()) {
-                        PostLoaderManager.setInstance(loader);
                         Intent i2 = new Intent(this, Gallery.class);
                         i2.putExtra("offline",
                                 ((SubmissionsView) adapter.getCurrentFragment()).posts.cached
@@ -920,15 +918,17 @@ public class MainActivity extends BaseActivity
                 }
                 return true;
             case R.id.action_shadowbox:
-                final SubredditPosts loader =
-                        ((SubmissionsView) adapter.getCurrentFragment()).posts;
                 if (SettingValues.tabletUI) {
-                    List<Submission> posts = loader.posts;
+                    List<Submission> posts =
+                            ((SubmissionsView) adapter.getCurrentFragment()).posts.posts;
                     if (posts != null && !posts.isEmpty()) {
-                        PostLoaderManager.setInstance(loader);
                         Intent i2 = new Intent(this, Shadowbox.class);
                         i2.putExtra(Shadowbox.EXTRA_PAGE, getCurrentPage());
-                        i2.putExtra("offline", loader.cached != null ? loader.cached.time : 0L);
+                        i2.putExtra("offline",
+                                ((SubmissionsView) adapter.getCurrentFragment()).posts.cached
+                                        != null
+                                        ? ((SubmissionsView) adapter.getCurrentFragment()).posts.cached.time
+                                        : 0L);
                         i2.putExtra(Shadowbox.EXTRA_SUBREDDIT,
                                 ((SubmissionsView) adapter.getCurrentFragment()).posts.subreddit);
                         startActivity(i2);
@@ -970,14 +970,16 @@ public class MainActivity extends BaseActivity
                                                 .apply();
                                         SettingValues.previews = SettingValues.prefs.getInt(
                                                 SettingValues.PREVIEWS_LEFT, 10);
-                                        List<Submission> posts = loader.posts;
+                                        List<Submission> posts =
+                                                ((SubmissionsView) adapter.getCurrentFragment()).posts.posts;
                                         if (posts != null && !posts.isEmpty()) {
-                                            PostLoaderManager.setInstance(loader);
                                             Intent i2 =
                                                     new Intent(MainActivity.this, Shadowbox.class);
                                             i2.putExtra(Shadowbox.EXTRA_PAGE, getCurrentPage());
                                             i2.putExtra("offline",
-                                                    loader.cached != null ? loader.cached.time
+                                                    ((SubmissionsView) adapter.getCurrentFragment()).posts.cached
+                                                            != null
+                                                            ? ((SubmissionsView) adapter.getCurrentFragment()).posts.cached.time
                                                             : 0L);
                                             i2.putExtra(Shadowbox.EXTRA_SUBREDDIT,
                                                     ((SubmissionsView) adapter.getCurrentFragment()).posts.subreddit);
@@ -3712,6 +3714,7 @@ public class MainActivity extends BaseActivity
                 adapter.notifyDataSetChanged();
             }
             pager.setAdapter(adapter);
+
             pager.setOffscreenPageLimit(1);
             if (toGoto == -1) {
                 toGoto = 0;
@@ -3926,7 +3929,15 @@ public class MainActivity extends BaseActivity
             d = new MaterialDialog.Builder(MainActivity.this).title(
                     R.string.offline_no_content_found)
                     .positiveText(R.string.offline_enter_online)
+                    .negativeText(R.string.btn_close)
                     .cancelable(false)
+                    .onNegative(new MaterialDialog.SingleButtonCallback() {
+                        @Override
+                        public void onClick(@NonNull MaterialDialog dialog,
+                                @NonNull DialogAction which) {
+                            finish();
+                        }
+                    })
                     .onPositive(new MaterialDialog.SingleButtonCallback() {
                         @Override
                         public void onClick(@NonNull MaterialDialog dialog,
@@ -3938,7 +3949,11 @@ public class MainActivity extends BaseActivity
                     .show();
         } else {
             drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-            setDrawerEdge(this, Constants.DRAWER_SWIPE_EDGE, drawerLayout);
+            if (!getResources().getBoolean(R.bool.isTablet)) {
+                setDrawerEdge(this, Constants.DRAWER_SWIPE_EDGE, drawerLayout);
+            } else {
+                setDrawerEdge(this, Constants.DRAWER_SWIPE_EDGE_TABLET, drawerLayout);
+            }
 
             if (loader != null) {
                 header.setVisibility(View.VISIBLE);
@@ -3984,15 +3999,18 @@ public class MainActivity extends BaseActivity
                     if (count == 2 || count == subs.size()) {
                         break;
                     }
-                    Intent sub = new Intent(Intent.ACTION_VIEW, new Uri.Builder().build(), this,
-                            SubredditView.class);
-                    sub.putExtra(SubredditView.EXTRA_SUBREDDIT, s);
-                    shortcuts.add(new ShortcutInfo.Builder(this, "sub" + s).setShortLabel("/r/" + s)
-                            .setLongLabel("/r/" + s)
-                            .setIcon(getIcon(s, R.drawable.sub))
-                            .setIntent(sub)
-                            .build());
-                    count++;
+                    if (!s.contains("/m/")) {
+                        Intent sub = new Intent(Intent.ACTION_VIEW, new Uri.Builder().build(), this,
+                                SubredditView.class);
+                        sub.putExtra(SubredditView.EXTRA_SUBREDDIT, s);
+                        shortcuts.add(new ShortcutInfo.Builder(this, "sub" + s).setShortLabel(
+                                (s.equalsIgnoreCase("frontpage") ? "" : "/r/") + s)
+                                .setLongLabel("/r/" + s)
+                                .setIcon(getIcon(s, R.drawable.sub))
+                                .setIntent(sub)
+                                .build());
+                        count++;
+                    }
                 }
 
                 Collections.reverse(shortcuts);
@@ -4006,15 +4024,19 @@ public class MainActivity extends BaseActivity
                     if (count == 4 || count == subs.size()) {
                         break;
                     }
-                    Intent sub = new Intent(Intent.ACTION_VIEW, new Uri.Builder().build(), this,
-                            SubredditView.class);
-                    sub.putExtra(SubredditView.EXTRA_SUBREDDIT, s);
-                    shortcuts.add(new ShortcutInfo.Builder(this, "sub" + s).setShortLabel("/r/" + s)
-                            .setLongLabel("/r/" + s)
-                            .setIcon(getIcon(s, R.drawable.sub))
-                            .setIntent(sub)
-                            .build());
-                    count++;
+                    if (!s.contains("/m/")) {
+
+                        Intent sub = new Intent(Intent.ACTION_VIEW, new Uri.Builder().build(), this,
+                                SubredditView.class);
+                        sub.putExtra(SubredditView.EXTRA_SUBREDDIT, s);
+                        new ShortcutInfo.Builder(this, "sub" + s).setShortLabel(
+                                (s.equalsIgnoreCase("frontpage") ? "" : "/r/") + s)
+                                .setLongLabel("/r/" + s)
+                                .setIcon(getIcon(s, R.drawable.sub))
+                                .setIntent(sub)
+                                .build();
+                        count++;
+                    }
                 }
 
                 Collections.reverse(shortcuts);
@@ -4794,12 +4816,7 @@ public class MainActivity extends BaseActivity
                     Reddit.currentPosition = position;
                     selectedSub = usedArray.get(position);
                     SubmissionsView page = (SubmissionsView) adapter.getCurrentFragment();
-                    if (page != null && page.adapter != null) {
-                        SubredditPosts p = page.adapter.dataSet;
-                        if (p.offline && !isRestart) {
-                            p.doMainActivityOffline(MainActivity.this, p.displayer);
-                        }
-                    }
+
                     if (hea != null) {
                         hea.setBackgroundColor(Palette.getColor(selectedSub));
                         if (accountsArea != null) {
@@ -4856,6 +4873,12 @@ public class MainActivity extends BaseActivity
                     } else {
                         mTabLayout.setSelectedTabIndicatorColor(
                                 new ColorPreferences(MainActivity.this).getColor(selectedSub));
+                    }
+                    if (page != null && page.adapter != null) {
+                        SubredditPosts p = page.adapter.dataSet;
+                        if (p.offline && !isRestart) {
+                            p.doMainActivityOffline(MainActivity.this, p.displayer);
+                        }
                     }
                 }
 
@@ -5007,8 +5030,7 @@ public class MainActivity extends BaseActivity
                     if (position == toOpenComments - 1
                             && adapter != null
                             && adapter.getCurrentFragment() != null) {
-                        SubmissionsView page =
-                                (SubmissionsView) adapter.getCurrentFragment();
+                        SubmissionsView page = (SubmissionsView) adapter.getCurrentFragment();
                         if (page != null && page.adapter != null) {
                             page.adapter.refreshView();
                             SubredditPosts p = page.adapter.dataSet;
@@ -5017,8 +5039,7 @@ public class MainActivity extends BaseActivity
                             }
                         }
                     } else {
-                        SubmissionsView page =
-                                (SubmissionsView) adapter.getCurrentFragment();
+                        SubmissionsView page = (SubmissionsView) adapter.getCurrentFragment();
                         if (page != null && page.adapter != null) {
                             SubredditPosts p = page.adapter.dataSet;
                             if (p.offline && !isRestart) {
@@ -5033,11 +5054,7 @@ public class MainActivity extends BaseActivity
 
                 }
             });
-            if (pager.getAdapter() != null) {
-                pager.getAdapter().notifyDataSetChanged();
-                pager.setCurrentItem(1);
-                pager.setCurrentItem(0);
-            }
+            notifyDataSetChanged();
         }
 
         @Override
@@ -5098,7 +5115,6 @@ public class MainActivity extends BaseActivity
                 } else {
                     shouldLoad = usedArray.get(position);
                 }
-
                 if (getCurrentFragment() != object) {
                     mCurrentFragment = ((SubmissionsView) object);
                     if (mCurrentFragment != null
@@ -5131,8 +5147,6 @@ public class MainActivity extends BaseActivity
             } else {
                 return "";
             }
-
-
         }
     }
 }

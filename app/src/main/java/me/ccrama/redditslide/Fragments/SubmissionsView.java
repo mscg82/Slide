@@ -35,7 +35,6 @@ import java.util.List;
 
 import me.ccrama.redditslide.Activities.BaseActivity;
 import me.ccrama.redditslide.Activities.MainActivity;
-import me.ccrama.redditslide.PostLoaderManager;
 import me.ccrama.redditslide.Activities.Submit;
 import me.ccrama.redditslide.Activities.SubredditView;
 import me.ccrama.redditslide.Adapters.SubmissionAdapter;
@@ -333,13 +332,11 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
             });
         }
 
-        posts = new SubredditPosts(id);
-        PostLoaderManager.setInstance(posts);
-        posts = (SubredditPosts)PostLoaderManager.getInstance();
+        posts = new SubredditPosts(id, getContext());
         adapter = new SubmissionAdapter(getActivity(), posts, rv, id, this);
         adapter.setHasStableIds(true);
         rv.setAdapter(adapter);
-        posts.loadMore(mSwipeRefreshLayout.getContext(), this, true);
+        posts.loadMore(getActivity(), this, true);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -356,12 +353,11 @@ public class SubmissionsView extends Fragment implements SubmissionDisplay {
             }
         });
 
-        posts = new SubredditPosts(id, force18);
-        PostLoaderManager.setInstance(posts);
+        posts = new SubredditPosts(id, getContext(), force18);
         adapter = new SubmissionAdapter(getActivity(), posts, rv, id, this);
         adapter.setHasStableIds(true);
         rv.setAdapter(adapter);
-        posts.loadMore(mSwipeRefreshLayout.getContext(), this, true);
+        posts.loadMore(getActivity(), this, true);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
