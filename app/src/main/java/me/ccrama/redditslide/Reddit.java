@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.multidex.MultiDexApplication;
+import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
@@ -165,6 +166,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     }
 
     public static void defaultShareText(String title, String url, Context c) {
+        url = StringEscapeUtils.unescapeHtml4(Html.fromHtml(url).toString());
         Intent sharingIntent = new Intent(Intent.ACTION_SEND);
         sharingIntent.setType("text/plain");
         /* Decode html entities */
@@ -175,6 +177,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     }
 
     public static void defaultShare(String url, Context c) {
+        url = StringEscapeUtils.unescapeHtml4(Html.fromHtml(url).toString());
         Uri webpage = LinkUtil.formatURL(url);
         Intent intent = new Intent(Intent.ACTION_VIEW, webpage);
         if (intent.resolveActivity(c.getPackageManager()) != null) {
