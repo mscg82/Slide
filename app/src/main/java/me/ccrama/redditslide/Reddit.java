@@ -632,6 +632,9 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     public void onCreate() {
         super.onCreate();
         //  LeakCanary.install(this);
+        if (ProcessPhoenix.isPhoenixProcess(this)) {
+            return;
+        }
         UpgradeUtil.upgrade(getApplicationContext());
         doMainStuff();
     }
@@ -787,7 +790,7 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
                 mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
                     public void onIabSetupFinished(IabResult result) {
                         if (!result.isSuccess()) {
-                            Log.d(LogUtil.getTag(), "Problem setting up In-app Billing: " + result);
+                            LogUtil.e("Problem setting up In-app Billing: " + result);
                         }
 
                     }
