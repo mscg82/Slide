@@ -43,6 +43,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.ref.WeakReference;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -65,6 +68,7 @@ import me.ccrama.redditslide.util.LinkUtil;
 import me.ccrama.redditslide.util.LogUtil;
 import me.ccrama.redditslide.util.NetworkUtil;
 import me.ccrama.redditslide.util.UpgradeUtil;
+import okhttp3.Dns;
 import okhttp3.OkHttpClient;
 
 /**
@@ -435,7 +439,9 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     public void onActivityResumed(Activity activity) {
         doLanguages(activity);
         if(client == null){
-            client = new OkHttpClient();
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+            builder.dns(new GfycatIpv4Dns());
+            client = builder.build();
         }
         if (authentication != null
                 && Authentication.didOnline
@@ -662,7 +668,9 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
         Authentication.authentication = getSharedPreferences("AUTH", 0);
         UserSubscriptions.subscriptions = getSharedPreferences("SUBSNEW", 0);
         UserSubscriptions.multiNameToSubs = getSharedPreferences("MULTITONAME", 0);
+        UserSubscriptions.pinned = getSharedPreferences("PINNED", 0);
         PostMatch.filters = getSharedPreferences("FILTERS", 0);
+        ImageFlairs.flairs = getSharedPreferences("FLAIRS", 0);
         SettingValues.setAllValues(getSharedPreferences("SETTINGS", 0));
         defaultSorting = SettingValues.defaultSorting;
         timePeriod = SettingValues.timePeriod;
@@ -732,15 +740,6 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
 
     public static final Map<String, Sorting> sorting = new HashMap<>();
 
-    public static Sorting getSorting(String subreddit) {
-        subreddit = subreddit.toLowerCase();
-        if (sorting.containsKey(subreddit)) {
-            return sorting.get(subreddit);
-        } else {
-            return defaultSorting;
-        }
-    }
-
     public static Sorting getSorting(String subreddit, Sorting defaultSort) {
         subreddit = subreddit.toLowerCase();
         if (sorting.containsKey(subreddit)) {
@@ -803,4 +802,33 @@ public class Reddit extends MultiDexApplication implements Application.ActivityL
     }
 
 
+    //IPV6 workaround by /u/talklittle
+    public class GfycatIpv4Dns implements Dns {
+        @Override
+        public List<InetAddress> lookup(String hostname) throws UnknownHostException {
+            if (ContentType.hostContains(hostname, "gfycat.com")) {
+                InetAddress[] addresses = InetAddress.getAllByName(hostname);
+                if (addresses == null || addresses.length == 0) {
+                    throw new UnknownHostException("Bad host: " + hostname);
+                }
+
+                // prefer IPv4; list IPv4 first
+                ArrayList<InetAddress> result = new ArrayList<>();
+                for (InetAddress address : addresses) {
+                    if (address instanceof Inet4Address) {
+                        result.add(address);
+                    }
+                }
+                for (InetAddress address : addresses) {
+                    if (!(address instanceof Inet4Address)) {
+                        result.add(address);
+                    }
+                }
+
+                return result;
+            } else {
+                return Dns.SYSTEM.lookup(hostname);
+            }
+        }
+    }
 }

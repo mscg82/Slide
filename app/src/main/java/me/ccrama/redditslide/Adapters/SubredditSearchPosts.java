@@ -3,7 +3,9 @@ package me.ccrama.redditslide.Adapters;
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.widget.Toast;
 
+import net.dean.jraw.http.NetworkException;
 import net.dean.jraw.models.Contribution;
 import net.dean.jraw.models.Submission;
 import net.dean.jraw.paginators.Paginator;
@@ -11,12 +13,14 @@ import net.dean.jraw.paginators.SubmissionSearchPaginator;
 import net.dean.jraw.paginators.SubmissionSearchPaginatorMultireddit;
 import net.dean.jraw.paginators.TimePeriod;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 import me.ccrama.redditslide.Activities.MultiredditOverview;
 import me.ccrama.redditslide.Authentication;
 import me.ccrama.redditslide.PostMatch;
 import me.ccrama.redditslide.Reddit;
+import me.ccrama.redditslide.util.LogUtil;
 
 /**
  * Created by ccrama on 9/17/2015.
@@ -80,6 +84,16 @@ public class SubredditSearchPosts extends GeneralPosts {
         @Override
         public void onPostExecute(ArrayList<Contribution> submissions) {
             loading = false;
+
+            if(error != null){
+                if(error instanceof NetworkException){
+                    NetworkException e = (NetworkException)error;
+                    Toast.makeText(adapter.mContext,"Loading failed, " + e.getResponse().getStatusCode() + ": " + ((NetworkException) error).getResponse().getStatusMessage(), Toast.LENGTH_LONG).show();
+                }
+                if(error.getCause() instanceof UnknownHostException){
+                    Toast.makeText(adapter.mContext,"Loading failed, please check your internet connection", Toast.LENGTH_LONG).show();
+                }
+            }
 
             if (submissions != null && !submissions.isEmpty()) {
                 // new submissions found
@@ -160,6 +174,7 @@ public class SubredditSearchPosts extends GeneralPosts {
                 }
 
                 if (!paginator.hasNext()) {
+                    nomore = true;
                     return newSubmissions;
                 }
                 for (Submission s : paginator.next()) {
@@ -168,10 +183,12 @@ public class SubredditSearchPosts extends GeneralPosts {
 
                 return newSubmissions;
             } catch (Exception e) {
+              error = e;
                 e.printStackTrace();
                 return null;
             }
         }
+        Exception error;
 
     }
 

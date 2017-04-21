@@ -94,6 +94,7 @@ import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.ContentType;
 import me.ccrama.redditslide.DataShare;
 import me.ccrama.redditslide.Drafts;
+import me.ccrama.redditslide.ImageFlairs;
 import me.ccrama.redditslide.OfflineSubreddit;
 import me.ccrama.redditslide.PostMatch;
 import me.ccrama.redditslide.R;
@@ -1099,6 +1100,13 @@ public class CommentPage extends Fragment {
                                         startActivity(i);
                                     }
                                 });
+                        dialoglayout.findViewById(R.id.syncflair)
+                                .setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                       ImageFlairs.syncFlairs(getContext(), subreddit);
+                                    }
+                                });
                         dialoglayout.findViewById(R.id.theme)
                                 .setOnClickListener(new View.OnClickListener() {
                                     @Override
@@ -1931,6 +1939,7 @@ public class CommentPage extends Fragment {
     private void reloadSubs() {
         mSwipeRefreshLayout.setRefreshing(true);
         comments.setSorting(commentSorting);
+        rv.scrollToPosition(0);
     }
 
     private void openPopup(View view) {
