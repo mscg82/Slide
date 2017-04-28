@@ -313,6 +313,7 @@ public class MediaFragmentComment extends Fragment {
                                 url = submission.getUrl();
                                 myIntent.putExtra(MediaView.EXTRA_DISPLAY_URL, submission.getUrl());
                                 myIntent.putExtra(MediaView.EXTRA_URL, url);
+                                myIntent.putExtra(MediaView.SUBREDDIT, submission.getSubredditName());
                                 myIntent.putExtra(MediaView.EXTRA_SHARE_URL, submission.getUrl());
 
                                 contextActivity.startActivity(myIntent);
@@ -339,7 +340,7 @@ public class MediaFragmentComment extends Fragment {
         rootView.findViewById(R.id.progress).setVisibility(View.GONE);
         gif = new GifUtils.AsyncLoadGif(getActivity(),
                 (MediaVideoView) rootView.findViewById(R.id.gif), loader,
-                rootView.findViewById(R.id.placeholder), false, false, true);
+                rootView.findViewById(R.id.placeholder), false, false, true, sub);
         gif.execute(dat);
     }
 

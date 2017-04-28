@@ -212,7 +212,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
         Matcher htmlSpoilerMatcher = htmlSpoilerPattern.matcher(html);
         while (htmlSpoilerMatcher.find()) {
             String newPiece = htmlSpoilerMatcher.group();
-            String inner = "<a href=\"/spoil\">spoil&lt; [[s[ "
+            String inner = "<a href=\"/spoiler\">spoiler&lt; [[s[ "
                     + newPiece.substring(newPiece.indexOf(">") + 1,
                     newPiece.indexOf("<", newPiece.indexOf(">")))
                     + "]s]]</a>";
@@ -222,7 +222,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
     }
 
     private String saveEmotesFromDestruction(String html) {
-        //Emotes often have no spoil caption, and therefore are converted to empty anchors. Html.fromHtml removes anchors with zero length node text. Find zero length anchors that start with "/" and add "." to them.
+        //Emotes often have no spoiler caption, and therefore are converted to empty anchors. Html.fromHtml removes anchors with zero length node text. Find zero length anchors that start with "/" and add "." to them.
         Pattern htmlEmotePattern = Pattern.compile("<a href=\"/.*\"></a>");
         Matcher htmlEmoteMatcher = htmlEmotePattern.matcher(html);
         while (htmlEmoteMatcher.find()) {
@@ -273,7 +273,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                 Bitmap emoteBitmap = BitmapFactory.decodeFile(emoteFile.getAbsolutePath(), options);
                 builder.setSpan(new ImageSpan(getContext(), emoteBitmap), start, start + 1,
                         Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                //Check if url span has length. If it does, it's a spoil/caption
+                //Check if url span has length. If it does, it's a spoiler/caption
                 if (textCovers.length() > 1) {
                     builder.setSpan(new URLSpan("/sp"), start + 1, end + 1,
                             Spanned.SPAN_INCLUSIVE_INCLUSIVE);
@@ -410,6 +410,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                     if (SettingValues.image) {
                         Intent intent2 = new Intent(activity, MediaView.class);
                         intent2.putExtra(MediaView.EXTRA_URL, url);
+                        intent2.putExtra(MediaView.SUBREDDIT, subreddit);
                         activity.startActivity(intent2);
                     } else {
                         Reddit.defaultShare(url, activity);
@@ -426,16 +427,18 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                     break;
                 case STREAMABLE:
                 case VID_ME:
-                    openStreamable(url);
+                    openStreamable(url, subreddit);
                     break;
                 case ALBUM:
                     if (SettingValues.album) {
                         if (SettingValues.albumSwipe) {
                             Intent i = new Intent(activity, AlbumPager.class);
                             i.putExtra(Album.EXTRA_URL, url);
+                            i.putExtra(AlbumPager.SUBREDDIT, subreddit);
                             activity.startActivity(i);
                         } else {
                             Intent i = new Intent(activity, Album.class);
+                            i.putExtra(Album.SUBREDDIT, subreddit);
                             i.putExtra(Album.EXTRA_URL, url);
                             activity.startActivity(i);
                         }
@@ -459,10 +462,10 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                     }
                     break;
                 case IMAGE:
-                    openImage(url);
+                    openImage(url, subreddit);
                     break;
                 case GIF:
-                    openGif(url);
+                    openGif(url, subreddit);
                     break;
                 case NONE:
                     break;
@@ -634,21 +637,23 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
         }
     }
 
-    private void openGif(String url) {
+    private void openGif(String url, String subreddit) {
         if (SettingValues.gif) {
             Intent myIntent = new Intent(getContext(), MediaView.class);
             myIntent.putExtra(MediaView.EXTRA_URL, url);
+            myIntent.putExtra(MediaView.SUBREDDIT, subreddit);
             getContext().startActivity(myIntent);
         } else {
             Reddit.defaultShare(url, getContext());
         }
     }
 
-    private void openStreamable(String url) {
+    private void openStreamable(String url, String subreddit) {
         if (SettingValues.video) { //todo maybe streamable here?
             Intent myIntent = new Intent(getContext(), MediaView.class);
 
             myIntent.putExtra(MediaView.EXTRA_URL, url);
+            myIntent.putExtra(MediaView.SUBREDDIT, subreddit);
             getContext().startActivity(myIntent);
 
         } else {
@@ -656,10 +661,11 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
         }
     }
 
-    private void openImage(String submission) {
+    private void openImage(String submission, String subreddit) {
         if (SettingValues.image) {
             Intent myIntent = new Intent(getContext(), MediaView.class);
             myIntent.putExtra(MediaView.EXTRA_URL, submission);
+            myIntent.putExtra(MediaView.SUBREDDIT, subreddit);
             getContext().startActivity(myIntent);
         } else {
             Reddit.defaultShare(submission, getContext());
@@ -671,7 +677,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
         if (span != null) {
             int offset = (span.getURL().contains("hidden")) ? -1 : 2;
             Spannable text = (Spannable) getText();
-            // add 2 to end of link since there is a white space between the link text and the spoil
+            // add 2 to end of link since there is a white space between the link text and the spoiler
             ForegroundColorSpan[] foregroundColors =
                     text.getSpans(endOfLink + offset, endOfLink + offset,
                             ForegroundColorSpan.class);
@@ -701,7 +707,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
     }
 
     /**
-     * Set the necessary spans for each spoil. <p/> The algorithm works in the same way as
+     * Set the necessary spans for each spoiler. <p/> The algorithm works in the same way as
      * <code>setCodeFont</code>.
      *
      * @param sequence
@@ -742,7 +748,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
 
                 sequence.setSpan(new URLSpanNoUnderline("#spoilerhidden"), start, end - 4,
                         Spannable.SPAN_INCLUSIVE_INCLUSIVE);
-                // spoil text has a space at the front
+                // spoiler text has a space at the front
                 sequence.setSpan(backgroundColorSpan, start + 1, end - 4,
                         Spannable.SPAN_INCLUSIVE_INCLUSIVE);
                 sequence.setSpan(underneathColorSpan, start, end - 4,

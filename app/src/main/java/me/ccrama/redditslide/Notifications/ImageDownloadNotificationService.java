@@ -36,6 +36,7 @@ import java.util.UUID;
 import me.ccrama.redditslide.Activities.DeleteFile;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
+import me.ccrama.redditslide.SettingValues;
 import me.ccrama.redditslide.util.LogUtil;
 
 /**
@@ -54,7 +55,11 @@ public class ImageDownloadNotificationService extends Service {
                 && !actuallyLoaded.contains(".jpg"))) {
             actuallyLoaded = actuallyLoaded + ".png";
         }
-        new PollTask(actuallyLoaded, intent.getIntExtra("index", -1)).executeOnExecutor(
+        String subreddit = "";
+        if (intent.hasExtra("subreddit")) {
+            subreddit = intent.getStringExtra("subreddit");
+        }
+        new PollTask(actuallyLoaded, intent.getIntExtra("index", -1), subreddit).executeOnExecutor(
                 AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -65,11 +70,13 @@ public class ImageDownloadNotificationService extends Service {
         private NotificationCompat.Builder mBuilder;
         public  String                     actuallyLoaded;
         private int                        index;
+        private String                     subreddit;
 
 
-        public PollTask(String actuallyLoaded, int index) {
+        public PollTask(String actuallyLoaded, int index, String subreddit) {
             this.actuallyLoaded = actuallyLoaded;
             this.index = index;
+            this.subreddit = subreddit;
         }
 
         public void startNotification() {
@@ -117,16 +124,25 @@ public class ImageDownloadNotificationService extends Service {
                                         if (f != null && f.exists()) {
                                             File f_out = null;
                                             try {
+                                                if(SettingValues.imageSubfolders && !subreddit.isEmpty()){
+                                                    File directory = new File( Reddit.appRestart.getString("imagelocation",
+                                                            "")
+                                                            + (SettingValues.imageSubfolders && !subreddit.isEmpty() ?File.separator + subreddit : ""));
+                                                    directory.mkdirs();
+                                                }
                                                 f_out = new File(
                                                         Reddit.appRestart.getString("imagelocation",
-                                                                "") + File.separator + (index > -1
-                                                                ? String.format("%03d_", index)
-                                                                : "") + getFileName(
-                                                                new URL(finalUrl1)));
+                                                                "")
+                                                                + (SettingValues.imageSubfolders && !subreddit.isEmpty() ?File.separator + subreddit : "")
+                                                                + File.separator
+                                                                + (index > -1 ? String.format(
+                                                                "%03d_", index) : "")
+                                                                + getFileName(new URL(finalUrl1)));
                                             } catch (MalformedURLException e) {
                                                 f_out = new File(
                                                         Reddit.appRestart.getString("imagelocation",
                                                                 "")
+                                                                + (SettingValues.imageSubfolders && !subreddit.isEmpty() ?File.separator + subreddit : "")
                                                                 + File.separator
                                                                 + (index > -1 ? String.format(
                                                                 "%03d_", index) : "")
@@ -158,7 +174,8 @@ public class ImageDownloadNotificationService extends Service {
                                     public void onProgressUpdate(String imageUri, View view,
                                             int current, int total) {
                                         latestPercentDone = (int) ((current / (float) total) * 100);
-                                        if (percentDone <= latestPercentDone + 30 || latestPercentDone == 100 ) { //Do every 10 percent
+                                        if (percentDone <= latestPercentDone + 30
+                                                || latestPercentDone == 100) { //Do every 10 percent
                                             percentDone = latestPercentDone;
                                             mBuilder.setProgress(100, percentDone, false);
                                             mNotifyManager.notify(id, mBuilder.build());
@@ -262,7 +279,9 @@ public class ImageDownloadNotificationService extends Service {
                             }
 
                             {
-                                pDeleteIntent = DeleteFile.getDeleteIntent(id + 3, getApplicationContext(), photoURI.getPath());
+                                pDeleteIntent =
+                                        DeleteFile.getDeleteIntent(id + 3, getApplicationContext(),
+                                                photoURI.getPath());
                             }
 
 
@@ -278,7 +297,8 @@ public class ImageDownloadNotificationService extends Service {
                                     .addAction(R.drawable.delete, getString(R.string.btn_delete),
                                             pDeleteIntent)
                                     .setStyle(new NotificationCompat.BigPictureStyle().bigPicture(
-                                            Bitmap.createScaledBitmap(loadedImage,400, 400, false)))
+                                            Bitmap.createScaledBitmap(loadedImage, 400, 400,
+                                                    false)))
                                     .build();
 
                             NotificationManager mNotificationManager =

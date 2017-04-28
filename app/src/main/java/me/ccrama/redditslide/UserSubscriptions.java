@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.widget.Toast;
 
 import net.dean.jraw.ApiException;
 import net.dean.jraw.managers.AccountManager;
@@ -328,21 +329,29 @@ public class UserSubscriptions {
     /**
      * @return list of multireddits if they are available, null if could not fetch multireddits
      */
-    public static List<MultiReddit> getMultireddits() {
-        if (multireddits == null) {
-            new AsyncTask<Void, Void, Void>() {
-                @Override
-                protected Void doInBackground(Void... params) {
-                    loadMultireddits();
-                    return null;
-                }
-            }.execute();
-        }
-        return multireddits;
+    public static void getMultireddits(final MultiCallback callback) {
+        new AsyncTask<Void, Void, List<MultiReddit>>() {
+
+            @Override
+            protected List<MultiReddit> doInBackground(Void... params) {
+                loadMultireddits();
+                return multireddits;
+            }
+
+            @Override
+            protected void onPostExecute(List<MultiReddit> multiReddits) {
+                callback.onComplete(multiReddits);
+            }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    private static void loadMultireddits() {
-        if (Authentication.isLoggedIn && Authentication.didOnline) {
+    public interface MultiCallback {
+        void onComplete(List<MultiReddit> multis);
+    }
+
+    public static void loadMultireddits() {
+        if (Authentication.isLoggedIn && Authentication.didOnline && (multireddits == null
+                || multireddits.isEmpty())) {
             try {
                 multireddits =
                         new ArrayList<>(new MultiRedditManager(Authentication.reddit).mine());
@@ -356,28 +365,39 @@ public class UserSubscriptions {
     /**
      * @return list of multireddits if they are available, null if could not fetch multireddits
      */
-    public static List<MultiReddit> getPublicMultireddits(final String profile) {
+    public static void getPublicMultireddits(MultiCallback callback, final String profile) {
         if (profile.isEmpty()) {
-            return getMultireddits();
+            getMultireddits(callback);
         }
 
         if (public_multireddits.get(profile) == null) {
             // It appears your own multis are pre-loaded at some point
             // but some other user's multis obviously can't be so
             // don't return until we've loaded them.
-            loadPublicMultireddits(profile);
+            loadPublicMultireddits(callback, profile);
         }
-        return public_multireddits.get(profile);
     }
 
-    private static void loadPublicMultireddits(String profile) {
-        try {
-            public_multireddits.put(profile, new ArrayList(
-                    new MultiRedditManager(Authentication.reddit).getPublicMultis(profile)));
-        } catch (Exception e) {
-            public_multireddits.put(profile, null);
-            e.printStackTrace();
-        }
+    private static void loadPublicMultireddits(final MultiCallback callback, final String profile) {
+        new AsyncTask<Void, Void, List<MultiReddit>>() {
+
+            @Override
+            protected List<MultiReddit> doInBackground(Void... params) {
+                try {
+                    public_multireddits.put(profile, new ArrayList(
+                            new MultiRedditManager(Authentication.reddit).getPublicMultis(profile)));
+                } catch (Exception e) {
+                    public_multireddits.put(profile, null);
+                    e.printStackTrace();
+                }
+                return public_multireddits.get(profile);
+            }
+
+            @Override
+            protected void onPostExecute(List<MultiReddit> multiReddits) {
+                callback.onComplete(multiReddits);
+            }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     private static CaseInsensitiveArrayList doModOf() {
@@ -638,7 +658,7 @@ public class UserSubscriptions {
      *
      * @param unsorted the ArrayList to sort
      * @return the sorted ArrayList
-     * @see #sortNoExtras(ArrayList)
+     * @see #sortNoExtras(CaseInsensitiveArrayList)
      */
     public static CaseInsensitiveArrayList sort(CaseInsensitiveArrayList unsorted) {
         CaseInsensitiveArrayList subs = new CaseInsensitiveArrayList(unsorted);
@@ -660,24 +680,19 @@ public class UserSubscriptions {
      *
      * @param unsorted the ArrayList to sort
      * @return the sorted ArrayList
-     * @see #sort(ArrayList)
+     * @see #sort(CaseInsensitiveArrayList)
      */
     public static CaseInsensitiveArrayList sortNoExtras(CaseInsensitiveArrayList unsorted) {
-        return sortNoExtras(unsorted, true);
-    }
-
-    public static CaseInsensitiveArrayList sortNoExtras(CaseInsensitiveArrayList unsorted,
-            boolean pinned) {
         List<String> subs = new CaseInsensitiveArrayList(unsorted);
         CaseInsensitiveArrayList finals = new CaseInsensitiveArrayList();
-        if (pinned) {
-            for (String subreddit : getPinned()) {
-                if (subs.contains(subreddit)) {
-                    subs.remove(subreddit);
-                    finals.add(subreddit);
-                }
+
+        for (String subreddit : getPinned()) {
+            if (subs.contains(subreddit)) {
+                subs.remove(subreddit);
+                finals.add(subreddit);
             }
         }
+
         for (String subreddit : specialSubreddits) {
             if (subs.contains(subreddit)) {
                 subs.remove(subreddit);
@@ -696,11 +711,20 @@ public class UserSubscriptions {
     }
 
     public static class SubscribeTask extends AsyncTask<String, Void, Void> {
+        Context context;
+        public SubscribeTask(Context context){
+            this.context = context;
+        }
+
         @Override
         protected Void doInBackground(String... subreddits) {
             final AccountManager m = new AccountManager(Authentication.reddit);
             for (String subreddit : subreddits) {
-                m.subscribe(Authentication.reddit.getSubreddit(subreddit));
+                try {
+                    m.subscribe(Authentication.reddit.getSubreddit(subreddit));
+                } catch(Exception e){
+                    Toast.makeText(context, "Couldn't subscribe, subreddit is private, quarantined, or invite only", Toast.LENGTH_SHORT).show();
+                }
             }
             return null;
         }
@@ -710,8 +734,12 @@ public class UserSubscriptions {
         @Override
         protected Void doInBackground(String... subreddits) {
             final AccountManager m = new AccountManager(Authentication.reddit);
-            for (String subreddit : subreddits) {
-                m.unsubscribe(Authentication.reddit.getSubreddit(subreddit));
+            try {
+                for (String subreddit : subreddits) {
+                    m.unsubscribe(Authentication.reddit.getSubreddit(subreddit));
+                }
+            } catch(Exception e){
+
             }
             return null;
         }
