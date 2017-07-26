@@ -60,6 +60,7 @@ public class SettingValues {
     public static final String PREF_COLLAPSE_COMMENTS_DEFAULT = "collapseCommentsDefault";
     public static final String PREF_RIGHT_HANDED_COMMENT_MENU = "rightHandedCommentMenu";
     public static final String PREF_DUAL_PORTRAIT             = "dualPortrait";
+    public static final String PREF_SINGLE_COLUMN_MULTI       = "singleColumnMultiWindow";
     public static final String PREF_CROP_IMAGE                = "cropImage";
     public static final String PREF_COMMENT_FAB               = "commentFab";
     public static final String PREF_SWITCH_THUMB              = "switchThumb";
@@ -82,6 +83,8 @@ public class SettingValues {
     public static final String PREF_COOKIES                   = "storeCookies";
     public static final String PREF_NIGHT_START               = "nightStart";
     public static final String PREF_NIGHT_END                 = "nightEnd";
+    public static final String PREF_HIDE_NSFW_CONTENT = "hideNSFWContent";
+    public static final String PREF_HIDE_NSFW_PREVIEW = "hideNSFWPreviews";
 
     public static final String PREF_FULL_COMMENT_OVERRIDE  = "fullCommentOverride";
     public static final String PREF_ALBUM                  = "album";
@@ -136,23 +139,25 @@ public class SettingValues {
     public static boolean                 actionbarTap;
     public static boolean                 commentAutoHide;
     public static boolean                 fullCommentOverride;
-    public static boolean                 lowResAlways;
-    public static boolean                 noImages;
-    public static boolean                 lowResMobile;
-    public static boolean                 blurCheck;
-    public static boolean                 readerNight;
-    public static boolean                 swipeAnywhere;
-    public static boolean                 commentLastVisit;
-    public static boolean                 storeHistory;
-    public static boolean                 storeNSFWHistory;
-    public static boolean                 scrollSeen;
-    public static boolean                 saveButton;
-    public static boolean                 voteGestures;
-    public static boolean                 colorEverywhere;
-    public static boolean                 gif;
-    public static boolean                 colorCommentDepth;
-    public static boolean                 web;
-    public static boolean                 commentVolumeNav;
+    public static boolean lowResAlways;
+    public static boolean noImages;
+    public static boolean lowResMobile;
+    public static boolean blurCheck;
+    public static boolean readerNight;
+    public static boolean swipeAnywhere;
+    public static boolean commentLastVisit;
+    public static boolean storeHistory;
+    public static boolean hideNSFWPreviews;
+    public static boolean hideNSFWContent;
+    public static boolean storeNSFWHistory;
+    public static boolean scrollSeen;
+    public static boolean saveButton;
+    public static boolean voteGestures;
+    public static boolean colorEverywhere;
+    public static boolean gif;
+    public static boolean colorCommentDepth;
+    public static boolean web;
+    public static boolean commentVolumeNav;
     public static boolean                 postNav;
     public static boolean                 exit;
     public static boolean                 cropImage;
@@ -188,6 +193,7 @@ public class SettingValues {
     public static boolean tabletUI;
     public static boolean customtabs;
     public static boolean dualPortrait;
+    public static boolean singleColumnMultiWindow;
     public static boolean nightMode;
     public static boolean imageSubfolders;
     public static boolean autoTime;
@@ -233,6 +239,7 @@ public class SettingValues {
         timePeriod = TimePeriod.valueOf(settings.getString("timePeriod", "DAY"));
         defaultCommentSorting =
                 CommentSort.valueOf(settings.getString("defaultCommentSortingNew", "CONFIDENCE"));
+        hideNSFWContent = prefs.getBoolean(PREF_HIDE_NSFW_CONTENT, false);
 
         single = prefs.getBoolean(PREF_SINGLE, false);
         readerNight = prefs.getBoolean(PREF_READER_NIGHT, false);
@@ -315,6 +322,7 @@ public class SettingValues {
         previews = prefs.getInt(PREVIEWS_LEFT, 10);
         nightStart = prefs.getInt(PREF_NIGHT_START, 9);
         nightEnd = prefs.getInt(PREF_NIGHT_END, 5);
+        hideNSFWPreviews = prefs.getBoolean(PREF_HIDE_NSFW_PREVIEW, true);
 
         fabComments = prefs.getBoolean(PREF_COMMENT_FAB, false);
         titleFilters = prefs.getString(PREF_TITLE_FILTERS, "");
@@ -327,6 +335,7 @@ public class SettingValues {
         largeLinks = prefs.getBoolean(PREF_LARGE_LINKS, false);
 
         dualPortrait = prefs.getBoolean(PREF_DUAL_PORTRAIT, false);
+        singleColumnMultiWindow = prefs.getBoolean(PREF_SINGLE_COLUMN_MULTI, false);
         colorSubName = prefs.getBoolean(PREF_COLOR_SUB_NAME, false);
 
         cropImage = prefs.getBoolean(PREF_CROP_IMAGE, true);

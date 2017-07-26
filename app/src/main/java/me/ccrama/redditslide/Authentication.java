@@ -146,11 +146,11 @@ public class Authentication {
                                 authentication.edit()
                                         .putLong("expires",
                                                 Calendar.getInstance().getTimeInMillis() + 3000000)
-                                        .apply();
+                                        .commit();
                             }
                             authentication.edit()
                                     .putString("backedCreds", finalData.getDataNode().toString())
-                                    .apply();
+                                    .commit();
                             reddit.authenticate(finalData);
                             refresh = oAuthHelper.getRefreshToken();
                             refresh = reddit.getOAuthHelper().getRefreshToken();
@@ -159,7 +159,6 @@ public class Authentication {
                                 if (me == null) {
                                     me = reddit.me();
                                 }
-                                Reddit.over18 = me.isOver18();
                                 Authentication.isLoggedIn = true;
 
                             }
@@ -179,10 +178,10 @@ public class Authentication {
                             authentication.edit()
                                     .putLong("expires",
                                             Calendar.getInstance().getTimeInMillis() + 3000000)
-                                    .apply();
+                                    .commit();
                             authentication.edit()
                                     .putString("backedCreds", authData.getDataNode().toString())
-                                    .apply();
+                                    .commit();
                             Authentication.name = "LOGGEDOUT";
                             mod = false;
 
