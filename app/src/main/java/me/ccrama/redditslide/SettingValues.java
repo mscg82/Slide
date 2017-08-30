@@ -83,8 +83,10 @@ public class SettingValues {
     public static final String PREF_COOKIES                   = "storeCookies";
     public static final String PREF_NIGHT_START               = "nightStart";
     public static final String PREF_NIGHT_END                 = "nightEnd";
-    public static final String PREF_HIDE_NSFW_CONTENT = "hideNSFWContent";
+    public static final String PREF_HIDE_NSFW_CONTENT = "showNSFWContent";
     public static final String PREF_HIDE_NSFW_PREVIEW = "hideNSFWPreviews";
+    public static final String PREF_HIDE_NSFW_COLLECTION = "hideNSFWPreviewsCollection";
+    public static final String PREF_IGNORE_SUB_SETTINGS = "ignoreSub";
 
     public static final String PREF_FULL_COMMENT_OVERRIDE  = "fullCommentOverride";
     public static final String PREF_ALBUM                  = "album";
@@ -137,8 +139,8 @@ public class SettingValues {
     public static boolean                 colorNavBar;
     public static boolean                 actionbarVisible;
     public static boolean                 actionbarTap;
-    public static boolean                 commentAutoHide;
-    public static boolean                 fullCommentOverride;
+    public static boolean commentAutoHide;
+    public static boolean fullCommentOverride;
     public static boolean lowResAlways;
     public static boolean noImages;
     public static boolean lowResMobile;
@@ -148,7 +150,7 @@ public class SettingValues {
     public static boolean commentLastVisit;
     public static boolean storeHistory;
     public static boolean hideNSFWPreviews;
-    public static boolean hideNSFWContent;
+    public static boolean showNSFWContent;
     public static boolean storeNSFWHistory;
     public static boolean scrollSeen;
     public static boolean saveButton;
@@ -158,9 +160,9 @@ public class SettingValues {
     public static boolean colorCommentDepth;
     public static boolean web;
     public static boolean commentVolumeNav;
-    public static boolean                 postNav;
-    public static boolean                 exit;
-    public static boolean                 cropImage;
+    public static boolean postNav;
+    public static boolean exit;
+    public static boolean cropImage;
     public static boolean                 smallTag;
     public static boolean                 typeInfoLine;
     public static boolean                 votesInfoLine;
@@ -185,6 +187,8 @@ public class SettingValues {
     public static String  flairFilters;
     public static String  alwaysExternal;
     public static boolean loadImageLq;
+    public static boolean ignoreSubSetting;
+    public static boolean hideNSFWCollection;
 
     public static boolean fastscroll;
     public static boolean fab     = true;
@@ -239,7 +243,9 @@ public class SettingValues {
         timePeriod = TimePeriod.valueOf(settings.getString("timePeriod", "DAY"));
         defaultCommentSorting =
                 CommentSort.valueOf(settings.getString("defaultCommentSortingNew", "CONFIDENCE"));
-        hideNSFWContent = prefs.getBoolean(PREF_HIDE_NSFW_CONTENT, false);
+        showNSFWContent = prefs.getBoolean(PREF_HIDE_NSFW_CONTENT, true);
+        hideNSFWCollection = prefs.getBoolean(PREF_HIDE_NSFW_COLLECTION, true);
+        ignoreSubSetting = prefs.getBoolean(PREF_IGNORE_SUB_SETTINGS, false);
 
         single = prefs.getBoolean(PREF_SINGLE, false);
         readerNight = prefs.getBoolean(PREF_READER_NIGHT, false);
@@ -312,7 +318,7 @@ public class SettingValues {
         customtabs = prefs.getBoolean(PREF_CUSTOMTABS, false);
         storeHistory = prefs.getBoolean(PREF_STORE_HISTORY, true);
         upvotePercentage = prefs.getBoolean(PREF_UPVOTE_PERCENTAGE, false);
-        storeNSFWHistory = prefs.getBoolean(PREF_STORE_NSFW_HISTORY, true);
+        storeNSFWHistory = prefs.getBoolean(PREF_STORE_NSFW_HISTORY, false);
         scrollSeen = prefs.getBoolean(PREF_SCROLL_SEEN, false);
         synccitName = prefs.getString(SYNCCIT_NAME, "");
         synccitAuth = prefs.getString(SYNCCIT_AUTH, "");

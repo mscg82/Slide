@@ -213,6 +213,11 @@ public class HeaderImageLinkView extends RelativeLayout {
                 thumbnailType = Submission.ThumbnailType.NONE;
             }
 
+            JsonNode node = submission.getDataNode();
+            if(!SettingValues.ignoreSubSetting && node != null && node.has("sr_detail") && node.get("sr_detail").has("show_media") && !node.get("sr_detail").get("show_media").asBoolean()){
+                thumbnailType = Submission.ThumbnailType.NONE;
+            }
+
             if (SettingValues.noImages && loadLq) {
                 setVisibility(View.GONE);
                 if (!full && !submission.isSelfPost()) {
@@ -224,7 +229,7 @@ public class HeaderImageLinkView extends RelativeLayout {
                         ContextCompat.getDrawable(getContext(), R.drawable.web));
                 thumbUsed = true;
             } else if (submission.isNsfw()
-                    && SettingValues.hideNSFWPreviews) {
+                    && SettingValues.hideNSFWPreviews || (baseSub != null && submission.isNsfw() && SettingValues.hideNSFWCollection && (baseSub.equals("frontpage") || baseSub.equals("all") || baseSub.equals("popular")) )) {
                 setVisibility(View.GONE);
                 if (!full || forceThumb) {
                     thumbImage2.setVisibility(View.VISIBLE);
