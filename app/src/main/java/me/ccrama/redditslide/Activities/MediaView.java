@@ -214,7 +214,7 @@ public class MediaView extends FullScreenActivity
     }
 
     public void showBottomSheetImage() {
-        int[] attrs = new int[]{R.attr.tint};
+        int[] attrs = new int[]{R.attr.tintColor};
         TypedArray ta = obtainStyledAttributes(attrs);
 
         int color = ta.getColor(0, Color.WHITE);
@@ -348,6 +348,7 @@ public class MediaView extends FullScreenActivity
                     mNotifyManager =
                             (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                     mBuilder = new NotificationCompat.Builder(MediaView.this);
+                    mBuilder.setChannelId(Reddit.CHANNEL_IMG);
                     mBuilder.setContentTitle(getString(R.string.mediaview_saving, baseUrl))
                             .setSmallIcon(R.drawable.download_png);
                     try {
@@ -400,6 +401,7 @@ public class MediaView extends FullScreenActivity
                                                 MediaView.this).setContentTitle(
                                                 getString(R.string.gif_saved))
                                                 .setSmallIcon(R.drawable.save_png)
+                                                .setChannelId(Reddit.CHANNEL_IMG)
                                                 .setContentIntent(contentIntent)
                                                 .build();
 
@@ -436,6 +438,7 @@ public class MediaView extends FullScreenActivity
                             (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                     mBuilder = new NotificationCompat.Builder(MediaView.this);
                     mBuilder.setContentTitle(getString(R.string.mediaview_saving, baseUrl))
+                            .setChannelId(Reddit.CHANNEL_IMG)
                             .setSmallIcon(R.drawable.save);
                     try {
 

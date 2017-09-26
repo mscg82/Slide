@@ -36,21 +36,21 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/autocache_subreddits"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:alpha=".86"
                         android:id="@+id/autocache_text"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="13sp" />
                 </LinearLayout>
 
             </RelativeLayout>
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -74,7 +74,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/cache_wifi_only"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
 
                 </LinearLayout>
@@ -84,18 +84,18 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="?android:selectableItemBackground"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
 
             </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -120,7 +120,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/comments_depth"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
 
                 </LinearLayout>
@@ -129,7 +129,7 @@
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -154,7 +154,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/comments_count"
-                            android:textColor="?attr/font"
+                            android:textColor="?attr/fontColor"
                             android:textSize="16sp" />
 
                 </LinearLayout>
@@ -163,7 +163,7 @@
 
             <View
                     android:layout_width="match_parent"
-                    android:background="?attr/tint"
+                    android:background="?attr/tintColor"
                     android:alpha=".25"
                     android:layout_height="0.25dp"/>
 
@@ -187,21 +187,21 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/autocache_time"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:alpha=".86"
                         android:id="@+id/autocache_time"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="13sp" />
                 </LinearLayout>
 
             </RelativeLayout>
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
             <RelativeLayout
@@ -224,14 +224,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/cache_subreddits_now"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                 </LinearLayout>
 
             </RelativeLayout>
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
             <RelativeLayout
@@ -254,14 +254,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/clear_saved_subreddits"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                 </LinearLayout>
 
             </RelativeLayout>
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_marginBottom="8dp"
                 android:layout_height="0.25dp"/>

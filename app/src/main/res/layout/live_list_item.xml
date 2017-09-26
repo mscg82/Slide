@@ -28,7 +28,7 @@
             android:layout_marginStart="16dp"
             android:tag="tint"
             android:text="@string/example_title"
-            android:textColor="?attr/font"
+            android:textColor="?attr/fontColor"
             android:layout_toLeftOf="@+id/go"
             android:textSize="?attr/font_commentbody" />
 
@@ -43,7 +43,7 @@
             android:layout_marginTop="8dp"
             android:gravity="center_vertical"
             android:tag="tintsecond"
-            android:textColor="?attr/tint"
+            android:textColor="?attr/tintColor"
             android:layout_toLeftOf="@+id/go"
             android:textSize="?attr/font_cardtitle" />
         <ImageView

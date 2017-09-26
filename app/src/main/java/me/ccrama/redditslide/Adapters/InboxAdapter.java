@@ -38,7 +38,7 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.cocosw.bottomsheet.BottomSheet;
-import com.devspark.robototextview.util.RobotoTypefaceManager;
+import com.devspark.robototextview.RobotoTypefaces;
 
 import net.dean.jraw.ApiException;
 import net.dean.jraw.managers.InboxManager;
@@ -250,7 +250,7 @@ public class InboxAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             messageViewHolder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    int[] attrs = new int[]{R.attr.tint};
+                    int[] attrs = new int[]{R.attr.tintColor};
                     TypedArray ta = mContext.obtainStyledAttributes(attrs);
 
                     final int color = ta.getColor(0, Color.WHITE);
@@ -400,7 +400,7 @@ public class InboxAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             int type = new FontPreferences(mContext).getFontTypeComment().getTypeface();
             Typeface typeface;
             if (type >= 0) {
-                typeface = RobotoTypefaceManager.obtainTypeface(mContext, type);
+                typeface = RobotoTypefaces.obtainTypeface(mContext, type);
             } else {
                 typeface = Typeface.DEFAULT;
             }

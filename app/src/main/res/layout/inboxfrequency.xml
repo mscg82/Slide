@@ -50,12 +50,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="?android:selectableItemBackground"
-                        android:backgroundTint="?attr/tint"
-                        android:buttonTint="?attr/tint"
+                        android:backgroundTint="?attr/tintColor"
+                        android:buttonTint="?attr/tintColor"
 
                         android:padding="16dp"
                         android:text="@string/settings_mail_check"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp"
                         android:textStyle="bold"/>
 
@@ -64,11 +64,11 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:background="?android:selectableItemBackground"
-                            android:backgroundTint="?attr/tint"
-                            android:buttonTint="?attr/tint"
+                            android:backgroundTint="?attr/tintColor"
+                            android:buttonTint="?attr/tintColor"
                             android:padding="16dp"
                             android:text="@string/settings_general_inbox_snd"
-                            android:textColor="?attr/font"
+                            android:textColor="?attr/fontColor"
                             android:textSize="14sp"
                             android:textStyle="bold"/>
 
@@ -81,7 +81,7 @@
                         app:sl_maxValue="96"
                         app:sl_minValue="1"
                         app:sl_alwaysFillThumb="true"
-                        app:sl_secondaryColor="?attr/tint"
+                        app:sl_secondaryColor="?attr/tintColor"
                         app:sl_stepValue="15"/>
 
                     <TextView
@@ -90,7 +90,7 @@
                         android:alpha=".7"
                         android:padding="16dp"
                         android:text="@string/settings_mail_info"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp"/>
 
                     <RelativeLayout
@@ -106,7 +106,7 @@
                             android:text="@string/btn_done"
                             android:layout_alignParentEnd="true"
                             android:textAllCaps="true"
-                            android:textColor="?attr/font"
+                            android:textColor="?attr/fontColor"
                             android:textSize="14sp"
                             android:textStyle="bold"/>
                     </RelativeLayout>

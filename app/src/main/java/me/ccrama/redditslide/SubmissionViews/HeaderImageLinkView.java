@@ -229,7 +229,7 @@ public class HeaderImageLinkView extends RelativeLayout {
                         ContextCompat.getDrawable(getContext(), R.drawable.web));
                 thumbUsed = true;
             } else if (submission.isNsfw()
-                    && SettingValues.hideNSFWPreviews || (baseSub != null && submission.isNsfw() && SettingValues.hideNSFWCollection && (baseSub.equals("frontpage") || baseSub.equals("all") || baseSub.equals("popular")) )) {
+                    && SettingValues.getIsNSFWEnabled() || (baseSub != null && submission.isNsfw() && SettingValues.hideNSFWCollection && (baseSub.equals("frontpage") || baseSub.equals("all") || baseSub.equals("popular")) )) {
                 setVisibility(View.GONE);
                 if (!full || forceThumb) {
                     thumbImage2.setVisibility(View.VISIBLE);
@@ -430,7 +430,7 @@ public class HeaderImageLinkView extends RelativeLayout {
             } else if (!thumbnail.isNull()
                     && submission.getThumbnail() != null
                     && (submission.getThumbnailType() == Submission.ThumbnailType.URL || (!thumbnail
-                    .isNull() && submission.isNsfw() && SettingValues.hideNSFWPreviews))) {
+                    .isNull() && submission.isNsfw() && SettingValues.getIsNSFWEnabled()))) {
 
                 if (!full) {
                     thumbImage2.setVisibility(View.VISIBLE);
@@ -670,7 +670,7 @@ public class HeaderImageLinkView extends RelativeLayout {
                         .show((PeekViewActivity) activity, event);
             } else {
                 BottomSheet.Builder b = new BottomSheet.Builder(activity).title(url).grid();
-                int[] attrs = new int[]{R.attr.tint};
+                int[] attrs = new int[]{R.attr.tintColor};
                 TypedArray ta = getContext().obtainStyledAttributes(attrs);
 
                 int color = ta.getColor(0, Color.WHITE);

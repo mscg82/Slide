@@ -43,7 +43,8 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.cocosw.bottomsheet.BottomSheet;
-import com.devspark.robototextview.util.RobotoTypefaceManager;
+import com.devspark.robototextview.RobotoTypefaces;
+import com.devspark.robototextview.RobotoTypefaces;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
@@ -443,7 +444,7 @@ public class AlbumPager extends FullScreenActivity
     public void showBottomSheetImage(final String contentUrl, final boolean isGif,
             final int index) {
 
-        int[] attrs = new int[]{R.attr.tint};
+        int[] attrs = new int[]{R.attr.tintColor};
         TypedArray ta = obtainStyledAttributes(attrs);
 
         int color = ta.getColor(0, Color.WHITE);
@@ -586,7 +587,7 @@ public class AlbumPager extends FullScreenActivity
                         int type = new FontPreferences(getContext()).getFontTypeComment().getTypeface();
                         Typeface typeface;
                         if (type >= 0) {
-                            typeface = RobotoTypefaceManager.obtainTypeface(getContext(), type);
+                            typeface = RobotoTypefaces.obtainTypeface(getContext(), type);
                         } else {
                             typeface = Typeface.DEFAULT;
                         }
@@ -597,7 +598,7 @@ public class AlbumPager extends FullScreenActivity
                         int type = new FontPreferences(getContext()).getFontTypeTitle().getTypeface();
                         Typeface typeface;
                         if (type >= 0) {
-                            typeface = RobotoTypefaceManager.obtainTypeface(getContext(), type);
+                            typeface = RobotoTypefaces.obtainTypeface(getContext(), type);
                         } else {
                             typeface = Typeface.DEFAULT;
                         }
@@ -777,6 +778,7 @@ public class AlbumPager extends FullScreenActivity
                                         getString(R.string.info_photo_saved))
                                         .setSmallIcon(R.drawable.notif)
                                         .setLargeIcon(loadedImage)
+                                        .setChannelId(Reddit.CHANNEL_IMG)
                                         .setContentIntent(contentIntent)
                                         .setStyle(
                                                 new NotificationCompat.BigPictureStyle().bigPicture(

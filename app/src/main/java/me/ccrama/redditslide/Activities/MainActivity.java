@@ -8,6 +8,8 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -132,6 +134,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import me.ccrama.redditslide.Adapters.HistoryPosts;
 import me.ccrama.redditslide.Adapters.SettingsSubAdapter;
 import me.ccrama.redditslide.Adapters.SideArrayAdapter;
 import me.ccrama.redditslide.Adapters.SubredditPosts;
@@ -142,12 +145,15 @@ import me.ccrama.redditslide.CaseInsensitiveArrayList;
 import me.ccrama.redditslide.ColorPreferences;
 import me.ccrama.redditslide.CommentCacheAsync;
 import me.ccrama.redditslide.Constants;
+import me.ccrama.redditslide.ContentType;
 import me.ccrama.redditslide.FDroid;
 import me.ccrama.redditslide.Fragments.CommentPage;
 import me.ccrama.redditslide.Fragments.SubmissionsView;
+import me.ccrama.redditslide.HasSeen;
 import me.ccrama.redditslide.ImageFlairs;
 import me.ccrama.redditslide.Notifications.CheckForMail;
 import me.ccrama.redditslide.Notifications.NotificationJobScheduler;
+import me.ccrama.redditslide.OpenRedditLink;
 import me.ccrama.redditslide.PostMatch;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
@@ -1416,6 +1422,33 @@ public class MainActivity extends BaseActivity
     public void networkUnavailable() {
     }
 
+    public void checkClipboard(){
+        try {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+
+            if (clipboard.hasPrimaryClip()) {
+                ClipData data = clipboard.getPrimaryClip();
+                final String s = (String) data.getItemAt(0).getText();
+                if (!s.isEmpty()) {
+                    if (ContentType.getContentType(s) == ContentType.Type.REDDIT && !HasSeen.getSeen(s)) {
+                        Snackbar snack =
+                                Snackbar.make(mToolbar, "Reddit link found in your clipboard",
+                                        Snackbar.LENGTH_LONG);
+                        snack.setAction("OPEN", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                OpenRedditLink.openUrl(MainActivity.this, s, false);
+                            }
+                        });
+                        snack.show();
+                    }
+                }
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -1428,6 +1461,7 @@ public class MainActivity extends BaseActivity
                 && !SettingValues.isNight())) {
             restartTheme();
         }
+        checkClipboard();
 
         if (pager != null && commentPager) {
             if (pager.getCurrentItem() != toOpenComments && shouldLoad != null) {
@@ -1540,6 +1574,8 @@ public class MainActivity extends BaseActivity
             LogUtil.e(e + ": Exception thrown while changing navdrawer edge size");
         }
     }
+
+    public HashMap<String, String> accounts = new HashMap<>();
 
     public void doDrawer() {
         drawerSubList = (ListView) findViewById(R.id.drawerlistview);
@@ -1696,7 +1732,6 @@ public class MainActivity extends BaseActivity
 
                 }
             });
-            final HashMap<String, String> accounts = new HashMap<>();
 
             for (String s : Authentication.authentication.getStringSet("accounts",
                     new HashSet<String>())) {
@@ -1717,6 +1752,7 @@ public class MainActivity extends BaseActivity
                         getLayoutInflater().inflate(R.layout.account_textview_white, accountList,
                                 false);
                 ((TextView) t.findViewById(R.id.name)).setText(accName);
+                LogUtil.v("Adding click to " + ((TextView) t.findViewById(R.id.name)).getText());
                 if (!accName.equals(guest)) {
                     t.findViewById(R.id.remove).setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -1754,6 +1790,9 @@ public class MainActivity extends BaseActivity
                                                             if (!s.equalsIgnoreCase(accName)) {
                                                                 d = true;
                                                                 LogUtil.v("Switching to " + s);
+                                                                for(Map.Entry<String, String> e : accounts.entrySet()){
+                                                                    LogUtil.v(e.getKey() + ":" + e.getValue());
+                                                                }
                                                                 if (accounts.containsKey(s)
                                                                         && !accounts.get(s)
                                                                         .isEmpty()) {
@@ -1819,10 +1858,13 @@ public class MainActivity extends BaseActivity
                 t.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        String accName = ((TextView) t.findViewById(R.id.name)).getText().toString();
+                        LogUtil.v("Found name is " + accName);
                         if (!accName.equalsIgnoreCase(Authentication.name)) {
                             LogUtil.v("Switching to " + accName);
                             if (!accName.equals(guest)) {
                                 if (!accounts.get(accName).isEmpty()) {
+                                    LogUtil.v("Using token " + accounts.get(accName));
                                     Authentication.authentication.edit()
                                             .putString("lasttoken", accounts.get(accName))
                                             .remove("backedCreds")

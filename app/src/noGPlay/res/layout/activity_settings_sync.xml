@@ -30,7 +30,7 @@
                     android:layout_height="match_parent"
                     android:layout_marginEnd="16dp"
                     android:padding="16dp"
-                    android:tint="?attr/tint"
+                    android:tint="?attr/tintColor"
                     app:srcCompat="@drawable/save"/>
 
                 <TextView
@@ -38,7 +38,7 @@
                     android:layout_height="match_parent"
                     android:gravity="center_vertical"
                     android:text="@string/backup_btn_file"
-                    android:textColor="?attr/font"
+                    android:textColor="?attr/fontColor"
                     android:textSize="16sp"/>
             </LinearLayout>
 
@@ -54,7 +54,7 @@
                     android:layout_height="match_parent"
                     android:layout_marginEnd="16dp"
                     android:padding="16dp"
-                    android:tint="?attr/tint"
+                    android:tint="?attr/tintColor"
                     app:srcCompat="@drawable/restorefile"/>
 
                 <TextView
@@ -62,7 +62,7 @@
                     android:layout_height="match_parent"
                     android:gravity="center_vertical"
                     android:text="@string/backup_btn_restore_file"
-                    android:textColor="?attr/font"
+                    android:textColor="?attr/fontColor"
                     android:textSize="16sp"/>
             </LinearLayout>
         </LinearLayout>

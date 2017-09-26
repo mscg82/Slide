@@ -41,14 +41,14 @@
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
                         app:srcCompat="@drawable/link"
-                        android:tint="?attr/tint" />
+                        android:tint="?attr/tintColor" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_filter_domain"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                 </LinearLayout>
 
@@ -74,7 +74,7 @@
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
             <LinearLayout
@@ -95,14 +95,14 @@
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
                         app:srcCompat="@drawable/fontsizedarker"
-                        android:tint="?attr/tint" />
+                        android:tint="?attr/tintColor" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_filter_selfttext"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout
@@ -125,7 +125,7 @@
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
             <LinearLayout
@@ -146,14 +146,14 @@
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
                         app:srcCompat="@drawable/infonew"
-                        android:tint="?attr/tint" />
+                        android:tint="?attr/tintColor" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_filter_title"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout
@@ -176,7 +176,7 @@
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
             <LinearLayout
@@ -197,14 +197,14 @@
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
                         app:srcCompat="@drawable/profile"
-                        android:tint="?attr/tint" />
+                        android:tint="?attr/tintColor" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_filter_profile"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout
@@ -227,7 +227,7 @@
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
             <LinearLayout
@@ -248,14 +248,14 @@
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
                         app:srcCompat="@drawable/sub"
-                        android:tint="?attr/tint" />
+                        android:tint="?attr/tintColor" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/setting_filter_subreddits"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout
@@ -280,7 +280,7 @@
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
             <LinearLayout
@@ -301,14 +301,14 @@
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
                         app:srcCompat="@drawable/flair"
-                        android:tint="?attr/tint" />
+                        android:tint="?attr/tintColor" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_filter_flair"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout

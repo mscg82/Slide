@@ -46,7 +46,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_comment_crop"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -55,17 +55,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -88,7 +88,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_comment_color"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -97,17 +97,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
 
             <View
                     android:layout_width="match_parent"
-                    android:background="?attr/tint"
+                    android:background="?attr/tintColor"
                     android:alpha=".25"
                     android:layout_height="0.25dp"/>
 
@@ -130,7 +130,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/settings_wide_depth_indicators"
-                            android:textColor="?attr/font"
+                            android:textColor="?attr/fontColor"
                             android:textSize="14sp" />
                 </LinearLayout>
 
@@ -139,17 +139,17 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:paddingEnd="16dp"
-                        android:backgroundTint="?attr/tint"
+                        android:backgroundTint="?attr/tintColor"
                         android:button="@null"
-                        android:buttonTint="?attr/tint"
+                        android:buttonTint="?attr/tintColor"
                         android:hapticFeedbackEnabled="true"
-                        android:textColor="?attr/font"
-                        android:textColorHint="?attr/font" />
+                        android:textColor="?attr/fontColor"
+                        android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -172,7 +172,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_fab_create"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -181,17 +181,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -214,7 +214,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_right_handed_comment_menu"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -223,17 +223,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -256,7 +256,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/upvote_percentage"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -265,12 +265,12 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
 
             </RelativeLayout>
 
@@ -304,7 +304,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_commentnav"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
 
                     <TextView
@@ -312,7 +312,7 @@
                         android:layout_height="wrap_content"
                         android:alpha=".86"
                         android:text="@string/settings_commentnav_description"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -321,17 +321,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -355,7 +355,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/auto_hide_the_comment_nav_bar"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -364,17 +364,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -397,7 +397,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_volume_nav_comments"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -406,16 +406,16 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
             <View
                     android:layout_width="match_parent"
-                    android:background="?attr/tint"
+                    android:background="?attr/tintColor"
                     android:alpha=".25"
                     android:layout_height="0.25dp"/>
 
@@ -438,14 +438,14 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/navigation_bar_vote_gestures"
-                            android:textColor="?attr/font"
+                            android:textColor="?attr/fontColor"
                             android:textSize="14sp" />
                     <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha=".86"
                             android:text="@string/nav_gestures_description"
-                            android:textColor="?attr/font"
+                            android:textColor="?attr/fontColor"
                             android:textSize="13sp" />
                 </LinearLayout>
 
@@ -454,12 +454,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:paddingEnd="16dp"
-                        android:backgroundTint="?attr/tint"
+                        android:backgroundTint="?attr/tintColor"
                         android:button="@null"
-                        android:buttonTint="?attr/tint"
+                        android:buttonTint="?attr/tintColor"
                         android:hapticFeedbackEnabled="true"
-                        android:textColor="?attr/font"
-                        android:textColorHint="?attr/font" />
+                        android:textColor="?attr/fontColor"
+                        android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
             <TextView
                 style="@style/TextAppearance.AppCompat.Body2"
@@ -491,7 +491,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_comments_swap_long"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -500,17 +500,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -533,14 +533,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_comment_collapse"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:alpha=".86"
                         android:text="@string/settings_comment_collapse_description"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -549,17 +549,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
-                android:background="?attr/tint"
+                android:background="?attr/tintColor"
                 android:alpha=".25"
                 android:layout_height="0.25dp"/>
 
@@ -582,7 +582,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_comment_collapse_default"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -591,12 +591,12 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:paddingEnd="16dp"
-                    android:backgroundTint="?attr/tint"
+                    android:backgroundTint="?attr/tintColor"
                     android:button="@null"
-                    android:buttonTint="?attr/tint"
+                    android:buttonTint="?attr/tintColor"
                     android:hapticFeedbackEnabled="true"
-                    android:textColor="?attr/font"
-                    android:textColorHint="?attr/font" />
+                    android:textColor="?attr/fontColor"
+                    android:textColorHint="?attr/fontColor" />
             </RelativeLayout>
         </LinearLayout>
     </ScrollView>

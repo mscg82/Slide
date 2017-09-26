@@ -52,7 +52,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/settings" />
 
                     <TextView
@@ -60,7 +60,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_general"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -76,7 +76,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/multicolumn" />
 
                     <TextView
@@ -84,7 +84,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_multi_column"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -100,7 +100,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/sub" />
 
                     <TextView
@@ -108,7 +108,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/manage_your_subreddits"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -124,7 +124,7 @@
                             android:layout_height="match_parent"
                             android:layout_marginEnd="16dp"
                             android:padding="16dp"
-                            android:tint="?attr/tint"
+                            android:tint="?attr/tintColor"
                             app:srcCompat="@drawable/offline" />
 
                     <TextView
@@ -132,7 +132,7 @@
                             android:layout_height="match_parent"
                             android:gravity="center_vertical"
                             android:text="Manage offline content"
-                            android:textColor="?attr/font"
+                            android:textColor="?attr/fontColor"
                             android:textSize="14sp" />
                 </LinearLayout>
 
@@ -171,7 +171,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/theme" />
 
                     <TextView
@@ -179,7 +179,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_default_theme"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -196,7 +196,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/card" />
 
                     <TextView
@@ -204,7 +204,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_layout_default"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -220,7 +220,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/sub" />
 
                     <TextView
@@ -228,7 +228,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_sub_theme"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -244,7 +244,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/fontsizedarker" />
 
                     <TextView
@@ -252,7 +252,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_font"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -268,7 +268,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/commentchange" />
 
                     <TextView
@@ -276,7 +276,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_comments"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -313,7 +313,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/link" />
 
                     <TextView
@@ -321,7 +321,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_link_handling"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -337,7 +337,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/history" />
 
                     <TextView
@@ -345,7 +345,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_history"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -361,7 +361,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/world" />
 
                     <TextView
@@ -369,7 +369,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_data"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -385,7 +385,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/filter" />
 
                     <TextView
@@ -393,7 +393,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_filter"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -409,7 +409,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/reddit" />
 
                     <TextView
@@ -417,7 +417,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/content_settings"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -454,7 +454,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/ic_backup" />
 
                     <TextView
@@ -462,7 +462,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_backup"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -479,14 +479,14 @@
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
                         android:src="@drawable/synccit"
-                        android:tint="?attr/tint" />
+                        android:tint="?attr/tintColor" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_synccit"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -503,7 +503,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/crown" />
 
                     <TextView
@@ -511,7 +511,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_pro"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -527,7 +527,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/donate" />
 
                     <TextView
@@ -536,7 +536,7 @@
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_support"
                         android:id="@+id/donatetext"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
 
@@ -552,7 +552,7 @@
                         android:layout_height="match_parent"
                         android:layout_marginEnd="16dp"
                         android:padding="16dp"
-                        android:tint="?attr/tint"
+                        android:tint="?attr/tintColor"
                         app:srcCompat="@drawable/infonew" />
 
                     <TextView
@@ -560,7 +560,7 @@
                         android:layout_height="match_parent"
                         android:gravity="center_vertical"
                         android:text="@string/settings_title_about"
-                        android:textColor="?attr/font"
+                        android:textColor="?attr/fontColor"
                         android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>

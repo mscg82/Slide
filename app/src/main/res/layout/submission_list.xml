@@ -53,7 +53,7 @@
                 android:layout_alignParentRight="true"
                 android:padding="8dp"
                 android:tag="tint"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 android:layout_marginLeft="-4dp"
                 app:srcCompat="@drawable/down" />
 
@@ -73,22 +73,8 @@
                     android:layout_marginEnd="16dp"
                     android:tag="tint"
                     android:text="@string/example_title"
-                    android:textColor="?attr/font"
+                    android:textColor="?attr/fontColor"
                     android:textSize="?attr/font_cardtitle" />
-
-                <TextView
-                    android:id="@+id/information"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@+id/title"
-                    android:layout_gravity="start"
-                    android:textColor="?attr/tint"
-                    android:layout_marginEnd="16dp"
-                    android:layout_marginStart="16dp"
-                    android:gravity="center_vertical"
-                    android:tag="tintsecond"
-                    android:text="@string/example_time"
-                    android:textSize="?attr/font_cardinfo" />
 
                 <me.ccrama.redditslide.SpoilerRobotoTextView
                     android:id="@+id/body"
@@ -101,7 +87,7 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center_vertical"
                     android:tag="tintsecond"
-                    android:textColor="?attr/tint"
+                    android:textColor="?attr/tintColor"
                     android:textSize="?attr/font_commentbody"
                     android:visibility="gone" />
             </RelativeLayout>
@@ -129,7 +115,7 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="4dp"
                 android:tag="tintactionbar"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 app:srcCompat="@drawable/upvoted" />
 
             <TextView
@@ -137,7 +123,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
                 android:layout_below="@+id/innerrelative"
-                android:textColor="?attr/tint"
+                android:textColor="?attr/tintColor"
                 android:layout_gravity="center_vertical"
                 android:layout_toRightOf="@+id/scoreimg"
                 android:gravity="center_vertical"
@@ -155,14 +141,14 @@
                 android:layout_marginEnd="4dp"
                 android:layout_toRightOf="@+id/score"
                 android:tag="tintactionbar"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 app:srcCompat="@drawable/commentchange" />
 
             <TextView
                 android:id="@+id/comments"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:textColor="?attr/tint"
+                android:textColor="?attr/tintColor"
                 android:layout_gravity="center_vertical"
                 android:layout_toRightOf="@+id/pointsimg"
                 android:gravity="center_vertical"
@@ -178,7 +164,7 @@
                 android:layout_toLeftOf="@+id/save"
                 android:padding="8dp"
                 android:tag="tintactionbar"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 app:srcCompat="@drawable/edit" />
             <ImageView
                 android:id="@+id/save"
@@ -189,7 +175,7 @@
                 android:layout_toLeftOf="@+id/hide"
                 android:padding="8dp"
                 android:tag="tintactionbar"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 app:srcCompat="@drawable/iconstarfilled" />
 
             <ImageView
@@ -201,7 +187,7 @@
                 android:layout_toLeftOf="@+id/upvote"
                 android:padding="8dp"
                 android:tag="tintactionbar"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 app:srcCompat="@drawable/mod" />
 
             <ImageView
@@ -213,7 +199,7 @@
                 android:layout_toLeftOf="@+id/mod"
                 android:padding="8dp"
                 android:tag="tintactionbar"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 app:srcCompat="@drawable/hide" />
 
             <ImageView
@@ -225,7 +211,7 @@
                 android:layout_toLeftOf="@+id/downvote"
                 android:padding="8dp"
                 android:tag="tintactionbar"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 app:srcCompat="@drawable/upvoted" />
 
             <ImageView
@@ -238,7 +224,7 @@
                 android:layout_toLeftOf="@+id/menu"
                 android:padding="8dp"
                 android:tag="tintactionbar"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 app:srcCompat="@drawable/downvote" />
 
             <ImageView
@@ -250,7 +236,7 @@
                 android:layout_below="@+id/innerrelative"
                 android:padding="8dp"
                 android:tag="tintactionbar"
-                android:tint="?attr/tint"
+                android:tint="?attr/tintColor"
                 app:srcCompat="@drawable/more" />
         </me.ccrama.redditslide.Views.RevealRelativeLayout>
     </RelativeLayout>

@@ -43,7 +43,7 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.cocosw.bottomsheet.BottomSheet;
-import com.devspark.robototextview.util.RobotoTypefaceManager;
+import com.devspark.robototextview.RobotoTypefaces;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
@@ -425,7 +425,7 @@ public class TumblrPager extends FullScreenActivity
     public void showBottomSheetImage(final String contentUrl, final boolean isGif,
             final int index) {
 
-        int[] attrs = new int[]{R.attr.tint};
+        int[] attrs = new int[]{R.attr.tintColor};
         TypedArray ta = obtainStyledAttributes(attrs);
 
         int color = ta.getColor(0, Color.WHITE);
@@ -563,7 +563,7 @@ public class TumblrPager extends FullScreenActivity
                     int type = new FontPreferences(getContext()).getFontTypeComment().getTypeface();
                     Typeface typeface;
                     if (type >= 0) {
-                        typeface = RobotoTypefaceManager.obtainTypeface(getContext(), type);
+                        typeface = RobotoTypefaces.obtainTypeface(getContext(), type);
                     } else {
                         typeface = Typeface.DEFAULT;
                     }
@@ -573,7 +573,7 @@ public class TumblrPager extends FullScreenActivity
                     int type = new FontPreferences(getContext()).getFontTypeTitle().getTypeface();
                     Typeface typeface;
                     if (type >= 0) {
-                        typeface = RobotoTypefaceManager.obtainTypeface(getContext(), type);
+                        typeface = RobotoTypefaces.obtainTypeface(getContext(), type);
                     } else {
                         typeface = Typeface.DEFAULT;
                     }
@@ -730,40 +730,6 @@ public class TumblrPager extends FullScreenActivity
             }
         });
 
-    }
-
-    public void showNotifPhoto(final File localAbsoluteFilePath, final Bitmap loadedImage) {
-        MediaScannerConnection.scanFile(TumblrPager.this,
-                new String[]{localAbsoluteFilePath.getAbsolutePath()}, null,
-                new MediaScannerConnection.OnScanCompletedListener() {
-                    public void onScanCompleted(String path, Uri uri) {
-
-                        final Intent shareIntent = new Intent(Intent.ACTION_VIEW);
-                        shareIntent.setDataAndType(Uri.fromFile(localAbsoluteFilePath), "image/*");
-                        PendingIntent contentIntent =
-                                PendingIntent.getActivity(TumblrPager.this, 0, shareIntent,
-                                        PendingIntent.FLAG_CANCEL_CURRENT);
-
-
-                        Notification notif =
-                                new NotificationCompat.Builder(TumblrPager.this).setContentTitle(
-                                        getString(R.string.info_photo_saved))
-                                        .setSmallIcon(R.drawable.notif)
-                                        .setLargeIcon(loadedImage)
-                                        .setContentIntent(contentIntent)
-                                        .setStyle(
-                                                new NotificationCompat.BigPictureStyle().bigPicture(
-                                                        loadedImage))
-                                        .build();
-
-
-                        NotificationManager mNotificationManager =
-                                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-                        mNotificationManager.notify(1, notif);
-                        loadedImage.recycle();
-                    }
-
-                });
     }
 
     private void shareImage(final String finalUrl) {
