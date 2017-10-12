@@ -8,6 +8,8 @@ import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.preference.PreferenceActivity;
+import android.support.design.widget.Snackbar;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.SwitchCompat;
 import android.view.LayoutInflater;
@@ -22,6 +24,7 @@ import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.rey.material.widget.Slider;
+import com.rey.material.widget.SnackBar;
 
 import net.dean.jraw.models.CommentSort;
 import net.dean.jraw.models.Subreddit;
@@ -32,6 +35,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 import me.ccrama.redditslide.Authentication;
 import me.ccrama.redditslide.Constants;
@@ -139,6 +143,8 @@ public class SettingsGeneral extends BaseActivityAnim
                 }
             }
         });
+
+
         dialoglayout.findViewById(R.id.save).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View d) {
@@ -178,6 +184,7 @@ public class SettingsGeneral extends BaseActivityAnim
             }
         });
     }
+
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -495,6 +502,7 @@ public class SettingsGeneral extends BaseActivityAnim
                 }
             });
         }
+        doNotifText();
         {
             final int i2 = SettingValues.defaultCommentSorting == CommentSort.CONFIDENCE ? 0
                     : SettingValues.defaultCommentSorting == CommentSort.TOP ? 1
@@ -562,6 +570,43 @@ public class SettingsGeneral extends BaseActivityAnim
                     builder.show();
                 }
             });
+        }
+    }
+
+    public void doNotifText(){
+        {
+            View notifs = findViewById(R.id.redditnotifs);
+            if(!Reddit.isPackageInstalled(this, "com.reddit.frontpage")){
+                notifs.setVisibility(View.GONE);
+                findViewById(R.id.installreddit).setVisibility(View.VISIBLE);
+            } else {
+                if(((Reddit)getApplication()).isAccessibilityEnabled()){
+                    SwitchCompat single = (SwitchCompat) findViewById(R.id.piggyback);
+                    single.setChecked(true);
+                    single.setEnabled(false);
+                } else {
+                    final SwitchCompat single = (SwitchCompat) findViewById(R.id.piggyback);
+                    single.setChecked(false);
+                    single.setEnabled(true);
+                    single.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                            single.setChecked(false);
+                            Snackbar s = Snackbar.make(single,"Give Slide accessibility access", Snackbar.LENGTH_INDEFINITE);
+                            s.setAction("Go to settings", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+
+                                    Intent intent = new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                                    startActivityForResult(intent, 0);
+
+                                }
+                            });
+                            s.show();
+                        }
+                    });
+                }
+            }
         }
     }
 
@@ -642,7 +687,7 @@ public class SettingsGeneral extends BaseActivityAnim
         for (String s : rawSubs) {
             try {
                 String[] split = s.split(":");
-                subThresholds.put(split[0].toLowerCase(), Integer.valueOf(split[1]));
+                subThresholds.put(split[0].toLowerCase(Locale.ENGLISH), Integer.valueOf(split[1]));
             } catch (Exception ignored) {
 
             }
@@ -669,7 +714,7 @@ public class SettingsGeneral extends BaseActivityAnim
                     && !s.contains("+")
                     && !s.contains(".")
                     && !s.contains("/m/")) {
-                all[i] = s.toLowerCase();
+                all[i] = s.toLowerCase(Locale.ENGLISH);
                 i++;
             }
         }
@@ -768,7 +813,7 @@ public class SettingsGeneral extends BaseActivityAnim
         final ArrayList<String> subs = new ArrayList<>();
         for (String s : subsRaw) {
             try {
-                subs.add(s.split(":")[0].toLowerCase());
+                subs.add(s.split(":")[0].toLowerCase(Locale.ENGLISH));
             } catch (Exception e) {
 
             }
@@ -776,8 +821,8 @@ public class SettingsGeneral extends BaseActivityAnim
 
         final ArrayList<String> toAdd = new ArrayList<>();
         for (String s : strings) {
-            if (!subs.contains(s.toLowerCase())) {
-                toAdd.add(s.toLowerCase());
+            if (!subs.contains(s.toLowerCase(Locale.ENGLISH))) {
+                toAdd.add(s.toLowerCase(Locale.ENGLISH));
             }
         }
         if (!toAdd.isEmpty()) {
@@ -816,7 +861,7 @@ public class SettingsGeneral extends BaseActivityAnim
             if (subreddit != null || input.equalsIgnoreCase("friends") || input.equalsIgnoreCase(
                     "mod")) {
                 ArrayList<String> singleSub = new ArrayList<>();
-                singleSub.add(subreddit.getDisplayName().toLowerCase());
+                singleSub.add(subreddit.getDisplayName().toLowerCase(Locale.ENGLISH));
                 showThresholdDialog(singleSub, true);
             }
         }
@@ -869,5 +914,11 @@ public class SettingsGeneral extends BaseActivityAnim
                     Toast.LENGTH_LONG).show();
             ((TextView) findViewById(R.id.location)).setText(folder.getAbsolutePath());
         }
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        doNotifText();
     }
 }

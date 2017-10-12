@@ -27,6 +27,7 @@ import net.dean.jraw.models.Captcha;
 import net.dean.jraw.models.PrivateMessage;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 import me.ccrama.redditslide.Authentication;
 import me.ccrama.redditslide.DataShare;
@@ -111,6 +112,7 @@ public class SendMessage extends BaseActivity {
             if (reply) {
                 b.setTitle(getString(R.string.mail_reply_to, name));
                 previousMessage = DataShare.sharedMessage;
+                if(previousMessage.getSubject() != null)
                 subject.setText(getString(R.string.mail_re, previousMessage.getSubject()));
                 subject.setInputType(InputType.TYPE_NULL);
 
@@ -222,7 +224,7 @@ public class SendMessage extends BaseActivity {
                     //Display a Toast with an error if the user doesn't exist
                     if (e.getReason().equals("USER_DOESNT_EXIST") || e.getReason().equals("NO_USER")) {
                         messageSentStatus = getString(R.string.msg_send_user_dne);
-                    } else if (e.getReason().toLowerCase().contains("captcha")) {
+                    } else if (e.getReason().toLowerCase(Locale.ENGLISH).contains("captcha")) {
                         messageSentStatus = getString(R.string.misc_captcha_incorrect);
                     }
 
