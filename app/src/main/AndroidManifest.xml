@@ -310,6 +310,7 @@
         <activity
                 android:name=".Activities.Tumblr"
                 android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
+                android:colorMode="wideColorGamut"
                 android:theme="@style/swipeable"/>
         <activity
                 android:name=".Activities.SettingsViewType"
@@ -343,14 +344,17 @@
                 android:name=".Activities.MediaView"
                 android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
                 android:alwaysRetainTaskState="true"
+                android:colorMode="wideColorGamut"
                 android:theme="@style/swipeable"/>
         <activity
                 android:name=".Activities.AlbumPager"
                 android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
+                android:colorMode="wideColorGamut"
                 android:theme="@style/swipeable"/>
         <activity
                 android:name=".Activities.TumblrPager"
                 android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
+                android:colorMode="wideColorGamut"
                 android:theme="@style/swipeable"/>
         <activity
                 android:name=".Activities.PostReadLater"
@@ -644,18 +648,13 @@
         <service
                 android:name=".Widget.ListViewWidgetService"
                 android:permission="android.permission.BIND_REMOTEVIEWS"/>
-        <service android:name=".Notifications.NotificationPiggyback"
-                 android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+        <service
+                android:name=".Notifications.NotificationPiggyback"
+                android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
             <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
+                <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
-
-            <meta-data
-                    android:name="android.accessibilityservice"
-                    android:resource="@xml/accessibilityservice" />
         </service>
-
-
         <uses-library
                 android:name="com.sec.android.app.multiwindow"
                 android:required="false"/>
