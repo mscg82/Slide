@@ -15,7 +15,7 @@ import android.content.res.Resources;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.app.NotificationManagerCompat;
-import android.support.v7.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat;
 import android.text.Html;
 
 import net.dean.jraw.models.Message;
@@ -119,20 +119,17 @@ public class CheckForMailSingle extends BroadcastReceiver {
                                                     1, 1))
                                     .setWhen(System.currentTimeMillis())
                                     .setAutoCancel(true)
-                                    .setChannelId(Reddit.CHANNEL_MAIL)
+                                    .setChannelId(SettingValues.notifSound ? Reddit.CHANNEL_MAIL_SOUND : Reddit.CHANNEL_MAIL)
                                     .setContentTitle(
                                             res.getQuantityString(R.plurals.mail_notification_title,
                                                     1, 1))
                                     .setStyle(notiStyle)
                                     .setGroup("MESSAGES")
                                     .setGroupSummary(true)
+                                    .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY)
                                     .addAction(R.drawable.ic_check_all_black,
                                             c.getString(R.string.mail_mark_read), readPI)
                                     .build();
-                    if (SettingValues.notifSound) {
-                        notification.defaults |= Notification.DEFAULT_SOUND;
-                        notification.defaults |= Notification.DEFAULT_VIBRATE;
-                    }
 
                     notificationManager.notify(0, notification);
                 }
@@ -187,18 +184,15 @@ public class CheckForMailSingle extends BroadcastReceiver {
                                     .setWhen(System.currentTimeMillis())
                                     .setAutoCancel(true)
                                     .setContentTitle(contentTitle)
-                                    .setChannelId(Reddit.CHANNEL_MAIL)
+                                    .setChannelId(SettingValues.notifSound ? Reddit.CHANNEL_MAIL_SOUND : Reddit.CHANNEL_MAIL)
                                     .setContentText(Html.fromHtml(StringEscapeUtils.unescapeHtml4(
                                             message.getDataNode().get("body_html").asText())))
                                     .setStyle(notiStyle)
                                     .setGroup("MESSAGES")
+                                    .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY)
                                     .addAction(R.drawable.ic_check_all_black,
                                             c.getString(R.string.mail_mark_read), readPISingle)
                                     .build();
-                    if (SettingValues.notifSound) {
-                        notification.defaults |= Notification.DEFAULT_SOUND;
-                        notification.defaults |= Notification.DEFAULT_VIBRATE;
-                    }
                     notificationManager.notify((int) message.getCreated().getTime(), notification);
                 }
             }
