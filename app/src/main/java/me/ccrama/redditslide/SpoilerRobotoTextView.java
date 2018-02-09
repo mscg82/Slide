@@ -15,6 +15,7 @@ import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Environment;
 import android.support.v4.content.ContextCompat;
 import android.text.Html;
@@ -48,13 +49,17 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.ccrama.redditslide.Activities.Album;
 import me.ccrama.redditslide.Activities.AlbumPager;
+import me.ccrama.redditslide.Activities.CommentsScreenSingle;
 import me.ccrama.redditslide.Activities.MediaView;
 import me.ccrama.redditslide.Activities.TumblrPager;
 import me.ccrama.redditslide.ForceTouch.PeekView;
@@ -65,6 +70,7 @@ import me.ccrama.redditslide.ForceTouch.callback.OnButtonUp;
 import me.ccrama.redditslide.ForceTouch.callback.OnPop;
 import me.ccrama.redditslide.ForceTouch.callback.OnRemove;
 import me.ccrama.redditslide.ForceTouch.callback.SimpleOnPeek;
+import me.ccrama.redditslide.SubmissionViews.OpenVRedditTask;
 import me.ccrama.redditslide.Views.CustomQuoteSpan;
 import me.ccrama.redditslide.Views.PeekMediaView;
 import me.ccrama.redditslide.Visuals.Palette;
@@ -414,7 +420,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                         intent2.putExtra(MediaView.SUBREDDIT, subreddit);
                         activity.startActivity(intent2);
                     } else {
-                        Reddit.defaultShare(url, activity);
+                        LinkUtil.openExternally(url, activity);
                     }
                     break;
                 case REDDIT:
@@ -444,7 +450,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                             activity.startActivity(i);
                         }
                     } else {
-                        Reddit.defaultShare(url, activity);
+                        LinkUtil.openExternally(url, activity);
                     }
                     break;
                 case TUMBLR:
@@ -459,13 +465,17 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                             activity.startActivity(i);
                         }
                     } else {
-                        Reddit.defaultShare(url, activity);
+                        LinkUtil.openExternally(url, activity);
                     }
                     break;
                 case IMAGE:
                     openImage(url, subreddit);
                     break;
+                case VREDDIT_REDIRECT:
+                    openVReddit(url, subreddit, activity);
+                    break;
                 case GIF:
+                case VREDDIT_DIRECT:
                     openGif(url, subreddit, activity);
                     break;
                 case NONE:
@@ -480,21 +490,21 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                             activity.startActivity(sharingIntent);
 
                         } catch (Exception e) {
-                            Reddit.defaultShare(url, activity);
+                            LinkUtil.openExternally(url, activity);
                         }
                     } else {
-                        Reddit.defaultShare(url, activity);
+                        LinkUtil.openExternally(url, activity);
                     }
                 case SPOILER:
                     spoilerClicked = true;
                     setOrRemoveSpoilerSpans(xOffset, span);
                     break;
                 case EXTERNAL:
-                    Reddit.defaultShare(url, activity);
+                    LinkUtil.openExternally(url, activity);
                     break;
             }
         } else {
-            Reddit.defaultShare(url, context);
+            LinkUtil.openExternally(url, context);
         }
     }
 
@@ -578,7 +588,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                         peekView.addButton((R.id.external), new OnButtonUp() {
                             @Override
                             public void onButtonUp() {
-                                LinkUtil.openExternally(url, context, false);
+                                LinkUtil.openExternally(url, context);
                             }
                         });
                         peekView.setOnPop(new OnPop() {
@@ -617,19 +627,13 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                     public void onClick(DialogInterface dialog, int which) {
                         switch (which) {
                             case R.id.open_link:
-                                LinkUtil.openExternally(url, context, false);
+                                LinkUtil.openExternally(url, context);
                                 break;
                             case R.id.share_link:
                                 Reddit.defaultShareText("", url, finalActivity);
                                 break;
                             case R.id.copy_link:
-                                ClipboardManager clipboard =
-                                        (ClipboardManager) finalActivity.getSystemService(
-                                                Context.CLIPBOARD_SERVICE);
-                                ClipData clip = ClipData.newPlainText("Link", url);
-                                clipboard.setPrimaryClip(clip);
-                                Toast.makeText(finalActivity, R.string.submission_link_copied,
-                                        Toast.LENGTH_SHORT).show();
+                                LinkUtil.copyUrl(url, finalActivity);
                                 break;
                         }
                     }
@@ -637,6 +641,12 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
             }
         }
     }
+
+    private void openVReddit(String url, String subreddit, Activity activity) {
+        new OpenVRedditTask(activity, subreddit).executeOnExecutor(
+                AsyncTask.THREAD_POOL_EXECUTOR, url);
+    }
+
 
     private void openGif(String url, String subreddit, Activity activity) {
         if (SettingValues.gif) {
@@ -649,7 +659,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
                 getContext().startActivity(myIntent);
             }
         } else {
-            Reddit.defaultShare(url, getContext());
+            LinkUtil.openExternally(url, getContext());
         }
     }
 
@@ -662,7 +672,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
             getContext().startActivity(myIntent);
 
         } else {
-            Reddit.defaultShare(url, getContext());
+            LinkUtil.openExternally(url, getContext());
         }
     }
 
@@ -673,7 +683,7 @@ public class SpoilerRobotoTextView extends RobotoTextView implements ClickableTe
             myIntent.putExtra(MediaView.SUBREDDIT, subreddit);
             getContext().startActivity(myIntent);
         } else {
-            Reddit.defaultShare(submission, getContext());
+            LinkUtil.openExternally(submission, getContext());
         }
 
     }

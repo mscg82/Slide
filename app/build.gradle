@@ -18,7 +18,7 @@ android {
         applicationId "me.ccrama.redditslide"
         minSdkVersion 15
         targetSdkVersion 27
-        versionCode 293
+        versionCode 294
         multiDexEnabled = true
         versionName androidGitVersion.name()
     }
@@ -130,6 +130,8 @@ dependencies {
     compile('com.mikepenz:aboutlibraries:5.8.1@aar') {
         transitive = true
     }
+
+    compile 'com.googlecode.mp4parser:isoparser:1.1.21'
 
 
     testCompile 'junit:junit:4.12'
