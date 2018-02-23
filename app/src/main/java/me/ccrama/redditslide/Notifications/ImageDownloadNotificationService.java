@@ -13,7 +13,6 @@ import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.IBinder;
-import android.support.v4.content.FileProvider;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.View;
@@ -37,6 +36,7 @@ import me.ccrama.redditslide.Activities.DeleteFile;
 import me.ccrama.redditslide.R;
 import me.ccrama.redditslide.Reddit;
 import me.ccrama.redditslide.SettingValues;
+import me.ccrama.redditslide.util.FileUtil;
 import me.ccrama.redditslide.util.LogUtil;
 
 /**
@@ -155,18 +155,17 @@ public class ImageDownloadNotificationService extends Service {
                                                 Files.copy(f, f_out);
                                                 showNotifPhoto(f_out, loadedImage);
                                             } catch (IOException e) {
-                                                e.printStackTrace();
                                                 try {
                                                     saveImageGallery(loadedImage, finalUrl1);
                                                 } catch (IOException ignored) {
-                                                    ignored.printStackTrace();
+                                                    onError(e);
                                                 }
                                             }
                                         } else {
                                             try {
                                                 saveImageGallery(loadedImage, finalUrl1);
                                             } catch (IOException e) {
-                                                e.printStackTrace();
+                                                onError(e);
                                             }
                                         }
                                     }
@@ -186,9 +185,19 @@ public class ImageDownloadNotificationService extends Service {
                                     }
                                 });
             } catch (Exception e) {
+                onError(e);
                 Log.v(LogUtil.getTag(), "COULDN'T DOWNLOAD!");
             }
             return null;
+        }
+
+        public void onError(Exception e){
+            e.printStackTrace();
+            mNotifyManager.cancel(id);
+            stopSelf();
+            try {
+                Toast.makeText(getBaseContext(), "Error saving image", Toast.LENGTH_LONG).show();
+            } catch (Exception ignored) {}
         }
 
         private String getFileName(URL url) {
@@ -203,9 +212,8 @@ public class ImageDownloadNotificationService extends Service {
 
         @Override
         protected void onPostExecute(Void result) {
-            // handle your data
             super.onPostExecute(result);
-            stopSelf();
+            mNotifyManager.cancel(id);
         }
 
         public void showNotifPhoto(final File localAbsoluteFilePath, final Bitmap loadedImage) {
@@ -214,10 +222,8 @@ public class ImageDownloadNotificationService extends Service {
                     new MediaScannerConnection.OnScanCompletedListener() {
                         public void onScanCompleted(String path, Uri uri) {
                             PendingIntent pContentIntent, pShareIntent, pDeleteIntent, pEditIntent;
-                            Uri photoURI = FileProvider.getUriForFile(
-                                    ImageDownloadNotificationService.this,
-                                    getApplicationContext().getPackageName() + ".MediaView",
-                                    localAbsoluteFilePath);
+                            Uri photoURI = FileUtil.getFileUri(localAbsoluteFilePath,
+                                    ImageDownloadNotificationService.this);
 
                             {
                                 final Intent shareIntent = new Intent(Intent.ACTION_VIEW);
@@ -309,6 +315,7 @@ public class ImageDownloadNotificationService extends Service {
                             notif.flags |= Notification.FLAG_AUTO_CANCEL;
                             mNotificationManager.notify(id, notif);
                             loadedImage.recycle();
+                            stopSelf();
                         }
                     });
         }
@@ -335,6 +342,7 @@ public class ImageDownloadNotificationService extends Service {
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
+                    onError(e);
                 }
             }
         }

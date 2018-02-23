@@ -21,7 +21,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.FileProvider;
 import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.text.Html;
 import android.util.Log;
@@ -36,7 +35,6 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.AlertDialogWrapper;
 import com.cocosw.bottomsheet.BottomSheet;
-import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
@@ -45,7 +43,6 @@ import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.imageaware.ImageViewAware;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingProgressListener;
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 
@@ -80,6 +77,7 @@ import me.ccrama.redditslide.util.HttpUtil;
 import me.ccrama.redditslide.util.LinkUtil;
 import me.ccrama.redditslide.util.LogUtil;
 import me.ccrama.redditslide.util.NetworkUtil;
+import me.ccrama.redditslide.util.ShareUtil;
 
 import static me.ccrama.redditslide.Activities.AlbumPager.readableFileSize;
 
@@ -110,7 +108,7 @@ public class MediaView extends FullScreenActivity
 
     private NotificationManager        mNotifyManager;
     private NotificationCompat.Builder mBuilder;
-    private long                        stopPosition;
+    private long                       stopPosition;
     private GifUtils.AsyncLoadGif      gif;
     private String                     contentUrl;
     private MediaVideoView             videoView;
@@ -263,7 +261,7 @@ public class MediaView extends FullScreenActivity
             b.sheet(6, file, getString(R.string.mediaview_save, type));
 
         }
-        if(contentUrl.contains("v.redd.it")){
+        if (contentUrl.contains("v.redd.it")) {
             b.sheet(15, thread, "View video thread");
         }
         b.listener(new DialogInterface.OnClickListener() {
@@ -271,12 +269,11 @@ public class MediaView extends FullScreenActivity
             public void onClick(DialogInterface dialog, int which) {
                 switch (which) {
                     case (2): {
-                        LinkUtil.openExternally(contentUrl,
-                                MediaView.this);
+                        LinkUtil.openExternally(contentUrl, MediaView.this);
                         break;
                     }
                     case (3): {
-                        shareImage(actuallyLoaded);
+                        ShareUtil.shareImage(actuallyLoaded, MediaView.this);
                         break;
                     }
                     case (5): {
@@ -289,7 +286,8 @@ public class MediaView extends FullScreenActivity
                     }
                     break;
                     case (15): {
-                        new OpenVRedditTask(MediaView.this, subreddit).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, contentUrl);
+                        new OpenVRedditTask(MediaView.this, subreddit).executeOnExecutor(
+                                AsyncTask.THREAD_POOL_EXECUTOR, contentUrl);
                     }
                     break;
                     case (9): {
@@ -381,7 +379,6 @@ public class MediaView extends FullScreenActivity
                                         MediaView.this.sendBroadcast(mediaScanIntent);
 
                                         final Intent shareIntent = new Intent(Intent.ACTION_VIEW);
-                                        shareIntent.setType("image/gif");
                                         PendingIntent contentIntent =
                                                 PendingIntent.getActivity(MediaView.this, 0,
                                                         shareIntent,
@@ -469,7 +466,6 @@ public class MediaView extends FullScreenActivity
                                         MediaView.this.sendBroadcast(mediaScanIntent);
 
                                         final Intent shareIntent = new Intent(Intent.ACTION_SEND);
-                                        shareIntent.setType("image/gif");
                                         startActivity(
                                                 Intent.createChooser(shareIntent, "Share GIF"));
                                         NotificationManager mNotificationManager =
@@ -493,8 +489,10 @@ public class MediaView extends FullScreenActivity
     public void onDestroy() {
         super.onDestroy();
         ((SubsamplingScaleImageView) findViewById(R.id.submission_image)).recycle();
-        if (gif != null) {gif.cancel(true);
-        gif.cancel();}
+        if (gif != null) {
+            gif.cancel(true);
+            gif.cancel();
+        }
 
         doOnClick = null;
         if (!didLoadGif && fileLoc != null && !fileLoc.isEmpty()) {
@@ -640,6 +638,7 @@ public class MediaView extends FullScreenActivity
         if (getIntent().hasExtra(SUBREDDIT)) {
             subreddit = getIntent().getExtras().getString(SUBREDDIT);
         }
+        findViewById(R.id.mute).setVisibility(View.GONE);
 
         if (getIntent().hasExtra(EXTRA_LQ)) {
             String lqUrl = getIntent().getStringExtra(EXTRA_DISPLAY_URL);
@@ -705,8 +704,11 @@ public class MediaView extends FullScreenActivity
         hideOnLongClick();
     }
 
+    private ContentType.Type contentType = ContentType.Type.IMAGE;
+
     public void doLoad(final String contentUrl) {
-        switch (ContentType.getContentType(contentUrl)) {
+        contentType = ContentType.getContentType(contentUrl);
+        switch (contentType) {
             case DEVIANTART:
                 doLoadDeviantArt(contentUrl);
                 break;
@@ -750,6 +752,13 @@ public class MediaView extends FullScreenActivity
         gif = new GifUtils.AsyncLoadGif(this, (MediaVideoView) findViewById(R.id.gif), loader,
                 findViewById(R.id.placeholder), doOnClick, true, false, true,
                 ((TextView) findViewById(R.id.size)), subreddit);
+        if (contentType != ContentType.Type.GIF) {
+            videoView.mute = findViewById(R.id.mute);
+            if(contentType != ContentType.Type.VREDDIT_DIRECT){
+                videoView.mute.setVisibility(View.VISIBLE);
+            }
+            gif.setMute(videoView.mute);
+        }
         gif.execute(dat);
         findViewById(R.id.more).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1312,133 +1321,6 @@ public class MediaView extends FullScreenActivity
                         .show();
             }
         });
-    }
-
-    private void shareImage(final String finalUrl) {
-        ((Reddit) getApplication()).getImageLoader()
-                .loadImage(finalUrl, new SimpleImageLoadingListener() {
-                    @Override
-                    public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                        shareImage(loadedImage, finalUrl);
-                    }
-                });
-    }
-
-    /**
-     * Converts an image to a PNG, stores it to the cache, then shares it. Saves the image to
-     * /cache/shared_image for easy deletion. If the /cache/shared_image folder already exists, we
-     * clear it's contents as to avoid increasing the cache size unnecessarily.
-     *
-     * @param bitmap image to share
-     */
-    private void shareImage(final Bitmap bitmap, String original) {
-        File image; //image to share
-
-        //check to see if the cache/shared_images directory is present
-        final File imagesDir =
-                new File(this.getCacheDir().toString() + File.separator + "shared_image");
-        if (!imagesDir.exists()) {
-            imagesDir.mkdir(); //create the folder if it doesn't exist
-        } else {
-            deleteFilesInDir(imagesDir);
-        }
-
-        try {
-            //creates a file in the cache; filename will be prefixed with "img" and end with ".png"
-            image = File.createTempFile("img", ".png", imagesDir);
-
-            File f = ((Reddit) getApplicationContext()).getImageLoader()
-                    .getDiscCache()
-                    .get(original);
-            if (f != null) {
-                try {
-                    Files.copy(f, image);
-                    shareFile(image);
-                } catch (IOException e) {
-                    doAlternativeImageSave(image, bitmap, original);
-                    shareFile(image);
-                    e.printStackTrace();
-                }
-            } else {
-                doAlternativeImageSave(image, bitmap, original);
-                shareFile(image);
-            }
-        } catch (IOException | NullPointerException e) {
-            e.printStackTrace();
-            Toast.makeText(this, getString(R.string.err_share_image), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    public void shareFile(File image) {
-        final String authority =
-                (this.getPackageName()).concat(".").concat(MediaView.class.getSimpleName());
-
-        final Uri contentUri = FileProvider.getUriForFile(this, authority, image);
-
-        if (contentUri != null) {
-            final Intent shareImageIntent = new Intent(Intent.ACTION_SEND);
-            shareImageIntent.addFlags(
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION); //temp permission for receiving app to read this file
-            shareImageIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-            shareImageIntent.setDataAndType(contentUri, getContentResolver().getType(contentUri));
-
-            //Select a share option
-            startActivity(
-                    Intent.createChooser(shareImageIntent, getString(R.string.misc_img_share)));
-        } else {
-            Toast.makeText(this, getString(R.string.err_share_image), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    public void doAlternativeImageSave(File image, Bitmap bitmap, String original)
-            throws IOException {
-        FileOutputStream out = null;
-
-        try {
-            //convert image to png
-            out = new FileOutputStream(image);
-            bitmap.compress(original.endsWith("png") ? Bitmap.CompressFormat.PNG
-                    : Bitmap.CompressFormat.JPEG, 100, out);
-        } finally {
-            if (out != null) {
-                out.close();
-
-                /**
-                 * If a user has both a debug build and a release build installed, the authority name needs to be unique
-                 */
-                final String authority =
-                        (this.getPackageName()).concat(".").concat(MediaView.class.getSimpleName());
-
-                final Uri contentUri = FileProvider.getUriForFile(this, authority, image);
-
-                if (contentUri != null) {
-                    final Intent shareImageIntent = new Intent(Intent.ACTION_SEND);
-                    shareImageIntent.addFlags(
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION); //temp permission for receiving app to read this file
-                    shareImageIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                    shareImageIntent.setDataAndType(contentUri,
-                            getContentResolver().getType(contentUri));
-
-                    //Select a share option
-                    startActivity(Intent.createChooser(shareImageIntent,
-                            getString(R.string.misc_img_share)));
-                } else {
-                    Toast.makeText(this, getString(R.string.err_share_image), Toast.LENGTH_LONG)
-                            .show();
-                }
-            }
-        }
-    }
-
-    /**
-     * Deletes all files in a folder
-     *
-     * @param dir to clear contents
-     */
-    private void deleteFilesInDir(File dir) {
-        for (File child : dir.listFiles()) {
-            child.delete();
-        }
     }
 
     @Override
