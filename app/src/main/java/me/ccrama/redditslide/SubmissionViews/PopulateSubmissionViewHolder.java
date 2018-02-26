@@ -1002,7 +1002,7 @@ public class PopulateSubmissionViewHolder {
                         break;
                     case 8:
                         Reddit.defaultShareText(Html.fromHtml(submission.getTitle()).toString(),
-                                "https://reddit.com" + submission.getPermalink(), mContext);
+                                "https://redd.it/" + submission.getId(), mContext);
                         break;
                     case 6: {
                         ClipboardManager clipboard = (ClipboardManager) mContext.getSystemService(
@@ -3104,7 +3104,7 @@ public class PopulateSubmissionViewHolder {
 
                                             DoEditorActions.doActions(e, dialoglayout,
                                                     ((AppCompatActivity) mContext).getSupportFragmentManager(),
-                                                    (Activity) mContext, null);
+                                                    (Activity) mContext, null, null);
 
                                             builder.setCancelable(false).setView(dialoglayout);
                                             final Dialog d = builder.create();
