@@ -82,7 +82,7 @@ public class DoEditorActions {
 
     public static void doActions(final EditText editText, final View baseView,
             final FragmentManager fm, final Activity a, final String oldComment,
-            @Nullable final String author) {
+            @Nullable final String authors[]) {
         baseView.findViewById(R.id.bold).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -99,16 +99,35 @@ public class DoEditorActions {
             }
         });
 
-        if(baseView.findViewById(R.id.author) != null) {
-            if (author != null && author.isEmpty()) {
-                baseView.setVisibility(View.GONE);
-            } else {
+        if (baseView.findViewById(R.id.author) != null) {
+            if (authors != null && authors.length > 0) {
                 baseView.findViewById(R.id.author).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        editText.setText(editText.getText().toString() + "/u/" + author);
+                        if (authors.length == 1) {
+                            int pos = editText.getSelectionStart();
+                            String author =  "/u/" + authors[0];
+                            editText.setText(editText.getText().toString() + author);
+                            editText.setSelection(pos + author.length()); //put the cursor between the symbols
+
+                        } else {
+                            new AlertDialogWrapper.Builder(a).setTitle(R.string.authors_above)
+                                    .setItems(authors, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            int pos = editText.getSelectionStart();
+                                            String author =  "/u/" + authors[which];
+                                            editText.setText(editText.getText().toString() + author);
+                                            editText.setSelection(pos + author.length()); //put the cursor between the symbols
+                                        }
+                                    })
+                                    .setNeutralButton(R.string.btn_cancel, null)
+                                    .show();
+                        }
                     }
                 });
+            } else {
+                baseView.findViewById(R.id.author).setVisibility(View.GONE);
             }
         }
 
@@ -556,11 +575,13 @@ public class DoEditorActions {
         @Override
         public void onActivityResult(int requestCode, int resultCode, final Intent data) {
             super.onActivityResult(requestCode, resultCode, data);
-            handleImageIntent(new ArrayList<Uri>() {{
-                add(data.getData());
-            }}, e, getContext());
+            if(data != null && data.getData() != null) {
+                handleImageIntent(new ArrayList<Uri>() {{
+                    add(data.getData());
+                }}, e, getContext());
 
-            getActivity().getSupportFragmentManager().beginTransaction().remove(this).commit();
+                getActivity().getSupportFragmentManager().beginTransaction().remove(this).commit();
+            }
 
         }
     }
