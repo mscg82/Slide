@@ -383,7 +383,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             });
             if (ImageFlairs.isSynced(comment.getSubredditName())
                     && comment.getAuthorFlair() != null
-                    && comment.getAuthorFlair().getCssClass() != null
+                    && !comment.getAuthorFlair().getText().isEmpty()
                     && !comment.getAuthorFlair().getCssClass().isEmpty()) {
                 boolean set = false;
                 for (String s : comment.getAuthorFlair().getCssClass().split(" ")) {
