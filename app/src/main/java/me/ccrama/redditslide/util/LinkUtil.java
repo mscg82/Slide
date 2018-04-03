@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -111,7 +112,13 @@ public class LinkUtil {
         }
 
         if (SettingValues.firefox) {
-            openCustomTab(url, color, contextActivity, "com.mozilla.firefox");
+            url = StringEscapeUtils.unescapeHtml4(Html.fromHtml(url).toString());
+            Uri uri = formatURL(url);
+
+            final Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.setComponent(new ComponentName("org.mozilla.firefox", "org.mozilla.firefox.App"));
+
+            contextActivity.startActivity(intent);
         } else {
             String packageName = CustomTabsHelper.getPackageNameToUse(contextActivity);
 
@@ -184,7 +191,13 @@ public class LinkUtil {
         }
 
         if (SettingValues.firefox) {
-            openCustomTab(url, color, contextActivity, "com.mozilla.firefox");
+            url = StringEscapeUtils.unescapeHtml4(Html.fromHtml(url).toString());
+            Uri uri = formatURL(url);
+
+            final Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.setComponent(new ComponentName("org.mozilla.firefox", "org.mozilla.firefox.App"));
+
+            contextActivity.startActivity(intent);
         } else {
             String packageName = CustomTabsHelper.getPackageNameToUse(contextActivity);
 
