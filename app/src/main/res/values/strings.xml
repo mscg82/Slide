@@ -1,5 +1,6 @@
 <resources>
     <!-- Generic text used anywhere -->
+    <string name="general_confirm">Confirm</string>
     <string name="general_confirm_exit">Confirm exit</string>
     <string name="general_confirm_exit_msg">Do you really want to exit Slide?</string>
     <string name="general_enable_shadowbox">Shadowbox mode</string>
@@ -434,6 +435,8 @@
     <string name="backup_btn_restore">Restore</string>
     <string name="backup_btn_file">Backup to file</string>
     <string name="backup_btn_restore_file">Restore from file</string>
+    <string name="backup_confirm">Are you sure you want to backup? Your previous backup will be overwritten</string>
+    <string name="backup_restore_confirm">Are you sure you want to restore? Your current settings will be overwritten</string>
 
 
     <!-- Vote -->
@@ -559,7 +562,6 @@
     <string name="settings_disable_nsfw_photo">Hide all NSFW photos</string>
     <string name="settings_store_history">Save history</string>
     <string name="settings_store_nsfw_history">Save NSFW history</string>
-    <string name="settings_confirm_exit">Confirm exit dialog</string>
     <string name="settings_commentnav">Navigate between parent comments</string>
     <string name="share_link">Share link</string>
     <string name="posts_hidden_forever">Posts hidden forever</string>
@@ -708,6 +710,12 @@
     <string name="subreddit_search_method_drawer">Search bar in the drawer</string>
     <string name="subreddit_search_method_toolbar">Long press on the toolbar title</string>
     <string name="subreddit_search_method_both">Both drawer and toolbar title</string>
+
+    <!-- Back button behavior -->
+    <string name="back_button_behavior_title">Back button behavior</string>
+    <string name="back_button_behavior_default">Close application</string>
+    <string name="back_button_behavior_confirm_exit">Confirm exit dialog</string>
+    <string name="back_button_behavior_drawer">Open drawer</string>
 
     <!-- Subscription managing -->
     <string name="reorder_add_domain">Add a domain</string>
@@ -1186,5 +1194,8 @@
     <string name="settings_shortlink_description">Links will be shared as \'https://redd.it/\'</string>
     <string name="settings_shortlink">Share Reddit shortlink where possible</string>
     <string name="firefox">Firefox</string>
+    <string name="disable_replies_comment">Disable comment inbox replies</string>
+    <string name="replies_disabled_comment">Comment replies disabled</string>
+    <string name="replies_enabled_comment">Comment replies enabled</string>
 
 </resources>
