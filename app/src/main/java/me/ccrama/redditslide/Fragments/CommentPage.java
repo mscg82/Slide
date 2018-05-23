@@ -23,7 +23,6 @@ import android.support.v7.view.ContextThemeWrapper;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -48,7 +47,6 @@ import net.dean.jraw.http.NetworkException;
 import net.dean.jraw.managers.AccountManager;
 import net.dean.jraw.managers.MultiRedditManager;
 import net.dean.jraw.models.CommentSort;
-import net.dean.jraw.models.Contribution;
 import net.dean.jraw.models.MultiReddit;
 import net.dean.jraw.models.MultiSubreddit;
 import net.dean.jraw.models.Submission;
@@ -62,6 +60,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -111,7 +110,6 @@ import me.ccrama.redditslide.Views.PreCachingLayoutManagerComments;
 import me.ccrama.redditslide.Visuals.Palette;
 import me.ccrama.redditslide.handler.ToolbarScrollHideHandler;
 import me.ccrama.redditslide.util.LinkUtil;
-import me.ccrama.redditslide.util.LogUtil;
 import me.ccrama.redditslide.util.NetworkUtil;
 import me.ccrama.redditslide.util.OnSingleClickListener;
 import me.ccrama.redditslide.util.SubmissionParser;
@@ -143,6 +141,7 @@ public class CommentPage extends Fragment {
     private boolean upvoted   = false;
     private boolean downvoted = false;
     private boolean currentlySubbed;
+    private boolean collapsed = SettingValues.collapseCommentsDefault;
 
 
     public void doResult(Intent data) {
@@ -309,17 +308,17 @@ public class CommentPage extends Fragment {
         LayoutInflater localInflater = inflater.cloneInContext(contextThemeWrapper);
         v = localInflater.inflate(R.layout.fragment_verticalcontenttoolbar, container, false);
 
-        rv = (RecyclerView) v.findViewById(R.id.vertical_content);
+        rv = v.findViewById(R.id.vertical_content);
         rv.setLayoutManager(mLayoutManager);
         rv.getLayoutManager().scrollToPosition(0);
 
-        toolbar = (Toolbar) v.findViewById(R.id.toolbar);
+        toolbar = v.findViewById(R.id.toolbar);
         toolbar.setPopupTheme(new ColorPreferences(getActivity()).getFontStyle().getBaseId());
 
-        if (!SettingValues.fabComments) {
+        if (!SettingValues.fabComments || archived || np || locked) {
             v.findViewById(R.id.comment_floating_action_button).setVisibility(View.GONE);
         } else {
-            fab = (FloatingActionButton) v.findViewById(R.id.comment_floating_action_button);
+            fab = v.findViewById(R.id.comment_floating_action_button);
             if (SettingValues.fastscroll) {
                 FrameLayout.LayoutParams fabs = (FrameLayout.LayoutParams) fab.getLayoutParams();
                 fabs.setMargins(fabs.leftMargin, fabs.topMargin, fabs.rightMargin,
@@ -331,11 +330,12 @@ public class CommentPage extends Fragment {
                 public void onClick(View v) {
                     LayoutInflater inflater = getActivity().getLayoutInflater();
 
-                    final View dialoglayout = inflater.inflate(R.layout.edit_comment, null);
+                    final View dialoglayout = inflater.inflate(R.layout.comment_menu, null);
+                    dialoglayout.findViewById(R.id.menu).setVisibility(View.GONE);
                     final AlertDialogWrapper.Builder builder =
                             new AlertDialogWrapper.Builder(getActivity());
 
-                    final EditText e = (EditText) dialoglayout.findViewById(R.id.entry);
+                    final EditText e = dialoglayout.findViewById(R.id.replyLine);
 
                     //Tint the replyLine appropriately if the base theme is Light or Sepia
                     if (SettingValues.currentTheme == 1 || SettingValues.currentTheme == 5) {
@@ -356,19 +356,55 @@ public class CommentPage extends Fragment {
                             .setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
                     d.show();
-                    dialoglayout.findViewById(R.id.cancel)
+                    dialoglayout.findViewById(R.id.discard)
                             .setOnClickListener(new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
                                     d.dismiss();
                                 }
                             });
-                    dialoglayout.findViewById(R.id.submit)
+                    final TextView profile = dialoglayout.findViewById(R.id.profile);
+                    final String[] changedProfile = {Authentication.name};
+                    profile.setText("/u/".concat(changedProfile[0]));
+                    profile.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            final HashMap<String, String> accounts = new HashMap<>();
+
+                            for (String s : Authentication.authentication.getStringSet("accounts",
+                                    new HashSet<String>())) {
+                                if (s.contains(":")) {
+                                    accounts.put(s.split(":")[0], s.split(":")[1]);
+                                } else {
+                                    accounts.put(s, "");
+                                }
+                            }
+                            final ArrayList<String> keys = new ArrayList<>(accounts.keySet());
+                            final int i = keys.indexOf(changedProfile[0]);
+
+                            AlertDialogWrapper.Builder builder =
+                                    new AlertDialogWrapper.Builder(getContext());
+                            builder.setTitle(getString(R.string.replies_switch_accounts));
+                            builder.setSingleChoiceItems(keys.toArray(new String[keys.size()]), i,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            changedProfile[0] = keys.get(which);
+                                            profile.setText("/u/".concat(changedProfile[0]));
+                                        }
+                                    });
+                            builder.alwaysCallSingleChoiceCallback();
+                            builder.setNegativeButton(R.string.btn_cancel, null);
+                            builder.show();
+                        }
+                    });
+                    dialoglayout.findViewById(R.id.send)
                             .setOnClickListener(new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
                                     adapter.dataSet.refreshLayout.setRefreshing(true);
-                                    new ReplyTaskComment(adapter.submission).execute(
+                                    adapter.new ReplyTaskComment(adapter.submission,
+                                            changedProfile[0]).execute(
                                             e.getText().toString());
                                     d.dismiss();
                                 }
@@ -383,6 +419,25 @@ public class CommentPage extends Fragment {
         if (!SettingValues.fastscroll) {
             fastScroll.setVisibility(View.GONE);
         } else {
+            if (!SettingValues.showCollapseExpand) {
+                v.findViewById(R.id.collapse_expand).setVisibility(View.GONE);
+            } else {
+                v.findViewById(R.id.collapse_expand).setVisibility(View.VISIBLE);
+                v.findViewById(R.id.collapse_expand).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (adapter != null) {
+                            if (collapsed) {
+                                adapter.expandAll();
+                                collapsed = !collapsed;
+                            } else {
+                                adapter.collapseAll();
+                                collapsed = !collapsed;
+                            }
+                        }
+                    }
+                });
+            }
             v.findViewById(R.id.down).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -477,12 +532,10 @@ public class CommentPage extends Fragment {
                                                         new AlertDialogWrapper.Builder(
                                                                 getActivity());
                                                 final Slider landscape =
-                                                        (Slider) dialoglayout.findViewById(
-                                                                R.id.landscape);
+                                                        dialoglayout.findViewById(R.id.landscape);
 
                                                 final TextView since =
-                                                        (TextView) dialoglayout.findViewById(
-                                                                R.id.time_string);
+                                                        dialoglayout.findViewById(R.id.time_string);
                                                 landscape.setValueRange(60, 18000, false);
                                                 landscape.setOnPositionChangeListener(
                                                         new Slider.OnPositionChangeListener() {
@@ -617,8 +670,7 @@ public class CommentPage extends Fragment {
 
         toolbar.setBackgroundColor(Palette.getColor(subreddit));
 
-        mSwipeRefreshLayout =
-                (SwipeRefreshLayout) v.findViewById(R.id.activity_main_swipe_refresh_layout);
+        mSwipeRefreshLayout = v.findViewById(R.id.activity_main_swipe_refresh_layout);
         mSwipeRefreshLayout.setColorSchemeColors(Palette.getColors(subreddit, getActivity()));
 
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -744,12 +796,16 @@ public class CommentPage extends Fragment {
                                                                 startActivity(new Intent(
                                                                         Intent.ACTION_VIEW,
                                                                         Uri.parse(
-                                                                                "market://details?id=me.ccrama.slideforreddittabletuiunlock")));
+                                                                                "market://details?id="
+                                                                                        + getString(
+                                                                                        R.string.ui_unlock_package))));
                                                             } catch (ActivityNotFoundException e) {
                                                                 startActivity(new Intent(
                                                                         Intent.ACTION_VIEW,
                                                                         Uri.parse(
-                                                                                "http://play.google.com/store/apps/details?id=me.ccrama.slideforreddittabletuiunlock")));
+                                                                                "http://play.google.com/store/apps/details?id="
+                                                                                        + getString(
+                                                                                        R.string.ui_unlock_package))));
                                                             }
                                                         }
                                                     })
@@ -784,8 +840,7 @@ public class CommentPage extends Fragment {
                                             getActivity().startActivity(myIntent);
 
                                         } else {
-                                            LinkUtil.openExternally(adapter.submission.getUrl(),
-                                                    getActivity());
+                                            LinkUtil.openExternally(adapter.submission.getUrl());
                                         }
                                         break;
                                     case IMGUR:
@@ -827,8 +882,7 @@ public class CommentPage extends Fragment {
                                                 getActivity().startActivity(i);
                                             }
                                         } else {
-                                            LinkUtil.openExternally(adapter.submission.getUrl(),
-                                                    getActivity());
+                                            LinkUtil.openExternally(adapter.submission.getUrl());
                                         }
                                         break;
                                     case REDDIT:
@@ -848,7 +902,7 @@ public class CommentPage extends Fragment {
                                                     Snackbar.make(rv, R.string.submission_nocontent,
                                                             Snackbar.LENGTH_SHORT);
                                             View view = s.getView();
-                                            TextView tv = (TextView) view.findViewById(
+                                            TextView tv = view.findViewById(
                                                     android.support.design.R.id.snackbar_text);
                                             tv.setTextColor(Color.WHITE);
                                             s.show();
@@ -894,8 +948,7 @@ public class CommentPage extends Fragment {
                                                         R.anim.slideright, R.anim.fade_out);
                                             }
                                         } else {
-                                            LinkUtil.openExternally(adapter.submission.getUrl(),
-                                                    getActivity());
+                                            LinkUtil.openExternally(adapter.submission.getUrl());
 
                                         }
                                         break;
@@ -920,8 +973,7 @@ public class CommentPage extends Fragment {
                                                         R.anim.slideright, R.anim.fade_out);
                                             }
                                         } else {
-                                            LinkUtil.openExternally(adapter.submission.getUrl(),
-                                                    getActivity());
+                                            LinkUtil.openExternally(adapter.submission.getUrl());
 
                                         }
                                         break;
@@ -936,29 +988,14 @@ public class CommentPage extends Fragment {
                                                 adapter.submission, -1);
                                         break;
                                     case VIDEO:
-                                        if (Reddit.videoPlugin) {
-                                            try {
-                                                Intent sharingIntent =
-                                                        new Intent(Intent.ACTION_SEND);
-                                                sharingIntent.setClassName(
-                                                        "ccrama.me.slideyoutubeplugin",
-                                                        "ccrama.me.slideyoutubeplugin.YouTubeView");
-                                                sharingIntent.putExtra("url",
-                                                        adapter.submission.getUrl());
-                                                getActivity().startActivity(sharingIntent);
-
-                                            } catch (Exception e) {
-                                                LinkUtil.openExternally(adapter.submission.getUrl(),
-                                                        getActivity());
-                                            }
-                                        } else {
-                                            LinkUtil.openExternally(adapter.submission.getUrl(),
-                                                    getActivity());
+                                        if (!LinkUtil.tryOpenWithVideoPlugin(
+                                                adapter.submission.getUrl())) {
+                                            LinkUtil.openUrl(adapter.submission.getUrl(),
+                                                    Palette.getStatusBarColor(), getActivity());
                                         }
-
                                 }
                             } else {
-                                LinkUtil.openExternally(adapter.submission.getUrl(), getActivity());
+                                LinkUtil.openExternally(adapter.submission.getUrl());
                             }
                         }
                     }
@@ -1227,9 +1264,8 @@ public class CommentPage extends Fragment {
                             final String text =
                                     baseSub.getDataNode().get("description_html").asText();
                             final SpoilerRobotoTextView body =
-                                    (SpoilerRobotoTextView) sidebar.findViewById(R.id.sidebar_text);
-                            CommentOverflow overflow =
-                                    (CommentOverflow) sidebar.findViewById(R.id.commentOverflow);
+                                    sidebar.findViewById(R.id.sidebar_text);
+                            CommentOverflow overflow = sidebar.findViewById(R.id.commentOverflow);
                             setViews(text, baseSub.getDisplayName(), body, overflow);
                         } else {
                             sidebar.findViewById(R.id.sidebar_text).setVisibility(View.GONE);
@@ -1363,8 +1399,7 @@ public class CommentPage extends Fragment {
                         }
 
                         {
-                            final TextView subscribe =
-                                    (TextView) sidebar.findViewById(R.id.subscribe);
+                            final TextView subscribe = sidebar.findViewById(R.id.subscribe);
 
                             currentlySubbed = (!Authentication.isLoggedIn
                                     && UserSubscriptions.getSubscriptions(getActivity())
@@ -1418,7 +1453,7 @@ public class CommentPage extends Fragment {
                                                                                                             s.getView();
                                                                                                     TextView
                                                                                                             tv =
-                                                                                                            (TextView) view
+                                                                                                            view
                                                                                                                     .findViewById(
                                                                                                                             android.support.design.R.id.snackbar_text);
                                                                                                     tv.setTextColor(
@@ -1476,9 +1511,8 @@ public class CommentPage extends Fragment {
                                                                         R.string.sub_added,
                                                                         Snackbar.LENGTH_SHORT);
                                                                 View view = s.getView();
-                                                                TextView tv =
-                                                                        (TextView) view.findViewById(
-                                                                                android.support.design.R.id.snackbar_text);
+                                                                TextView tv = view.findViewById(
+                                                                        android.support.design.R.id.snackbar_text);
                                                                 tv.setTextColor(Color.WHITE);
                                                                 s.show();
                                                             }
@@ -1545,7 +1579,7 @@ public class CommentPage extends Fragment {
                                                                                                             s.getView();
                                                                                                     TextView
                                                                                                             tv =
-                                                                                                            (TextView) view
+                                                                                                            view
                                                                                                                     .findViewById(
                                                                                                                             android.support.design.R.id.snackbar_text);
                                                                                                     tv.setTextColor(
@@ -1602,9 +1636,8 @@ public class CommentPage extends Fragment {
                                                                         R.string.misc_unsubscribed,
                                                                         Snackbar.LENGTH_SHORT);
                                                                 View view = s.getView();
-                                                                TextView tv =
-                                                                        (TextView) view.findViewById(
-                                                                                android.support.design.R.id.snackbar_text);
+                                                                TextView tv = view.findViewById(
+                                                                        android.support.design.R.id.snackbar_text);
                                                                 tv.setTextColor(Color.WHITE);
                                                                 s.show();
                                                             }
@@ -2115,35 +2148,6 @@ public class CommentPage extends Fragment {
         }
     }
 
-    public class ReplyTaskComment extends AsyncTask<String, Void, String> {
-        public Contribution sub;
-
-        public ReplyTaskComment(Contribution n) {
-            sub = n;
-        }
-
-        @Override
-        public void onPostExecute(final String s) {
-            adapter.dataSet.refreshLayout.setRefreshing(false);
-            adapter.dataSet.loadMoreReplyTop(adapter, s);
-
-        }
-
-        @Override
-        protected String doInBackground(String... comment) {
-            if (Authentication.me != null) {
-                try {
-                    return new AccountManager(Authentication.reddit).reply(sub, comment[0]);
-                } catch (ApiException e) {
-                    Log.v(LogUtil.getTag(), "UH OH!!");
-                    //todo this
-                }
-            }
-            return null;
-        }
-
-    }
-
     public void doGoDown(int old) {
         int depth = -1;
         if (adapter.currentlySelected != null) {
@@ -2257,7 +2261,7 @@ public class CommentPage extends Fragment {
         Snackbar s = Snackbar.make(toolbar, isChecked ? getString(R.string.misc_subscribed)
                 : getString(R.string.misc_unsubscribed), Snackbar.LENGTH_SHORT);
         View view = s.getView();
-        TextView tv = (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+        TextView tv = view.findViewById(android.support.design.R.id.snackbar_text);
         tv.setTextColor(Color.WHITE);
         s.show();
     }

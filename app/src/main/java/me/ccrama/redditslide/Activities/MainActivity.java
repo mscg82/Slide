@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.content.res.Configuration;
@@ -61,6 +62,7 @@ import android.text.Editable;
 import android.text.Spannable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -147,6 +149,8 @@ import me.ccrama.redditslide.Constants;
 import me.ccrama.redditslide.ContentType;
 import me.ccrama.redditslide.FDroid;
 import me.ccrama.redditslide.Fragments.CommentPage;
+import me.ccrama.redditslide.Fragments.SettingsGeneralFragment;
+import me.ccrama.redditslide.Fragments.SettingsThemeFragment;
 import me.ccrama.redditslide.Fragments.SubmissionsView;
 import me.ccrama.redditslide.HasSeen;
 import me.ccrama.redditslide.ImageFlairs;
@@ -615,195 +619,32 @@ public class MainActivity extends BaseActivity
                 if (SettingValues.isNight()) {
                     dialoglayout.findViewById(R.id.nightmsg).setVisibility(View.VISIBLE);
                 }
-                dialoglayout.findViewById(R.id.black)
-                        .setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                String[] names =
-                                        new ColorPreferences(MainActivity.this).getFontStyle()
-                                                .getTitle()
-                                                .split("_");
-                                String name = names[names.length - 1];
-                                final String newName = name.replace("(", "");
-                                for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
-                                    if (theme.toString().contains(newName)
-                                            && theme.getThemeType() == 2) {
-                                        back = theme.getThemeType();
-                                        new ColorPreferences(MainActivity.this).setFontStyle(theme);
-                                        d.dismiss();
-                                        restartTheme();
-                                        break;
+
+                for (final Pair<Integer, Integer> pair : ColorPreferences.themePairList) {
+                    dialoglayout.findViewById(pair.first)
+                            .setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    String[] names =
+                                            new ColorPreferences(MainActivity.this).getFontStyle()
+                                                    .getTitle()
+                                                    .split("_");
+                                    String name = names[names.length - 1];
+                                    final String newName = name.replace("(", "");
+                                    for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
+                                        if (theme.toString().contains(newName)
+                                                && theme.getThemeType() == pair.second) {
+                                            back = theme.getThemeType();
+                                            new ColorPreferences(MainActivity.this).setFontStyle(
+                                                    theme);
+                                            d.dismiss();
+                                            restartTheme();
+                                            break;
+                                        }
                                     }
                                 }
-                            }
-                        });
-                dialoglayout.findViewById(R.id.blacklighter)
-                        .setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                String[] names =
-                                        new ColorPreferences(MainActivity.this).getFontStyle()
-                                                .getTitle()
-                                                .split("_");
-                                String name = names[names.length - 1];
-                                final String newName = name.replace("(", "");
-                                for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
-                                    if (theme.toString().contains(newName)
-                                            && theme.getThemeType() == 4) {
-                                        back = theme.getThemeType();
-                                        new ColorPreferences(MainActivity.this).setFontStyle(theme);
-                                        d.dismiss();
-                                        restartTheme();
-                                        break;
-                                    }
-                                }
-                            }
-                        });
-                dialoglayout.findViewById(R.id.deep)
-                        .setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                String[] names =
-                                        new ColorPreferences(MainActivity.this).getFontStyle()
-                                                .getTitle()
-                                                .split("_");
-                                String name = names[names.length - 1];
-                                final String newName = name.replace("(", "");
-                                for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
-                                    if (theme.toString().contains(newName)
-                                            && theme.getThemeType() == 8) {
-                                        back = theme.getThemeType();
-                                        new ColorPreferences(MainActivity.this).setFontStyle(theme);
-                                        d.dismiss();
-                                        restartTheme();
-                                        break;
-                                    }
-                                }
-                            }
-                        });
-                dialoglayout.findViewById(R.id.sepia)
-                        .setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                String[] names =
-                                        new ColorPreferences(MainActivity.this).getFontStyle()
-                                                .getTitle()
-                                                .split("_");
-                                String name = names[names.length - 1];
-                                final String newName = name.replace("(", "");
-                                for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
-                                    if (theme.toString().contains(newName)
-                                            && theme.getThemeType() == 5) {
-                                        back = theme.getThemeType();
-                                        new ColorPreferences(MainActivity.this).setFontStyle(theme);
-                                        d.dismiss();
-                                        restartTheme();
-                                        break;
-                                    }
-                                }
-                            }
-                        });
-                dialoglayout.findViewById(R.id.pixel)
-                        .setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                String[] names =
-                                        new ColorPreferences(MainActivity.this).getFontStyle()
-                                                .getTitle()
-                                                .split("_");
-                                String name = names[names.length - 1];
-                                final String newName = name.replace("(", "");
-                                for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
-                                    if (theme.toString().contains(newName)
-                                            && theme.getThemeType() == 7) {
-                                        back = theme.getThemeType();
-                                        new ColorPreferences(MainActivity.this).setFontStyle(theme);
-                                        d.dismiss();
-                                        restartTheme();
-                                        break;
-                                    }
-                                }
-                            }
-                        });
-                dialoglayout.findViewById(R.id.red).setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String[] names = new ColorPreferences(MainActivity.this).getFontStyle()
-                                .getTitle()
-                                .split("_");
-                        String name = names[names.length - 1];
-                        final String newName = name.replace("(", "");
-                        for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
-                            if (theme.toString().contains(newName) && theme.getThemeType() == 6) {
-                                back = theme.getThemeType();
-                                new ColorPreferences(MainActivity.this).setFontStyle(theme);
-                                d.dismiss();
-                                restartTheme();
-                                break;
-                            }
-                        }
-                    }
-                });
-                dialoglayout.findViewById(R.id.light)
-                        .setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                String[] names =
-                                        new ColorPreferences(MainActivity.this).getFontStyle()
-                                                .getTitle()
-                                                .split("_");
-                                String name = names[names.length - 1];
-                                final String newName = name.replace("(", "");
-                                for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
-                                    if (theme.toString().contains(newName)
-                                            && theme.getThemeType() == 1) {
-                                        new ColorPreferences(MainActivity.this).setFontStyle(theme);
-                                        back = theme.getThemeType();
-                                        d.dismiss();
-                                        restartTheme();
-                                        break;
-                                    }
-                                }
-                            }
-                        });
-                dialoglayout.findViewById(R.id.dark).setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String[] names = new ColorPreferences(MainActivity.this).getFontStyle()
-                                .getTitle()
-                                .split("_");
-                        String name = names[names.length - 1];
-                        final String newName = name.replace("(", "");
-                        for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
-                            if (theme.toString().contains(newName) && theme.getThemeType() == 0) {
-                                new ColorPreferences(MainActivity.this).setFontStyle(theme);
-                                back = theme.getThemeType();
-                                d.dismiss();
-                                restartTheme();
-                                break;
-                            }
-                        }
-                    }
-                });
-                dialoglayout.findViewById(R.id.blue).setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String[] names = new ColorPreferences(MainActivity.this).getFontStyle()
-                                .getTitle()
-                                .split("_");
-                        String name = names[names.length - 1];
-                        final String newName = name.replace("(", "");
-                        for (ColorPreferences.Theme theme : ColorPreferences.Theme.values()) {
-                            if (theme.toString().contains(newName) && theme.getThemeType() == 3) {
-                                new ColorPreferences(MainActivity.this).setFontStyle(theme);
-                                back = theme.getThemeType();
-                                d.dismiss();
-                                restartTheme();
-                                break;
-                            }
-                        }
-                    }
-                });
+                            });
+                }
             }
             return true;
             case R.id.action_refresh:
@@ -927,11 +768,14 @@ public class MainActivity extends BaseActivity
                                             try {
                                                 startActivity(new Intent(Intent.ACTION_VIEW,
                                                         Uri.parse(
-                                                                "market://details?id=me.ccrama.slideforreddittabletuiunlock")));
+                                                                "market://details?id=" + getString(
+                                                                        R.string.ui_unlock_package))));
                                             } catch (ActivityNotFoundException e) {
                                                 startActivity(new Intent(Intent.ACTION_VIEW,
                                                         Uri.parse(
-                                                                "http://play.google.com/store/apps/details?id=me.ccrama.slideforreddittabletuiunlock")));
+                                                                "http://play.google.com/store/apps/details?id="
+                                                                        + getString(
+                                                                        R.string.ui_unlock_package))));
                                             }
                                         }
                                     })
@@ -1000,11 +844,14 @@ public class MainActivity extends BaseActivity
                                             try {
                                                 startActivity(new Intent(Intent.ACTION_VIEW,
                                                         Uri.parse(
-                                                                "market://details?id=me.ccrama.slideforreddittabletuiunlock")));
+                                                                "market://details?id=" + getString(
+                                                                        R.string.ui_unlock_package))));
                                             } catch (ActivityNotFoundException e) {
                                                 startActivity(new Intent(Intent.ACTION_VIEW,
                                                         Uri.parse(
-                                                                "http://play.google.com/store/apps/details?id=me.ccrama.slideforreddittabletuiunlock")));
+                                                                "http://play.google.com/store/apps/details?id="
+                                                                        + getString(
+                                                                        R.string.ui_unlock_package))));
                                             }
                                         }
                                     })
@@ -1431,6 +1278,17 @@ public class MainActivity extends BaseActivity
         } catch (Exception e) {
 
         }
+
+        LogUtil.v("Installed browsers");
+        Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse("http://ccrama.me/"));
+                List<ResolveInfo> allApps = getPackageManager().queryIntentActivities (intent,
+                        PackageManager.GET_DISABLED_COMPONENTS);
+        for(ResolveInfo i : allApps){
+            if(i.activityInfo.isEnabled())
+                LogUtil.v(i.activityInfo.packageName);
+        }
     }
 
     @Override
@@ -1516,16 +1374,16 @@ public class MainActivity extends BaseActivity
             setToolbarClick();
         }*/
         //Only refresh the view if a Setting was altered
-        if (Settings.changed || SettingsTheme.changed) {
+        if (Settings.changed || SettingsThemeFragment.changed) {
 
             reloadSubs();
             //If the user changed a Setting regarding the app's theme, restartTheme()
-            if (SettingsTheme.changed /* todo maybe later || (usedArray != null && usedArray.size() != UserSubscriptions.getSubscriptions(this).size())*/) {
+            if (SettingsThemeFragment.changed /* todo maybe later || (usedArray != null && usedArray.size() != UserSubscriptions.getSubscriptions(this).size())*/) {
                 restartTheme();
             }
 
             //Need to change the subreddit search method
-            if (SettingsGeneral.searchChanged) {
+            if (SettingsGeneralFragment.searchChanged) {
                 setDrawerSubList();
 
                 if (SettingValues.subredditSearchMethod
@@ -1542,9 +1400,9 @@ public class MainActivity extends BaseActivity
                     setupSubredditSearchToolbar();
                     setDrawerSubList();
                 }
-                SettingsGeneral.searchChanged = false;
+                SettingsGeneralFragment.searchChanged = false;
             }
-            SettingsTheme.changed = false;
+            SettingsThemeFragment.changed = false;
             Settings.changed = false;
             setToolbarClick();
         }
@@ -2220,12 +2078,15 @@ public class MainActivity extends BaseActivity
                                                     int whichButton) {
                                                 try {
                                                     startActivity(new Intent(Intent.ACTION_VIEW,
-                                                            Uri.parse(
-                                                                    "market://details?id=me.ccrama.slideforreddittabletuiunlock")));
+                                                            Uri.parse("market://details?id="
+                                                                    + getString(
+                                                                    R.string.ui_unlock_package))));
                                                 } catch (ActivityNotFoundException e) {
                                                     startActivity(new Intent(Intent.ACTION_VIEW,
                                                             Uri.parse(
-                                                                    "http://play.google.com/store/apps/details?id=me.ccrama.slideforreddittabletuiunlock")));
+                                                                    "http://play.google.com/store/apps/details?id="
+                                                                            + getString(
+                                                                            R.string.ui_unlock_package))));
                                                 }
                                             }
                                         })

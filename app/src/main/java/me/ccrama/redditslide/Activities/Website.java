@@ -147,7 +147,7 @@ public class Website extends BaseActivityAnim {
                 return true;
             case R.id.chrome:
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(v.getUrl()));
-                browserIntent.setPackage(LinkUtil.getPackage(browserIntent));
+                LinkUtil.overridePackage(browserIntent);
                 startActivity(Intent.createChooser(browserIntent, getDomainName(v.getUrl())));
                 return true;
             case R.id.share:
@@ -185,20 +185,20 @@ public class Website extends BaseActivityAnim {
         client = new MyWebViewClient();
         webClient = new AdBlockWebViewClient();
 
-            if (!SettingValues.cookies) {
-                CookieSyncManager.createInstance(this);
-                CookieManager cookieManager = CookieManager.getInstance();
-                try {
+        if (!SettingValues.cookies) {
+            CookieSyncManager.createInstance(this);
+            CookieManager cookieManager = CookieManager.getInstance();
+            try {
                 cookieManager.removeAllCookies(null);
                 CookieManager.getInstance().flush();
                 cookieManager.setAcceptCookie(false);
-                } catch(NoSuchMethodError e){
-                    //Although these were added in api 12, some devices don't have this method
-                }
-                WebSettings ws = v.getSettings();
-                ws.setSaveFormData(false);
-                ws.setSavePassword(false);
+            } catch(NoSuchMethodError e){
+                //Although these were added in api 12, some devices don't have this method
             }
+            WebSettings ws = v.getSettings();
+            ws.setSaveFormData(false);
+            ws.setSavePassword(false);
+        }
 
 
         /* todo in the future, drag left and right to go back and forward in history
@@ -387,19 +387,9 @@ public class Website extends BaseActivityAnim {
                         }
                         return super.shouldOverrideUrlLoading(view, url);
                     case VIDEO:
-                        if (Reddit.videoPlugin) {
-                            try {
-                                Intent sharingIntent = new Intent(Intent.ACTION_SEND);
-                                sharingIntent.setClassName("ccrama.me.slideyoutubeplugin",
-                                        "ccrama.me.slideyoutubeplugin.YouTubeView");
-                                sharingIntent.putExtra("url", url);
-                                view.getContext().startActivity(sharingIntent);
-                            } catch (Exception e) {
-                                return super.shouldOverrideUrlLoading(view, url);
-                            }
-                            return true;
+                        if (!LinkUtil.tryOpenWithVideoPlugin(url)) {
+                            return super.shouldOverrideUrlLoading(view, url);
                         }
-                        return super.shouldOverrideUrlLoading(view, url);
                     case EXTERNAL:
                     default:
                         return super.shouldOverrideUrlLoading(view, url);

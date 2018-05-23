@@ -240,6 +240,20 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    public void expandAll() {
+        if (currentComments == null) return;
+        for (CommentObject o : currentComments) {
+            if (o.comment.isTopLevel()) {
+                if (hiddenPersons.contains(o.comment.getComment().getFullName())) {
+                    hiddenPersons.remove(o.comment.getComment().getFullName());
+                }
+                unhideAll(o.comment);
+            }
+        }
+        notifyItemChanged(2);
+    }
+
+
     public void collapseAll() {
         if (currentComments == null) return;
         for (CommentObject o : currentComments) {
@@ -674,7 +688,7 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     final int i = keys.indexOf(changedProfile);
 
                     AlertDialogWrapper.Builder builder = new AlertDialogWrapper.Builder(mContext);
-                    builder.setTitle("Switch to another account");
+                    builder.setTitle(mContext.getString(R.string.replies_switch_accounts));
                     builder.setSingleChoiceItems(keys.toArray(new String[keys.size()]), i,
                             new DialogInterface.OnClickListener() {
                                 @Override
@@ -1907,6 +1921,17 @@ public class CommentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             }
         } catch (Exception ignored) {
 
+        }
+    }
+
+    public void unhideAll(CommentNode n) {
+        unhideNumber(n, 0);
+        if (SettingValues.collapseComments) {
+            listView.setItemAnimator(null);
+            notifyDataSetChanged();
+        } else {
+            listView.setItemAnimator(new AlphaInAnimator());
+            notifyDataSetChanged();
         }
     }
 

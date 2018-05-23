@@ -136,7 +136,7 @@ public class PopulateNewsViewHolder {
                                         myIntent.putExtra(MediaView.EXTRA_URL, submission.getUrl());
                                         contextActivity.startActivity(myIntent);
                                     } else {
-                                        LinkUtil.openExternally(submission.getUrl(), contextActivity);
+                                        LinkUtil.openExternally(submission.getUrl());
                                     }
                                     break;
                                 case IMGUR:
@@ -156,7 +156,7 @@ public class PopulateNewsViewHolder {
                                             contextActivity.startActivity(i);
                                         }
                                     } else {
-                                        LinkUtil.openExternally(submission.getUrl(), contextActivity);
+                                        LinkUtil.openExternally(submission.getUrl());
                                     }
                                     break;
                                 case REDDIT:
@@ -194,7 +194,7 @@ public class PopulateNewsViewHolder {
                                         contextActivity.overridePendingTransition(R.anim.slideright,
                                                 R.anim.fade_out);
                                     } else {
-                                        LinkUtil.openExternally(submission.getUrl(), contextActivity);
+                                        LinkUtil.openExternally(submission.getUrl());
 
                                     }
                                     break;
@@ -218,7 +218,7 @@ public class PopulateNewsViewHolder {
                                         contextActivity.overridePendingTransition(R.anim.slideright,
                                                 R.anim.fade_out);
                                     } else {
-                                        LinkUtil.openExternally(submission.getUrl(), contextActivity);
+                                        LinkUtil.openExternally(submission.getUrl());
 
                                     }
                                     break;
@@ -238,26 +238,14 @@ public class PopulateNewsViewHolder {
                                     }
                                     break;
                                 case VIDEO:
-                                    if (Reddit.videoPlugin) {
-                                        try {
-                                            Intent sharingIntent = new Intent(Intent.ACTION_SEND);
-                                            sharingIntent.setClassName(
-                                                    "ccrama.me.slideyoutubeplugin",
-                                                    "ccrama.me.slideyoutubeplugin.YouTubeView");
-                                            sharingIntent.putExtra("url", submission.getUrl());
-                                            contextActivity.startActivity(sharingIntent);
-
-                                        } catch (Exception e) {
-                                            LinkUtil.openExternally(submission.getUrl(),
-                                                    contextActivity);
-                                        }
-                                    } else {
-                                        LinkUtil.openExternally(submission.getUrl(), contextActivity);
+                                    if (!LinkUtil.tryOpenWithVideoPlugin(submission.getUrl())) {
+                                        LinkUtil.openUrl(submission.getUrl(),
+                                                Palette.getStatusBarColor(), contextActivity);
                                     }
                                     break;
                             }
                         } else {
-                            LinkUtil.openExternally(submission.getUrl(), contextActivity);
+                            LinkUtil.openExternally(submission.getUrl());
                         }
                     }
                 } else {
@@ -267,7 +255,7 @@ public class PopulateNewsViewHolder {
                         Snackbar s = Snackbar.make(holder.itemView, R.string.go_online_view_content,
                                 Snackbar.LENGTH_SHORT);
                         View view = s.getView();
-                        TextView tv = (TextView) view.findViewById(
+                        TextView tv = view.findViewById(
                                 android.support.design.R.id.snackbar_text);
                         tv.setTextColor(Color.WHITE);
                         s.show();
@@ -325,7 +313,7 @@ public class PopulateNewsViewHolder {
             contextActivity.startActivity(myIntent);
 
         } else {
-            LinkUtil.openExternally(submission.getUrl(), contextActivity);
+            LinkUtil.openExternally(submission.getUrl());
         }
 
     }
@@ -409,7 +397,7 @@ public class PopulateNewsViewHolder {
             addAdaptorPosition(myIntent, submission, adapterPosition);
             contextActivity.startActivity(myIntent);
         } else {
-            LinkUtil.openExternally(submission.getUrl(), contextActivity);
+            LinkUtil.openExternally(submission.getUrl());
         }
 
     }
@@ -592,7 +580,6 @@ public class PopulateNewsViewHolder {
                                     mContext.getString(R.string.filter_posts_flair, flair, baseSub)
                             };
                         }
-                        ;
                         chosen = new boolean[]{
                                 Arrays.asList(
                                         SettingValues.subredditFilters.toLowerCase(Locale.ENGLISH)
@@ -795,7 +782,7 @@ public class PopulateNewsViewHolder {
                     }
                     break;
                     case 7:
-                        LinkUtil.openExternally(submission.getUrl(), mContext);
+                        LinkUtil.openExternally(submission.getUrl());
                         if (submission.isNsfw() && !SettingValues.storeNSFWHistory) {
                             //Do nothing if the post is NSFW and storeNSFWHistory is not enabled
                         } else if (SettingValues.storeHistory) {
@@ -808,7 +795,7 @@ public class PopulateNewsViewHolder {
                             Snackbar s = Snackbar.make(holder.itemView, "Added to read later!",
                                     Snackbar.LENGTH_SHORT);
                             View view = s.getView();
-                            TextView tv = (TextView) view.findViewById(
+                            TextView tv = view.findViewById(
                                     android.support.design.R.id.snackbar_text);
                             tv.setTextColor(Color.WHITE);
                             s.setAction(R.string.btn_undo, new View.OnClickListener() {
@@ -818,7 +805,7 @@ public class PopulateNewsViewHolder {
                                     Snackbar s2 = Snackbar.make(holder.itemView,
                                             "Removed from read later", Snackbar.LENGTH_SHORT);
                                     View view2 = s2.getView();
-                                    TextView tv2 = (TextView) view2.findViewById(
+                                    TextView tv2 = view2.findViewById(
                                             android.support.design.R.id.snackbar_text);
                                     tv2.setTextColor(Color.WHITE);
                                     s2.show();
@@ -844,7 +831,7 @@ public class PopulateNewsViewHolder {
                                         Snackbar.make(holder.itemView, "Removed from read later",
                                                 Snackbar.LENGTH_SHORT);
                                 View view2 = s2.getView();
-                                TextView tv2 = (TextView) view2.findViewById(
+                                TextView tv2 = view2.findViewById(
                                         android.support.design.R.id.snackbar_text);
                                 tv2.setTextColor(Color.WHITE);
                                 s2.setAction(R.string.btn_undo, new View.OnClickListener() {
@@ -859,7 +846,7 @@ public class PopulateNewsViewHolder {
                                         Snackbar.make(holder.itemView, "Removed from read later",
                                                 Snackbar.LENGTH_SHORT);
                                 View view2 = s2.getView();
-                                TextView tv2 = (TextView) view2.findViewById(
+                                TextView tv2 = view2.findViewById(
                                         android.support.design.R.id.snackbar_text);
                                 s2.show();
                             }
@@ -915,7 +902,7 @@ public class PopulateNewsViewHolder {
                                                                 R.string.msg_report_sent,
                                                                 Snackbar.LENGTH_SHORT);
                                                         View view = s.getView();
-                                                        TextView tv = (TextView) view.findViewById(
+                                                        TextView tv = view.findViewById(
                                                                 android.support.design.R.id.snackbar_text);
                                                         tv.setTextColor(Color.WHITE);
                                                         s.show();
@@ -1032,8 +1019,7 @@ public class PopulateNewsViewHolder {
                 Snackbar snack = Snackbar.make(recyclerview, R.string.submission_info_unhidden,
                         Snackbar.LENGTH_LONG);
                 View view = snack.getView();
-                TextView tv =
-                        (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                TextView tv = view.findViewById(android.support.design.R.id.snackbar_text);
                 tv.setTextColor(Color.WHITE);
                 snack.show();
             } else {
@@ -1072,8 +1058,7 @@ public class PopulateNewsViewHolder {
                             }
                         });
                 View view = snack.getView();
-                TextView tv =
-                        (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                TextView tv = view.findViewById(android.support.design.R.id.snackbar_text);
                 tv.setTextColor(Color.WHITE);
                 snack.show();
             }
@@ -1136,7 +1121,7 @@ public class PopulateNewsViewHolder {
                                 + "%)" : "";
 
         if (!scoreRatio.isEmpty()) {
-            TextView percent = ((TextView) holder.itemView.findViewById(R.id.percent));
+            TextView percent = holder.itemView.findViewById(R.id.percent);
             percent.setVisibility(View.VISIBLE);
             percent.setText(scoreRatio);
 
@@ -1162,7 +1147,7 @@ public class PopulateNewsViewHolder {
 
         //Save the score so we can use it in the OnClickListeners for the vote buttons
 
-        ImageView thumbImage2 = ((ImageView) holder.thumbnail);
+        ImageView thumbImage2 = holder.thumbnail;
 
         if (holder.leadImage.thumbImage2 == null) {
             holder.leadImage.setThumbnail(thumbImage2);
@@ -1194,8 +1179,7 @@ public class PopulateNewsViewHolder {
                             Snackbar.make(holder.itemView, mContext.getString(R.string.offline_msg),
                                     Snackbar.LENGTH_SHORT);
                     View view = s.getView();
-                    TextView tv =
-                            (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+                    TextView tv = view.findViewById(android.support.design.R.id.snackbar_text);
                     tv.setTextColor(Color.WHITE);
                     s.show();
                 } else {
