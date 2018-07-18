@@ -15,7 +15,7 @@ android {
     }
     defaultConfig {
         applicationId "me.ccrama.redditslide"
-        versionCode 308
+        versionCode 309
         minSdkVersion 15
         targetSdkVersion 27
         compileSdkVersion 27
@@ -76,6 +76,7 @@ robototextview {
 ext {
     supportLibVersion = '27.1.0'
     robolectricVersion = '3.3.1'
+    powerMockitoVersion = '1.7.4'
 }
 dependencies {
     withGPlayImplementation 'com.google.android.gms:play-services-drive:10.2.0'
@@ -124,10 +125,13 @@ dependencies {
     implementation 'me.everything:overscroll-decor-android:1.0.4'
     implementation 'com.mikepenz:aboutlibraries:5.8.1'
     implementation 'com.googlecode.mp4parser:isoparser:1.1.21'
+    implementation 'org.apache.commons:commons-text:1.4'
 
     testImplementation 'junit:junit:4.12'
     testImplementation 'org.hamcrest:hamcrest-all:1.3'
-    testImplementation 'org.mockito:mockito-core:1.10.19'
+    testImplementation 'org.mockito:mockito-core:2.8.9'
     testImplementation "org.robolectric:robolectric:$robolectricVersion"
     testImplementation "org.robolectric:shadows-multidex:$robolectricVersion"
+    testImplementation "org.powermock:powermock-api-mockito2:$powerMockitoVersion"
+    testImplementation "org.powermock:powermock-module-junit4:$powerMockitoVersion"
 }
