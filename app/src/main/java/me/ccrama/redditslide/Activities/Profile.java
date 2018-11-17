@@ -233,7 +233,8 @@ public class Profile extends BaseActivityAnim {
             }
             return;
         }
-        if (account.getDataNode().has("is_suspended") && account.getDataNode().get("is_suspended").asBoolean()) {
+        if (account.getDataNode().has("is_suspended") && account.getDataNode().get("is_suspended").asBoolean()
+                && !name.equalsIgnoreCase(Authentication.name)) {
             try {
                 new AlertDialogWrapper.Builder(Profile.this)
                         .setTitle(R.string.account_suspended)
@@ -657,7 +658,9 @@ public class Profile extends BaseActivityAnim {
                                 view.setOnClickListener(new View.OnClickListener() {
                                     @Override
                                     public void onClick(View v) {
-                                        LinkUtil.openUrl("https://reddit.com" + t.getAboutUrl(), Palette.getColorUser(account.getFullName()), Profile.this);
+                                        LinkUtil.openUrl(LinkUtil.formatURL(t.getAboutUrl()).toString(),
+                                                Palette.getColorUser(account.getFullName()),
+                                                Profile.this);
                                     }
                                 });
                             }
