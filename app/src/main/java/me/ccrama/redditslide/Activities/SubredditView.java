@@ -963,7 +963,7 @@ public class SubredditView extends BaseActivity {
                             });
                         }
                     }
-                }.execute(dialoglayout.findViewById(R.id.flair));
+                }.execute((View) dialoglayout.findViewById(R.id.flair));
             }
         } else {
             if (drawerLayout != null) {
